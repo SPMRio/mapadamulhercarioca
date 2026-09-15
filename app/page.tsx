@@ -46,25 +46,31 @@ type Indicador = {
   unidade: string;
   territorialidade: string;
   fonte: string;
+  link_fonte: string;
   nota: string;
   observacoes: string;
 };
 
 type DadoCuidado = {
   indicador_id: string;
+  tema: string;
   periodo: string;
   territorialidade: string;
   linha: string;
   coluna: string;
   valor: number;
   valor_original: number;
+  texto: string;
   metrica: string;
   tipo_valor: string;
+  escala: string;
   unidade: string;
   fonte: string;
+  link_fonte: string;
   observacoes: string;
-  aba_origem: string;
-  celula_origem: string;
+  nota_dado: string;
+  formato_original: string;
+  publicar: string;
 };
 
 function tabelaParaObjetos<T>(tabela: unknown[][]): T[] {
@@ -85,24 +91,33 @@ function numero(valor: unknown): number {
 }
 
 function formatarValor(dado: DadoCuidado): string {
-  const valor = numero(dado.valor);
+  const valorOriginal = numero(dado.valor);
 
-  if (dado.metrica === "percentual" || dado.unidade === "%") {
-    return `${(valor * 100).toLocaleString("pt-BR", {
+  if (dado.tipo_valor === "percentual" || dado.metrica === "percentual") {
+    const percentual = dado.escala === "0–1" ? valorOriginal * 100 : valorOriginal;
+    return `${percentual.toLocaleString("pt-BR", {
       minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
+      maximumFractionDigits: 2,
     })}%`;
   }
 
-  if (dado.metrica === "horas" || dado.unidade === "horas") {
-    return `${valor.toLocaleString("pt-BR", {
+  if (dado.tipo_valor === "moeda") {
+    return valorOriginal.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      maximumFractionDigits: 2,
+    });
+  }
+
+  if (dado.metrica === "horas" || dado.unidade.toLowerCase().includes("hora")) {
+    return `${valorOriginal.toLocaleString("pt-BR", {
       minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
+      maximumFractionDigits: 2,
     })} h`;
   }
 
-  return valor.toLocaleString("pt-BR", {
-    maximumFractionDigits: 0,
+  return valorOriginal.toLocaleString("pt-BR", {
+    maximumFractionDigits: dado.tipo_valor === "inteiro" ? 0 : 2,
   });
 }
 
@@ -268,20 +283,33 @@ function PainelCuidados({
     1,
   );
 
-  function localizar(indicadorId: string, celula: string) {
-    return dados.find(
-      (item) =>
-        item.indicador_id === indicadorId &&
-        item.celula_origem === celula,
-    );
+  function localizar(
+    indicadorId: string,
+    filtros: { linha?: string; coluna?: string; periodo?: string; tipo?: string },
+  ) {
+    return dados.find((item) => {
+      if (item.indicador_id !== indicadorId) return false;
+      if (filtros.linha && item.linha !== filtros.linha) return false;
+      if (filtros.coluna && item.coluna !== filtros.coluna) return false;
+      if (filtros.periodo && item.periodo !== filtros.periodo) return false;
+      if (filtros.tipo && item.tipo_valor !== filtros.tipo) return false;
+      return true;
+    });
   }
 
-  const horasMulheres = localizar("3.1-1", "E12");
-  const horasHomens = localizar("3.1-1", "F12");
-  const horasNegras = localizar("3.1-2", "D12");
-  const horasBrancas = localizar("3.1-2", "E12");
-  const mulheresMaes = localizar("3.2-2", "C12");
-  const coberturaCreche = localizar("3.4-6", "C15");
+  const horasMulheres = localizar("3.1-1", { coluna: "Mulheres" });
+  const horasHomens = localizar("3.1-1", { coluna: "Homens" });
+  const horasNegras = localizar("3.1-2", { coluna: "Negras" });
+  const horasBrancas = localizar("3.1-2", { coluna: "Brancas" });
+  const mulheresMaes = localizar("3.2-2", {
+    linha: "Mães",
+    tipo: "percentual",
+  });
+  const coberturaCreche = localizar("3.4-6", {
+    periodo: "2024",
+    coluna: "Percentual Rio de Janeiro",
+    tipo: "percentual",
+  });
 
   const diferencaGenero =
     numero(horasMulheres?.valor) - numero(horasHomens?.valor);
@@ -414,7 +442,7 @@ function PainelCuidados({
                     .join(" · ");
 
                   return (
-                    <div className="dynamic-row" key={`${item.celula_origem}-${index}`}>
+                    <div className="dynamic-row" key={`${item.indicador_id}-${item.periodo}-${item.linha}-${item.coluna}-${index}`}>
                       <div>
                         <span>{rotulo}</span>
                         <b>{formatarValor(item)}</b>
@@ -436,7 +464,7 @@ function PainelCuidados({
                   </thead>
                   <tbody>
                     {linhas.map((item, index) => (
-                      <tr key={`${item.celula_origem}-${index}`}>
+                      <tr key={`${item.indicador_id}-${item.periodo}-${item.linha}-${item.coluna}-${index}`}>
                         <td>{item.linha}</td>
                         <td>{item.coluna}</td>
                         <td>{formatarValor(item)}</td>
@@ -448,7 +476,21 @@ function PainelCuidados({
             </div>
 
             <div className="indicator-source">
-              <p><b>Fonte:</b> {indicador.fonte || linhas[0]?.fonte}</p>
+              <p>
+                <b>Fonte:</b> {indicador.fonte || linhas[0]?.fonte}
+                {(indicador.link_fonte || linhas[0]?.link_fonte) && (
+                  <>
+                    {" "}
+                    <a
+                      href={indicador.link_fonte || linhas[0]?.link_fonte}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir fonte
+                    </a>
+                  </>
+                )}
+              </p>
               {(indicador.observacoes || linhas[0]?.observacoes) && (
                 <p><b>Nota:</b> {indicador.observacoes || linhas[0]?.observacoes}</p>
               )}
