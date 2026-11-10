@@ -4,11 +4,11 @@ Aplicação Next.js App Router, publicada na Vercel, com dados públicos do BigQ
 
 ## Arquitetura de publicação
 
-- `app/page.tsx` é um **Server Component** com `revalidate = 86400` (ISR).
+- `app/page.tsx` é um **Server Component** com `revalidate = 300` (ISR: 5 minutos).
 - `lib/bigquery-static.ts` consulta o BigQuery **somente no servidor**, usando a variável `BIGQUERY_SERVICE_ACCOUNT_JSON`, e armazena o resultado com tags de cache.
 - `app/RadarClient.tsx` recebe os dados já prontos e faz apenas a interação local (trocar eixo, selecionar indicador, mostrar gráfico); **não chama APIs ou BigQuery ao abrir a página**.
-- O HTML da página é pré-gerado e armazenado pelo Next.js/Vercel. Na falta de webhook, o ISR poderá revalidar após 24 horas de cache.
-- `app/api/revalidate/route.ts` permite invalidar o cache sob demanda **após uma carga validada no BigQuery**, sem novo deploy.
+- O HTML da página é pré-gerado e armazenado pelo Next.js/Vercel. O ISR revalida automaticamente após 5 minutos, quando houver nova visita. Uma solicitação inicial após o vencimento pode receber a versão anterior enquanto a nova é gerada.
+- `app/api/revalidate/route.ts` permite invalidar o cache sob demanda **para uma atualização imediata após uma carga validada no BigQuery**, sem novo deploy.
 
 ## Configuração segura na Vercel
 
@@ -31,7 +31,7 @@ Content-Type: application/json
 
 Resposta esperada: `{"ok":true,...}`. A próxima visita à página regenerará a versão cacheada. Para invalidar catálogo e todos os eixos implementados, use `{"eixo":"todos"}`.
 
-Se `REVALIDATE_SECRET` ainda não estiver configurado, a rota retorna 503 e o sistema continua utilizando revalidação periódica de 24 h.
+A revalidação automática de 5 minutos funciona independentemente do webhook; `REVALIDATE_SECRET` é necessário somente para atualização manual imediata.
 
 ## Dados e tabelas
 
@@ -55,3 +55,9 @@ As tabelas dos demais eixos e a ingestão automatizada ainda serão adicionadas 
 - `lib/bigquery-static.ts`: consultas cacheadas.
 - `app/api/revalidate/route.ts`: webhook de atualização sob demanda.
 - `app/globals.css`: estilos.
+
+## Atualização direta no BigQuery
+
+A única fonte de dados é o **BigQuery** (não há dependência de Google Sheets). Ao fazer `INSERT`, `UPDATE`, `MERGE` ou `DELETE` nas tabelas, nenhuma etapa manual é necessária para o próximo ciclo de ISR: **após pelo menos 5 minutos**, a primeira visita aciona a regeneração do HTML. A visita que dispara o processo pode ver a versão anterior até a regeneração terminar. Não há detecção instantânea de cada mutação no BigQuery nem um processo rodando sem visitas.
+
+Para publicação imediata, chame `/api/revalidate` autenticado depois de gravar os dados. Se for exigida publicação por evento, será necessário implementar um pipeline separado de eventos/auditoria do GCP para acionar esse webhook.
