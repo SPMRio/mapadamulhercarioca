@@ -552,6 +552,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
   const x = (i: number) => left + (periodos.length > 1 ? i / (periodos.length - 1) : 0.5) * (W-left-right);
   const y = (v: number) => top + (max-v)/amplitude * (H-top-bottom);
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const numeroGrafico = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
   const mostrarTooltip = (e: React.MouseEvent<SVGCircleElement> | React.FocusEvent<SVGCircleElement>, serie: string, periodo: string, valor: number, cor: string) => {
     const ponto = e.currentTarget.getBoundingClientRect();
     const container = e.currentTarget.closest(".radar-real-chart")?.getBoundingClientRect();
@@ -571,7 +572,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
           const valor = min + amplitude * i/4;
           return <g key={i}>
             <line x1={left} x2={W-right} y1={y(valor)} y2={y(valor)} stroke="#e4dfeb" />
-            <text x={left-12} y={y(valor)+4} fontSize="14" fill="#52657b" textAnchor="end">{moeda(valor)}</text>
+            <text x={left-12} y={y(valor)+4} fontSize="14" fill="#52657b" textAnchor="end">{numeroGrafico(valor)}</text>
           </g>;
         })}
         {periodos.map((periodo, i) => <text key={periodo} x={x(i)} y={H-20}
@@ -586,7 +587,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
               fill="none" stroke={serie.cor} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" className="radar-animated-line" pathLength={1} />}
             {pontos.map(p => <circle key={p.periodo} cx={x(p.indice)} cy={y(p.valor)} r="6"
               fill={serie.cor} stroke="#fff" strokeWidth="2" tabIndex={0} role="img"
-              aria-label={`${serie.nome}, ${p.periodo}: ${moeda(p.valor)}`}
+              aria-label={`${serie.nome}, ${p.periodo}: ${numeroGrafico(p.valor)}`}
               onMouseEnter={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
               onMouseMove={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
               onMouseLeave={() => setTooltip(null)}
@@ -600,7 +601,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
         <div className="radar-chart-tooltip" style={{ left: tooltip.left, top: tooltip.top }} role="status">
           <span className="radar-tooltip-series"><i style={{ background: tooltip.cor }} />{tooltip.serie}</span>
           <strong>{tooltip.periodo}</strong>
-          <b>{moeda(tooltip.valor)}</b>
+          <b>{numeroGrafico(tooltip.valor)}</b>
         </div>
       )}
       </>}
