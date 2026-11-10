@@ -102,11 +102,12 @@ export async function GET() {
       return decoded && typeof decoded === "object" && !Array.isArray(decoded)
         ? decoded as Record<string, unknown> : {};
     });
+    const normalizados = indicadores.map((row) => ({ ...row, indicador_id: String(row.indicador_id ?? row.id_indicador ?? "") }));
     const firstColumns = indicadores.length > 0 ? Object.keys(indicadores[0]) : [];
     // Indicate when the source's original key differs from the dashboard's ID.
     const contemId = firstColumns.includes("indicador_id");
     return NextResponse.json(
-      { ok: true, fonte: "bigquery", indicadores, colunas: firstColumns, possui_indicador_id: contemId },
+      { ok: true, fonte: "bigquery", indicadores: normalizados, colunas: firstColumns, possui_indicador_id: contemId },
       { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } },
     );
   } catch (error) {
