@@ -616,13 +616,12 @@ export default function Home() {
 
         <div className="meta">
           <span>
-            Dados atualizados em{" "}
-            <b>agosto de 2026</b>
+            Indicadores disponíveis no{" "}
+            <b>BigQuery</b>
           </span>
 
           <span>
-            Fontes: IBGE, ISP, Data.Rio e
-            registros municipais
+            Fontes indicadas individualmente em cada indicador
           </span>
         </div>
       </section>
