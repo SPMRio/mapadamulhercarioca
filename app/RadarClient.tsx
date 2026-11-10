@@ -518,6 +518,13 @@ type DadoEixo01 = {
   serie_subrecorte: string;
   valor: string | number;
   publicar: string;
+  tipo_valor?: string;
+  escala?: string;
+  texto?: string;
+  unidade_dado?: string;
+  nota_dado?: string;
+  situacao?: string;
+  ordem?: number;
 };
 function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
   const publicados = dados.filter(d => d.id_indicador === "1.2.1" &&
@@ -610,20 +617,82 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
   );
 }
 
+
+// As visualizações são geradas pelos registros da tabela de dados do eixo, não por constantes no front-end.
+function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[] }) {
+  const [metrica, setMetrica] = useState("");
+  const [ordem, setOrdem] = useState<"maior" | "menor">("maior");
+  const validos = dados.filter(d => d.id_indicador === indicador.indicador_id && Number.isFinite(Number(d.valor)));
+  const tipo = indicador.tipo_visualizacao || "";
+  const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const fmt = (d: DadoEixo01) => {
+    const n = Number(d.valor);
+    if (d.tipo_valor === "moeda" || d.unidade_dado === "R$") return moeda(n);
+    if (d.unidade_dado === "%") return `${(d.escala === "0–1" ? n * 100 : n).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+    if (d.unidade_dado === "posição") return `${n}º`;
+    return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  };
+  if (!validos.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis.</p></div>;
+  if (tipo === "cards") return (
+    <>
+      <div className="radar-world-grid">
+        {[...validos].sort((a,b) => (a.ordem ?? 0) - (b.ordem ?? 0)).map((d,i) => (
+          <article className="radar-world-card" key={`${d.categoria_recorte}-${i}`}>
+            <span className="radar-world-card-label">{d.periodo} · {d.territorio}</span>
+            <strong>{fmt(d)}</strong>
+            <h4>{d.categoria_recorte}</h4>
+            <p>{d.texto}</p>
+          </article>
+        ))}
+      </div>
+    </>
+  );
+  const isPir = tipo === "piramide";
+  const metricas = Array.from(new Set(validos.map(d => d.serie_subrecorte).filter(Boolean)));
+  const uf = tipo === "barras_uf";
+  const grupoTaxa = (m: string) => /taxa/i.test(m);
+  const metricaAtual = metricas.includes(metrica) ? metrica : (metricas.find(m => !grupoTaxa(m)) || metricas[0]);
+  const linhas = uf
+    ? validos.filter(d => d.serie_subrecorte === metricaAtual)
+    : validos.filter(d => d.tipo_valor !== "texto");
+  const ordered = uf ? [...linhas].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor)) : linhas;
+  const max = Math.max(1,...ordered.map(d => Math.abs(Number(d.valor))));
+  const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
+  const serieX = tipo === "linhas" || tipo === "barras_populacao";
+  return (
+    <div className="radar-dynamic-view">
+      {uf && <div className="radar-view-controls">
+        {metricas.map(m => <button type="button" key={m} className={metricaAtual === m ? "active" : ""} onClick={() => setMetrica(m)}>{m}</button>)}
+        <button type="button" onClick={() => setOrdem(v => v === "maior" ? "menor" : "maior")}>Ordenar: {ordem === "maior" ? "maiores" : "menores"}</button>
+      </div>}
+      {serieX && <div className="radar-view-legend">
+        {Array.from(new Set(ordered.map(d => d.serie_subrecorte))).filter(Boolean).map(m => <span key={m}>{m}</span>)}
+      </div>}
+      <div className="radar-dynamic-bars">
+        {ordered.map((d,i) => (
+          <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
+            <div className="radar-dynamic-meta">
+              <span>{isPir ? `${d.categoria_recorte} · ${d.serie_subrecorte}` : (uf ? d.categoria_recorte : `${d.periodo} · ${d.categoria_recorte} · ${d.serie_subrecorte}`)}</span>
+              <strong>{fmt(d)}</strong>
+            </div>
+            <div className="radar-dynamic-track"><div style={{width:`${Math.max(1, Math.abs(Number(d.valor))/max*100)}%`}} /></div>
+          </div>
+        ))}
+      </div>
+      <div className="radar-data-table-wrap">
+        <table><thead><tr><th>Período</th><th>Categoria</th><th>Série</th><th>Valor</th></tr></thead>
+          <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{fmt(d)}</td></tr>)}</tbody>
+        </table>
+      </div>
+      {avisos.length > 0 && <p className="radar-data-notice">Alguns registros ainda exigem conferência de fonte, escala ou total. Consulte a documentação antes de utilizar esses dados como definitivos.</p>}
+    </div>
+  );
+}
+
 function tituloPublico(titulo: string) {
   const nome = titulo.replace(/^\s*\d+(?:\.\d+)*(?:-\d+)?\s*[-–—:]?\s*/, "").trim();
   return /dados em texto corrido/i.test(nome) ? "Desigualdade de gênero no mundo" : nome;
 }
-
-const destaquesDesigualdadeMundo = [
-  { valor: "70º", rotulo: "Posição do Brasil no ranking mundial", detalhe: "Entre os países avaliados no índice global de igualdade de gênero." },
-  { valor: "71,6%", rotulo: "Paridade geral de gênero", detalhe: "Pontuação do Brasil no índice de 2024 (0,716)." },
-  { valor: "16º", rotulo: "Brasil na América Latina e Caribe", detalhe: "Posição entre 22 países da região." },
-  { valor: "66,7%", rotulo: "Participação econômica e oportunidades", detalhe: "Paridade econômica estimada para o Brasil." },
-  { valor: "72,6%", rotulo: "Participação na força de trabalho", detalhe: "Paridade com avanço de 0,7 ponto percentual." },
-  { valor: "22%", rotulo: "Empoderamento político", detalhe: "Paridade no subíndice de representação e participação política." },
-  { valor: "99,6%", rotulo: "Educação", detalhe: "Paridade no subíndice de educação." },
-];
 
 export default function RadarClient({
   indicadores,
@@ -646,11 +715,11 @@ export default function RadarClient({
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
       String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR") &&
-      !/dados em texto corrido/i.test(item.titulo)
+      true
     ), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
-  const mundoSelecionado = tema === "Visão geral" && indicadorId === "__desigualdade_mundo__";
+
   const indicadoresFiltrados = useMemo(() => {
     const busca = buscaIndicador.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
     return indicadoresDoTema.filter(item =>
@@ -770,7 +839,7 @@ export default function RadarClient({
                   <button type="button" className={`radar-select-trigger${seletorAberto ? " is-open" : ""}`}
                     aria-haspopup="listbox" aria-expanded={seletorAberto} aria-controls="radar-indicator-options"
                     onClick={() => { setBuscaIndicador(""); setSeletorAberto(aberto => !aberto); }}>
-                    <span>{mundoSelecionado ? "Desigualdade de gênero no mundo" : selecionado ? tituloPublico(selecionado.titulo) : "Escolha um indicador"}</span>
+                    <span>{selecionado ? tituloPublico(selecionado.titulo) : "Escolha um indicador"}</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="m6 9 6 6 6-6" />
@@ -788,14 +857,6 @@ export default function RadarClient({
                           onChange={event => setBuscaIndicador(event.target.value)} />
                       </div>
                       <div id="radar-indicator-options" className="radar-select-options" role="listbox" aria-label="Indicadores disponíveis">
-                        {tema === "Visão geral" && "Desigualdade de gênero no mundo".toLocaleLowerCase("pt-BR").includes(buscaIndicador.toLocaleLowerCase("pt-BR")) && (
-                          <button type="button" role="option" aria-selected={mundoSelecionado}
-                            className={`radar-select-option${mundoSelecionado ? " selected" : ""}`}
-                            onClick={() => { setIndicadorId("__desigualdade_mundo__"); setSeletorAberto(false); setBuscaIndicador(""); }}>
-                            <span>Desigualdade de gênero no mundo</span>
-                            {mundoSelecionado && <span className="radar-option-check" aria-hidden="true">✓</span>}
-                          </button>
-                        )}
                         {indicadoresFiltrados.map(item => (
                           <button type="button" role="option" key={item.indicador_id}
                             aria-selected={indicadorId === item.indicador_id}
@@ -805,30 +866,13 @@ export default function RadarClient({
                             {indicadorId === item.indicador_id && <span className="radar-option-check" aria-hidden="true">✓</span>}
                           </button>
                         ))}
-                        {indicadoresFiltrados.length === 0 && !(tema === "Visão geral" && "Desigualdade de gênero no mundo".toLocaleLowerCase("pt-BR").includes(buscaIndicador.toLocaleLowerCase("pt-BR"))) && (
+                        {indicadoresFiltrados.length === 0 && (
                           <div className="radar-select-empty">Nenhum indicador encontrado.</div>
                         )}
                       </div>
                     </div>
                   )}
                 </div>
-                {mundoSelecionado && (
-                  <article className="panel wide radar-indicator">
-                    <div className="panel-head"><h3>Desigualdade de gênero no mundo</h3></div>
-                    <div className="radar-indicator-tags"><span>Visão geral</span><span>Brasil</span><span>2024</span></div>
-                    <div className="radar-world-grid">
-                      {destaquesDesigualdadeMundo.map(dado => (
-                        <div className="radar-world-card" key={dado.rotulo}>
-                          <span className="radar-world-card-label">2024 · BRASIL</span>
-                          <strong>{dado.valor}</strong>
-                          <h4>{dado.rotulo}</h4>
-                          <p>{dado.detalhe}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="radar-world-source">Fonte: Fórum Econômico Mundial, <i>Global Gender Gap Report 2024</i>.</p>
-                  </article>
-                )}
                 {selecionado && (
                   <article className="panel wide radar-indicator">
                     <div className="panel-head">
@@ -842,8 +886,8 @@ export default function RadarClient({
                       <span>{selecionado.unidade || "Unidade não informada"}</span>
                     </div>
                     <div className="radar-indicator-preview">
-                      {selecionado.indicador_id === "1.2.1" && dadosEixo01.some(d => d.id_indicador === "1.2.1" && d.publicar === "SIM") ? (
-                        <GraficoRendimento dados={dadosEixo01} />
+                      {dadosEixo01.some(d => d.id_indicador === selecionado.indicador_id) ? (
+                        selecionado.indicador_id === "1.2.1" ? <GraficoRendimento dados={dadosEixo01} /> : <VisualizacaoEixo1 indicador={selecionado} dados={dadosEixo01} />
                       ) : (
                         <div className="radar-chart-empty" role="status">
                           <div className="radar-chart-grid" aria-hidden="true" />
