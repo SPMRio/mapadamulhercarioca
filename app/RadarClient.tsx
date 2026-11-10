@@ -611,10 +611,8 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
 }
 
 function tituloPublico(titulo: string) {
-  const nome = titulo.replace(/^\\s*\\d+(?:\\.\\d+)*(?:-\\d+)?\\s*[-–—:]?\\s*/, "").trim();
-  return nome.toLocaleLowerCase("pt-BR") === "dados em texto corrido"
-    ? "Desigualdade de gênero no mundo"
-    : nome;
+  const nome = titulo.replace(/^\s*\d+(?:\.\d+)*(?:-\d+)?\s*[-–—:]?\s*/, "").trim();
+  return /dados em texto corrido/i.test(nome) ? "Desigualdade de gênero no mundo" : nome;
 }
 
 const destaquesDesigualdadeMundo = [
@@ -640,7 +638,6 @@ export default function RadarClient({
   const carregandoDados = false;
   const [tema, setTema] = useState(temas[0]);
   const [indicadorId, setIndicadorId] = useState("");
-  const [mundoAberto, setMundoAberto] = useState(false);
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [buscaIndicador, setBuscaIndicador] = useState("");
   const seletorRef = useRef<HTMLDivElement>(null);
@@ -653,6 +650,7 @@ export default function RadarClient({
     ), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
+  const mundoSelecionado = tema === "Visão geral" && indicadorId === "__desigualdade_mundo__";
   const indicadoresFiltrados = useMemo(() => {
     const busca = buscaIndicador.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
     return indicadoresDoTema.filter(item =>
@@ -680,7 +678,6 @@ export default function RadarClient({
   function selecionarTema(novoTema: string) {
     setTema(novoTema);
     setIndicadorId("");
-    setMundoAberto(false);
     setSeletorAberto(false);
     setBuscaIndicador("");
   }
@@ -753,38 +750,6 @@ export default function RadarClient({
             </div>
           </section>
 
-          {tema === "Visão geral" && (
-            <section className="radar-world-section" aria-label="Desigualdade de gênero no mundo">
-              <button className="radar-world-toggle" type="button"
-                aria-expanded={mundoAberto} aria-controls="radar-world-content"
-                onClick={() => setMundoAberto(aberto => !aberto)}>
-                <span className="radar-world-number">1.1</span>
-                <span className="radar-world-toggle-label">
-                  <strong>Desigualdade de gênero no mundo</strong>
-                  <small>Dados do Brasil no Global Gender Gap Report 2024</small>
-                </span>
-                <svg className={mundoAberto ? "expanded" : ""} width="22" height="22" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-              </button>
-              {mundoAberto && (
-                <div id="radar-world-content" className="radar-world-content">
-                  <div className="radar-world-grid">
-                    {destaquesDesigualdadeMundo.map(dado => (
-                      <article className="radar-world-card" key={dado.rotulo}>
-                        <span className="radar-world-card-label">2024 · BRASIL</span>
-                        <strong>{dado.valor}</strong>
-                        <h4>{dado.rotulo}</h4>
-                        <p>{dado.detalhe}</p>
-                      </article>
-                    ))}
-                  </div>
-                  <p className="radar-world-source">Fonte: Fórum Econômico Mundial, <i>Global Gender Gap Report 2024</i>.</p>
-                </div>
-              )}
-            </section>
-          )}
-
           <section className="radar-explorer" aria-label="Explorar indicadores do eixo">
             <div className="radar-explorer-heading">
               <div>
@@ -805,7 +770,7 @@ export default function RadarClient({
                   <button type="button" className={`radar-select-trigger${seletorAberto ? " is-open" : ""}`}
                     aria-haspopup="listbox" aria-expanded={seletorAberto} aria-controls="radar-indicator-options"
                     onClick={() => { setBuscaIndicador(""); setSeletorAberto(aberto => !aberto); }}>
-                    <span>{selecionado ? tituloPublico(selecionado.titulo) : "Escolha um indicador"}</span>
+                    <span>{mundoSelecionado ? "Desigualdade de gênero no mundo" : selecionado ? tituloPublico(selecionado.titulo) : "Escolha um indicador"}</span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="m6 9 6 6 6-6" />
@@ -823,7 +788,15 @@ export default function RadarClient({
                           onChange={event => setBuscaIndicador(event.target.value)} />
                       </div>
                       <div id="radar-indicator-options" className="radar-select-options" role="listbox" aria-label="Indicadores disponíveis">
-                        {indicadoresFiltrados.length ? indicadoresFiltrados.map(item => (
+                        {tema === "Visão geral" && "Desigualdade de gênero no mundo".toLocaleLowerCase("pt-BR").includes(buscaIndicador.toLocaleLowerCase("pt-BR")) && (
+                          <button type="button" role="option" aria-selected={mundoSelecionado}
+                            className={`radar-select-option${mundoSelecionado ? " selected" : ""}`}
+                            onClick={() => { setIndicadorId("__desigualdade_mundo__"); setSeletorAberto(false); setBuscaIndicador(""); }}>
+                            <span>Desigualdade de gênero no mundo</span>
+                            {mundoSelecionado && <span className="radar-option-check" aria-hidden="true">✓</span>}
+                          </button>
+                        )}
+                        {indicadoresFiltrados.map(item => (
                           <button type="button" role="option" key={item.indicador_id}
                             aria-selected={indicadorId === item.indicador_id}
                             className={`radar-select-option${indicadorId === item.indicador_id ? " selected" : ""}`}
@@ -831,11 +804,31 @@ export default function RadarClient({
                             <span>{tituloPublico(item.titulo)}</span>
                             {indicadorId === item.indicador_id && <span className="radar-option-check" aria-hidden="true">✓</span>}
                           </button>
-                        )) : <div className="radar-select-empty">Nenhum indicador encontrado.</div>}
+                        ))}
+                        {indicadoresFiltrados.length === 0 && !(tema === "Visão geral" && "Desigualdade de gênero no mundo".toLocaleLowerCase("pt-BR").includes(buscaIndicador.toLocaleLowerCase("pt-BR"))) && (
+                          <div className="radar-select-empty">Nenhum indicador encontrado.</div>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
+                {mundoSelecionado && (
+                  <article className="panel wide radar-indicator">
+                    <div className="panel-head"><h3>Desigualdade de gênero no mundo</h3></div>
+                    <div className="radar-indicator-tags"><span>Visão geral</span><span>Brasil</span><span>2024</span></div>
+                    <div className="radar-world-grid">
+                      {destaquesDesigualdadeMundo.map(dado => (
+                        <div className="radar-world-card" key={dado.rotulo}>
+                          <span className="radar-world-card-label">2024 · BRASIL</span>
+                          <strong>{dado.valor}</strong>
+                          <h4>{dado.rotulo}</h4>
+                          <p>{dado.detalhe}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="radar-world-source">Fonte: Fórum Econômico Mundial, <i>Global Gender Gap Report 2024</i>.</p>
+                  </article>
+                )}
                 {selecionado && (
                   <article className="panel wide radar-indicator">
                     <div className="panel-head">
