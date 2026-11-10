@@ -534,8 +534,8 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
   const [tooltip, setTooltip] = useState<null | { serie: string; periodo: string; valor: number; cor: string; left: number; top: number }>(null);
   if (!publicados.length) return null;
   const periodoOrdem = (p: string) => {
-    const m = p.match(/^([1-4])T(\d{4})$/);
-    return m ? Number(m[2]) * 4 + Number(m[1]) : Number.MAX_SAFE_INTEGER;
+    const m = p.match(/^(?:([1-4])T(\d{4})|(\d{4})-T([1-4]))$/);
+    return m ? Number(m[2] ?? m[3]) * 4 + Number(m[1] ?? m[4]) : Number.MAX_SAFE_INTEGER;
   };
   const periodos = Array.from(new Set(publicados.map(d => d.periodo)))
     .sort((a, b) => periodoOrdem(a) - periodoOrdem(b));
@@ -741,8 +741,7 @@ export default function RadarClient({
 
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
-      String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR") &&
-      true
+      String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR")
     ), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
