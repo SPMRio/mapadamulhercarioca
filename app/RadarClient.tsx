@@ -518,6 +518,7 @@ type DadoEixo01 = {
   serie_subrecorte: string;
   valor: string | number;
   publicar: string;
+  atualizado_em?: string;
   tipo_valor?: string;
   escala?: string;
   texto?: string;
@@ -526,7 +527,7 @@ type DadoEixo01 = {
   situacao?: string;
   ordem?: number;
 };
-function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
+function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   const publicados = dados.filter(d => d.id_indicador === "1.2.1" &&
     String(d.publicar).toUpperCase() === "SIM" &&
     ["Mulheres", "Homens"].includes(d.serie_subrecorte) &&
@@ -559,6 +560,7 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
   };
   return (
     <div className="radar-real-chart">
+      {aba === "grafico" && <>
       <div className="radar-series-legend">
         {series.map(serie => <span key={serie.nome}><i style={{ background: serie.cor }} />{serie.nome}</span>)}
       </div>
@@ -581,7 +583,7 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
           }).filter((p): p is { periodo: string; indice: number; valor: number } => p !== null);
           return <g key={serie.nome}>
             {pontos.length > 1 && <polyline points={pontos.map(p => `${x(p.indice)},${y(p.valor)}`).join(" ")}
-              fill="none" stroke={serie.cor} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />}
+              fill="none" stroke={serie.cor} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" className="radar-animated-line" pathLength={1} />}
             {pontos.map(p => <circle key={p.periodo} cx={x(p.indice)} cy={y(p.valor)} r="6"
               fill={serie.cor} stroke="#fff" strokeWidth="2" tabIndex={0} role="img"
               aria-label={`${serie.nome}, ${p.periodo}: ${moeda(p.valor)}`}
@@ -601,7 +603,8 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
           <b>{moeda(tooltip.valor)}</b>
         </div>
       )}
-      <div className="radar-data-table-wrap">
+      </>}
+      {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
         <table>
           <thead><tr><th>Trimestre</th><th>Mulheres</th><th>Homens</th></tr></thead>
           <tbody>{periodos.map(periodo => <tr key={periodo}>
@@ -619,7 +622,7 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
 
 
 // As visualizações são geradas pelos registros da tabela de dados do eixo, não por constantes no front-end.
-function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[] }) {
+function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   const [metrica, setMetrica] = useState("");
   const [ordem, setOrdem] = useState<"maior" | "menor">("maior");
   const validos = dados.filter(d => d.id_indicador === indicador.indicador_id && Number.isFinite(Number(d.valor)));
@@ -633,7 +636,7 @@ function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo
     return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   };
   if (!validos.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis.</p></div>;
-  if (tipo === "cards") return (
+  if (tipo === "cards" && aba === "grafico") return (
     <>
       <div className="radar-world-grid">
         {[...validos].sort((a,b) => (a.ordem ?? 0) - (b.ordem ?? 0)).map((d,i) => (
@@ -668,14 +671,14 @@ function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
   return (
     <div className="radar-dynamic-view">
-      {uf && <div className="radar-view-controls">
+      {uf && aba === "grafico" && <div className="radar-view-controls">
         {metricas.map(m => <button type="button" key={m} className={metricaAtual === m ? "active" : ""} onClick={() => setMetrica(m)}>{m}</button>)}
         <button type="button" onClick={() => setOrdem(v => v === "maior" ? "menor" : "maior")}>Ordenar: {ordem === "maior" ? "maiores" : "menores"}</button>
       </div>}
-      {serieX && <div className="radar-view-legend">
+      {serieX && aba === "grafico" && <div className="radar-view-legend">
         {Array.from(new Set(ordered.map(d => d.serie_subrecorte))).filter(Boolean).map(m => <span key={m}>{m}</span>)}
       </div>}
-      {tipo === "linhas" && <svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
+      {aba === "grafico" && tipo === "linhas" && <svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
         aria-label={`Evolução de ${indicador.titulo}`}>
         {[0,1,2,3,4].map(i => {
           const v = minLinha+(maxLinha-minLinha)*i/4;
@@ -690,12 +693,12 @@ function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo
             if (!d) return null;
             return { x: linhaX(j), y: linhaY(d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor)), label: fmt(d) };
           }).filter((x): x is {x:number;y:number;label:string} => x !== null);
-          return <g key={serie}>{coords.length>1 && <polyline points={coords.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={cor} strokeWidth="3" />}
+          return <g key={serie}>{coords.length>1 && <polyline points={coords.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={cor} strokeWidth="3" className="radar-animated-line" pathLength={1} />}
             {coords.map((p,j)=><circle key={j} cx={p.x} cy={p.y} r="5" fill={cor} stroke="white" strokeWidth="2"><title>{serie}: {p.label}</title></circle>)}
           </g>;
         })}
       </svg>}
-      <div className={tipo === "linhas" ? "radar-dynamic-bars radar-bars-secondary" : "radar-dynamic-bars"}>
+      {aba === "grafico" && <div className={tipo === "linhas" ? "radar-dynamic-bars radar-bars-secondary" : "radar-dynamic-bars"}>
         {ordered.map((d,i) => (
           <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
             <div className="radar-dynamic-meta">
@@ -706,7 +709,7 @@ function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo
           </div>
         ))}
       </div>
-      <div className="radar-data-table-wrap">
+      {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
         <table><thead><tr><th>Período</th><th>Categoria</th><th>Série</th><th>Valor</th></tr></thead>
           <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{fmt(d)}</td></tr>)}</tbody>
         </table>
@@ -725,7 +728,7 @@ export default function RadarClient({
   indicadores,
   dadosEixo01,
 }: {
-  indicadores: (Indicador & { tema?: string; status_publicacao?: string; tipo_visualizacao?: string })[];
+  indicadores: (Indicador & { tema?: string; status_publicacao?: string; tipo_visualizacao?: string; atualizado_em?: string })[];
   dadosEixo01: DadoEixo01[];
 }) {
   const carregando = false;
@@ -734,6 +737,7 @@ export default function RadarClient({
   const carregandoDados = false;
   const [tema, setTema] = useState(temas[0]);
   const [indicadorId, setIndicadorId] = useState("");
+  const [abaVisualizacao, setAbaVisualizacao] = useState<"grafico" | "tabela">("grafico");
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [buscaIndicador, setBuscaIndicador] = useState("");
   const seletorRef = useRef<HTMLDivElement>(null);
@@ -773,6 +777,7 @@ export default function RadarClient({
   function selecionarTema(novoTema: string) {
     setTema(novoTema);
     setIndicadorId("");
+    setAbaVisualizacao("grafico");
     setSeletorAberto(false);
     setBuscaIndicador("");
   }
@@ -887,7 +892,7 @@ export default function RadarClient({
                           <button type="button" role="option" key={item.indicador_id}
                             aria-selected={indicadorId === item.indicador_id}
                             className={`radar-select-option${indicadorId === item.indicador_id ? " selected" : ""}`}
-                            onClick={() => { setIndicadorId(item.indicador_id); setSeletorAberto(false); setBuscaIndicador(""); }}>
+                            onClick={() => { setIndicadorId(item.indicador_id); setAbaVisualizacao("grafico"); setSeletorAberto(false); setBuscaIndicador(""); }}>
                             <span>{tituloPublico(item.titulo)}</span>
                             {indicadorId === item.indicador_id && <span className="radar-option-check" aria-hidden="true">✓</span>}
                           </button>
@@ -907,13 +912,19 @@ export default function RadarClient({
                       </div>
                     </div>
                     <div className="radar-indicator-tags">
-                      <span>{selecionado.tema || "Tema não informado"}</span>
-                      <span>{selecionado.territorialidade || "Territorialidade não informada"}</span>
-                      <span>{selecionado.unidade || "Unidade não informada"}</span>
+                      <span>{selecionado.tema}</span>
+                      {Array.from(new Set(dadosEixo01.filter(d => d.id_indicador === selecionado.indicador_id).map(d => d.territorio).filter(Boolean))).slice(0, 2).map(t => <span key={t}>{t}</span>)}
+                      {Array.from(new Set(dadosEixo01.filter(d => d.id_indicador === selecionado.indicador_id).map(d => d.unidade_dado).filter(Boolean))).slice(0, 2).map(u => <span key={u}>{u}</span>)}
                     </div>
-                    <div className="radar-indicator-preview">
+                    <div className="radar-indicator-tabs" role="tablist" aria-label="Visualização dos dados">
+                      <button type="button" role="tab" id="indicador-aba-grafico" aria-controls="indicador-conteudo" aria-selected={abaVisualizacao === "grafico"}
+                        className={abaVisualizacao === "grafico" ? "active" : ""} onClick={() => setAbaVisualizacao("grafico")}>Gráfico</button>
+                      <button type="button" role="tab" id="indicador-aba-tabela" aria-controls="indicador-conteudo" aria-selected={abaVisualizacao === "tabela"}
+                        className={abaVisualizacao === "tabela" ? "active" : ""} onClick={() => setAbaVisualizacao("tabela")}>Tabela</button>
+                    </div>
+                    <div className="radar-indicator-preview" id="indicador-conteudo" role="tabpanel" aria-labelledby={abaVisualizacao === "grafico" ? "indicador-aba-grafico" : "indicador-aba-tabela"} key={`${selecionado.indicador_id}-${abaVisualizacao}`}>
                       {dadosEixo01.some(d => d.id_indicador === selecionado.indicador_id) ? (
-                        selecionado.indicador_id === "1.2.1" ? <GraficoRendimento dados={dadosEixo01} /> : <VisualizacaoEixo1 indicador={selecionado} dados={dadosEixo01} />
+                        selecionado.indicador_id === "1.2.1" ? <GraficoRendimento dados={dadosEixo01} aba={abaVisualizacao} /> : <VisualizacaoEixo1 indicador={selecionado} dados={dadosEixo01} aba={abaVisualizacao} />
                       ) : (
                         <div className="radar-chart-empty" role="status">
                           <div className="radar-chart-grid" aria-hidden="true" />
@@ -927,10 +938,19 @@ export default function RadarClient({
                     <div className="radar-indicator-footer">
                       <div>
                         <strong>Fonte</strong>
-                        <p>{selecionado.fonte || "Não informada"}</p>
-                        {selecionado.link_fonte && (
-                          <a href={selecionado.link_fonte} target="_blank" rel="noopener noreferrer">Consultar fonte ↗</a>
+                        {selecionado.link_fonte ? (
+                          <p><a href={selecionado.link_fonte} target="_blank" rel="noopener noreferrer" className="radar-source-direct">
+                            {selecionado.fonte?.trim() || "Abrir fonte original"} ↗
+                          </a></p>
+                        ) : (
+                          <p>{selecionado.fonte?.trim() || "Fonte não cadastrada"}</p>
                         )}
+                      </div>
+                      <div>
+                        <strong>Última atualização do indicador</strong>
+                        <p>{selecionado.atualizado_em
+                          ? new Date(selecionado.atualizado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                          : "Data ainda não registrada no BigQuery"}</p>
                       </div>
                       {selecionado.observacoes && (
                         <div><strong>Nota metodológica</strong><p>{selecionado.observacoes}</p></div>
