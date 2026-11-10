@@ -923,6 +923,14 @@ export default function RadarClient({
                         className={abaVisualizacao === "tabela" ? "active" : ""} onClick={() => setAbaVisualizacao("tabela")}>Tabela</button>
                     </div>
                     <div className="radar-indicator-preview" id="indicador-conteudo" role="tabpanel" aria-labelledby={abaVisualizacao === "grafico" ? "indicador-aba-grafico" : "indicador-aba-tabela"} key={`${selecionado.indicador_id}-${abaVisualizacao}`}>
+                      {abaVisualizacao === "tabela" && (
+                        <div className="radar-table-update">
+                          <strong>Última atualização:</strong>{" "}
+                          {selecionado.atualizado_em
+                            ? new Date(selecionado.atualizado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                            : "Ainda não registrada"}
+                        </div>
+                      )}
                       {dadosEixo01.some(d => d.id_indicador === selecionado.indicador_id) ? (
                         selecionado.indicador_id === "1.2.1" ? <GraficoRendimento dados={dadosEixo01} aba={abaVisualizacao} /> : <VisualizacaoEixo1 indicador={selecionado} dados={dadosEixo01} aba={abaVisualizacao} />
                       ) : (
