@@ -7,13 +7,20 @@ import {
   type CSSProperties,
 } from "react";
 
+// Eixos temáticos oficiais do catálogo. São exibidos mesmo antes da carga de dados.
 const temas = [
   "Visão geral",
   "Violência",
   "Cuidados",
   "Segurança pública",
   "Meninas",
+  "Saúde",
+  "Educação",
   "Emprego e renda",
+  "Cultura",
+  "Assistência social",
+  "Mulheres",
+  "CODIM",
 ];
 
 const faixas = [
@@ -634,7 +641,7 @@ export default function Home() {
           <p>RADAR DE DADOS</p>
 
           <div className="theme-list">
-            {["Visão geral", ...temasDisponiveis.filter(item => item.toLowerCase() !== "visão geral")].map((item, index) => (
+            {temas.map((item, index) => (
               <button type="button" className={tema.toLowerCase() === item.toLowerCase() ? "active" : ""}
                 onClick={() => selecionarTema(item)} key={item}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
@@ -685,7 +692,7 @@ export default function Home() {
           ) : erro ? (
             <div className="care-state error">{erro}</div>
           ) : filtrados.length === 0 ? (
-            <div className="care-state">Nenhum indicador disponível para esses filtros no BigQuery.</div>
+            <div className="care-state">{indicadoresDoTema.length === 0 ? "Ainda não há indicadores cadastrados neste tema no BigQuery." : "Nenhum indicador corresponde aos filtros selecionados."}</div>
           ) : (
             <div className="chart-grid">
               {filtrados.map(item => (
