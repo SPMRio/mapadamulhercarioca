@@ -157,9 +157,13 @@ async function catalogo() {
   const porId = new Map<string, Record<string, unknown>>();
   for (const row of originais) {
     const id = normalizarId(row.id_indicador ?? row.indicador_id);
-    if (id && !novos.has(id)) porId.set(id, row);
+    if (id) porId.set(id, row);
   }
-  for (const [id, row] of novos) porId.set(id, row);
+  // A tabela "indicadores" é a fonte prioritária dos metadados.
+  // Só usamos metadados repetidos no Eixo 1 quando o indicador faltar no catálogo.
+  for (const [id, row] of novos) {
+    if (!porId.has(id)) porId.set(id, row);
+  }
   return Array.from(porId.entries()).map(([indicador_id,row]) => ({
     indicador_id,
     titulo: String(row.titulo ?? ""),
@@ -195,7 +199,7 @@ async function valoresEixo01() {
     }));
 }
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v3"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v4"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
 export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v3"], {
