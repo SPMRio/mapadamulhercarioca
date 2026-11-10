@@ -1,9 +1,9 @@
 import RadarClient from "./RadarClient";
 import { getIndicadores, getEixo01 } from "../lib/bigquery-static";
 
-// A página HTML é gerada e servida do cache ISR, não consulta o banco a cada visitante.
+// HTML pré-renderizado via ISR: revalida automaticamente a cada 5 minutos sob demanda de acesso.\n// A maioria das visitas recebe o HTML em cache, sem consulta ao BigQuery.
 export const runtime = "nodejs";
-export const revalidate = 86400;
+export const revalidate = 300;
 
 export default async function Page() {
   const [indicadores, dadosEixo01] = await Promise.all([getIndicadores(), getEixo01()]);
