@@ -927,7 +927,7 @@ export default function RadarClient({
                         <div className="radar-table-update">
                           <strong>Última atualização:</strong>{" "}
                           {selecionado.atualizado_em
-                            ? new Date(selecionado.atualizado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                            ? new Date(selecionado.atualizado_em.replace(" ", "T").replace(/(\+00(:00)?|Z)?$/, "Z")).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" })
                             : "Ainda não registrada"}
                         </div>
                       )}
@@ -957,7 +957,7 @@ export default function RadarClient({
                       <div>
                         <strong>Última atualização do indicador</strong>
                         <p>{selecionado.atualizado_em
-                          ? new Date(selecionado.atualizado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                          ? new Date(selecionado.atualizado_em.replace(" ", "T").replace(/(\+00(:00)?|Z)?$/, "Z")).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" })
                           : "Data ainda não registrada no BigQuery"}</p>
                       </div>
                       {selecionado.observacoes && (
