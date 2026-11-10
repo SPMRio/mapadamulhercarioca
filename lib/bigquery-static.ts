@@ -145,17 +145,23 @@ async function catalogo() {
     if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
     originais = await query("indicador");
   }
-  let novos: Record<string, unknown>[] = [];
-  try { novos = await query("eixo_01_indicadores_v2"); }
-  catch (error) {
-    if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
+  // Os títulos e as fontes do Eixo 1 vêm diretamente da mesma tabela dos dados.
+  // Antes da carga nova, usa o catálogo existente normalmente.
+  let eixo1: Record<string, unknown>[] = [];
+  try { eixo1 = await query("eixo_01_visao_geral"); } catch { /* legado sem a tabela */ }
+  const novos = new Map<string, Record<string, unknown>>();
+  for (const row of eixo1) {
+    const id = normalizarId(row.id_indicador);
+    if (id.startsWith("1.") && row.titulo) novos.set(id, row);
   }
-  // O catálogo dedicado ao Eixo 1 substitui somente os registros antigos desse eixo.
-  const rows = novos.length
-    ? [...originais.filter(item => String(item.tema ?? "").toLocaleLowerCase("pt-BR") !== "visão geral"), ...novos]
-    : originais;
-  return rows.map(row => ({
-    indicador_id: normalizarId(row.id_indicador ?? row.indicador_id),
+  const porId = new Map<string, Record<string, unknown>>();
+  for (const row of originais) {
+    const id = normalizarId(row.id_indicador ?? row.indicador_id);
+    if (id && !novos.has(id)) porId.set(id, row);
+  }
+  for (const [id, row] of novos) porId.set(id, row);
+  return Array.from(porId.entries()).map(([indicador_id,row]) => ({
+    indicador_id,
     titulo: String(row.titulo ?? ""),
     tema: String(row.tema ?? ""),
     periodo: String(row.periodo ?? ""),
@@ -166,24 +172,17 @@ async function catalogo() {
     nota: String(row.nota_indicador ?? row.nota ?? ""),
     observacoes: String(row.nota_indicador ?? row.observacoes ?? ""),
     tipo_visualizacao: String(row.tipo_visualizacao ?? ""),
-  })).filter(item => Boolean(item.indicador_id));
+  }));
 }
 async function valoresEixo01() {
-  let rows: Record<string, unknown>[];
-  let tabelaNova = true;
-  try { rows = await query("eixo_01_dados_v2"); }
-  catch (error) {
-    if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
-    rows = await query("eixo_01_visao_geral");
-    tabelaNova = false;
-  }
-  return rows.filter(row => tabelaNova || String(row.publicar ?? "").toUpperCase() === "SIM")
+  const rows = await query("eixo_01_visao_geral");
+  return rows.filter(row => !("publicar" in row) || String(row.publicar ?? "").toUpperCase() === "SIM")
     .map(row => ({
       id_indicador: normalizarId(row.id_indicador),
       periodo: String(row.periodo ?? ""),
       territorio: String(row.territorio ?? ""),
-      categoria_recorte: String(row.categoria ?? row.categoria_recorte ?? ""),
-      serie_subrecorte: String(row.serie ?? row.serie_subrecorte ?? ""),
+      categoria_recorte: String(row.categoria_recorte ?? ""),
+      serie_subrecorte: String(row.serie_subrecorte ?? ""),
       valor: Number(row.valor ?? 0),
       publicar: "SIM",
       tipo_valor: String(row.tipo_valor ?? ""),
@@ -196,9 +195,9 @@ async function valoresEixo01() {
     }));
 }
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v2"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v3"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
-export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v2"], {
+export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v3"], {
   tags: ["mapa-eixo-01"], revalidate: false,
 });
