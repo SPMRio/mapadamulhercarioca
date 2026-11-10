@@ -153,6 +153,12 @@ function normalizarEixo(valor: unknown): string {
 async function catalogo() {
   const originais = await query("indicadores");
   const eixo1 = await query("eixo_01_visao_geral");
+  const datas = new Map<string, string>();
+  for (const row of eixo1) {
+    const id = normalizarId(row.indicador_id ?? row.id_indicador);
+    const data = String(row.atualizado_em ?? "");
+    if (id && data && (!datas.has(id) || data > datas.get(id)!)) datas.set(id, data);
+  }
   const porId = new Map<string, Record<string, unknown>>();
   // Metadados oficiais vêm da tabela indicadores, conforme o modelo novo.
   for (const row of originais) {
@@ -179,7 +185,7 @@ async function catalogo() {
     nota: String(row.nota_metodologica ?? row.nota_indicador ?? row.nota ?? ""),
     observacoes: String(row.nota_metodologica ?? row.observacoes ?? ""),
     tipo_visualizacao: String(row.tipo_visualizacao ?? (indicador_id === "1.2.1" ? "linhas" : "")),
-    atualizado_em: String(row.atualizado_em ?? ""),
+    atualizado_em: datas.get(indicador_id) || String(row.atualizado_em ?? ""),
   })).filter(item => Boolean(item.indicador_id) && Boolean(item.titulo));
 }
 async function valoresEixo01() {
@@ -203,7 +209,7 @@ async function valoresEixo01() {
     }));
 }
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v6-tabs"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v7-datas"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
 export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v5-eixo"], {
