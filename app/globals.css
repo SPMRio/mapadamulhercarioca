@@ -157,3 +157,22 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .radar-world-content{padding:4px 22px 22px;border-top:1px solid #eee8f2}
 .radar-world-content .radar-world-grid{margin-top:18px}
 @media(max-width:680px){.radar-world-toggle{gap:12px;padding:17px 15px}.radar-world-number{font-size:14px;padding:9px}.radar-world-toggle-label strong{font-size:17px}.radar-world-content{padding:4px 14px 16px}}
+
+
+/* Visualizações do Eixo 1 alimentadas pelo banco de dados */
+.radar-dynamic-view{padding:18px 22px 24px}
+.radar-view-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+.radar-view-controls button{padding:9px 13px;border:1px solid #d9cde4;background:#fff;color:var(--navy);font-size:12px;font-weight:700;border-radius:999px;cursor:pointer}
+.radar-view-controls button.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+.radar-view-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;color:#516680;font-size:12px;font-weight:700}
+.radar-dynamic-bars{display:grid;gap:12px;max-height:520px;overflow:auto}
+.radar-dynamic-line{padding:8px 10px;border-radius:9px}
+.radar-dynamic-line.highlight{background:#f1e6fa;border:1px solid #d4bbe9}
+.radar-dynamic-meta{display:flex;justify-content:space-between;gap:18px;align-items:center;font-size:12px;color:var(--navy);margin-bottom:7px}
+.radar-dynamic-meta strong{white-space:nowrap}
+.radar-dynamic-track{background:#f2ecf6;border-radius:999px;height:12px;overflow:hidden}
+.radar-dynamic-track>div{height:100%;background:linear-gradient(90deg,var(--purple),var(--lilac));border-radius:999px}
+.radar-eixo-linechart{display:block;max-width:1050px;width:100%;height:auto;margin:8px auto 18px}
+.radar-bars-secondary{max-height:150px}
+.radar-data-notice{font-size:12px;color:#785b25;background:#fff9ea;border-radius:10px;padding:12px 14px;margin:16px 0 0}
+@media(max-width:680px){.radar-dynamic-view{padding:12px}.radar-dynamic-meta{font-size:11px}.radar-view-controls button{font-size:11px}}
