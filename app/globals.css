@@ -176,3 +176,22 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .radar-bars-secondary{max-height:150px}
 .radar-data-notice{font-size:12px;color:#785b25;background:#fff9ea;border-radius:10px;padding:12px 14px;margin:16px 0 0}
 @media(max-width:680px){.radar-dynamic-view{padding:12px}.radar-dynamic-meta{font-size:11px}.radar-view-controls button{font-size:11px}}
+
+
+/* Abas de visualização dos indicadores */
+.radar-indicator-tabs{display:flex;gap:4px;padding:5px;margin:17px 24px 0;width:max-content;max-width:calc(100% - 48px);border-radius:13px;border:1px solid #e0d8e9;background:#f8f5fb}
+.radar-indicator-tabs button{border:0;background:transparent;color:#5d6880;font:inherit;font-size:13px;font-weight:750;border-radius:9px;padding:10px 22px;cursor:pointer;transition:background-color .18s,color .18s,box-shadow .18s}
+.radar-indicator-tabs button.active{background:white;color:var(--purple);box-shadow:0 2px 9px rgba(42,20,75,.1)}
+.radar-indicator-tabs button:focus-visible{outline:3px solid rgba(112,48,181,.38);outline-offset:2px}
+.radar-table-standalone{max-width:none;margin:0 auto;padding:15px 14px 24px;overflow-x:auto}
+.radar-table-standalone table{width:100%;font-size:13px}
+.radar-source-direct{color:var(--purple);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.radar-source-direct:hover{color:var(--navy)}
+.radar-animated-line{stroke-dasharray:1;stroke-dashoffset:1;animation:radar-line-reveal 1.25s cubic-bezier(.25,.65,.2,1) .12s forwards}
+.radar-real-chart circle,.radar-eixo-linechart circle{animation:radar-point-reveal .5s ease-out .85s both;transform-box:fill-box;transform-origin:center}
+.radar-dynamic-track>div{animation:radar-bar-reveal .65s ease-out both;transform-origin:left center}
+@keyframes radar-line-reveal{to{stroke-dashoffset:0}}
+@keyframes radar-point-reveal{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
+@keyframes radar-bar-reveal{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:reduce){.radar-animated-line{animation:none;stroke-dashoffset:0}.radar-real-chart circle,.radar-eixo-linechart circle,.radar-dynamic-track>div{animation:none}}
+@media(max-width:680px){.radar-indicator-tabs{margin-left:12px}.radar-indicator-tabs button{padding:9px 15px}}
