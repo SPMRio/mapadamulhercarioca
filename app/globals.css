@@ -49,3 +49,26 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .radar-data-table-wrap th{background:#f4edf8;color:#42305e;font-weight:800}
 .radar-data-table-wrap tr:last-child td{border-bottom:0}
 @media(max-width:560px){.radar-real-chart{padding:12px 10px 16px}.radar-data-table-wrap table{font-size:11px}}
+
+
+/* Eixos temáticos: painel editorial e seleção de indicadores abaixo */
+.radar-overview{margin:12px 0 30px}
+.radar-overview-heading{margin:0 0 18px}
+.radar-overview-heading h3{font-size:23px;line-height:1.2;margin:0 0 6px;color:var(--navy)}
+.radar-overview-heading p{font-size:12px;line-height:1.55;color:#687b8e;margin:0;max-width:640px}
+.radar-infographic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.radar-infographic-card{background:#fff;border:1px solid #ddd3e7;border-radius:18px;padding:20px;min-height:224px;display:flex;flex-direction:column}
+.radar-infographic-top{letter-spacing:.13em;font-size:9px;font-weight:850;color:var(--purple)}
+.radar-infographic-placeholder{margin:18px 0 12px;flex:1;min-height:85px;background:#f7f3fa;border:1px dashed #ded3e8;border-radius:12px;display:grid;place-items:center}
+.radar-infographic-symbol{font-size:34px;color:#b3a3c5;font-weight:400}
+.radar-infographic-card h4{font-size:16px;margin:0 0 4px;color:var(--navy)}
+.radar-infographic-card p{margin:0;font-size:11px;color:#738398}
+.radar-explorer{margin-top:32px;border-top:1px solid #e3dbe9;padding-top:28px}
+.radar-explorer-heading span{font-size:9px;font-weight:900;letter-spacing:.12em;color:var(--purple)}
+.radar-explorer-heading h3{margin:7px 0 5px;font-size:24px;line-height:1.2;color:var(--navy)}
+.radar-explorer-heading p{margin:0;color:#63778b;font-size:12px;line-height:1.5}
+.radar-indicator-select{display:block;margin:22px 0 20px;font-size:10px;letter-spacing:.09em;font-weight:850;color:var(--navy)}
+.radar-indicator-select select{display:block;margin-top:9px;width:100%;padding:13px 15px;border:1px solid #d7cee1;border-radius:10px;background:#fff;color:var(--navy);font-size:13px;letter-spacing:normal}
+.radar-explorer>.radar-indicator{margin-top:20px}
+@media(max-width:1050px){.radar-infographic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.radar-infographic-grid{grid-template-columns:1fr}.radar-infographic-card{min-height:180px}.radar-overview-heading h3{font-size:21px}}
