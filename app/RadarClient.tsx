@@ -652,9 +652,9 @@ export default function RadarClient({
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
   const mundoSelecionado = tema === "Visão geral" && indicadorId === "__desigualdade_mundo__";
   const indicadoresFiltrados = useMemo(() => {
-    const busca = buscaIndicador.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+    const busca = buscaIndicador.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
     return indicadoresDoTema.filter(item =>
-      tituloPublico(item.titulo).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").includes(busca)
+      tituloPublico(item.titulo).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").includes(busca)
     );
   }, [indicadoresDoTema, buscaIndicador]);
   useEffect(() => {
@@ -761,7 +761,7 @@ export default function RadarClient({
               <div className="care-state">Carregando indicadores…</div>
             ) : erro ? (
               <div className="care-state error">{erro}</div>
-            ) : indicadoresDoTema.length === 0 ? (
+            ) : indicadoresDoTema.length === 0 && tema !== "Visão geral" ? (
               <div className="care-state">Os indicadores deste eixo ainda não foram publicados.</div>
             ) : (
               <>
