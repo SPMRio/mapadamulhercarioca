@@ -74,7 +74,7 @@ export async function GET() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        query: "SELECT * FROM `rj-spm-rio.projeto_mapa_mulher.indicador` LIMIT 1000",
+        query: "SELECT TO_JSON_STRING(t) AS linha_json FROM `rj-spm-rio.projeto_mapa_mulher.indicador` AS t LIMIT 1000",
         useLegacySql: false,
         location: "southamerica-east1",
         maximumBytesBilled: "1000000000",
@@ -93,18 +93,26 @@ export async function GET() {
     if (!payload.jobComplete) throw new Error("job_pending");
     if (payload.pageToken) throw new Error("pagination_required");
     const columns = payload.schema?.fields?.map(field => field.name) ?? [];
-    if (!columns.includes("indicador_id")) throw new Error("schema_missing_indicador_id");
-    const indicadores = (payload.rows ?? []).map(row =>
-      Object.fromEntries(columns.map((column, index) => [column, normalizeValue(row.f?.[index])]))
-    );
+    if (!columns.includes("linha_json")) throw new Error("schema_missing_row_json");
+    const index = columns.indexOf("linha_json");
+    const indicadores = (payload.rows ?? []).map(row => {
+      const raw = normalizeValue(row.f?.[index]);
+      if (!raw) return {};
+      const decoded: unknown = JSON.parse(raw);
+      return decoded && typeof decoded === "object" && !Array.isArray(decoded)
+        ? decoded as Record<string, unknown> : {};
+    });
+    const firstColumns = indicadores.length > 0 ? Object.keys(indicadores[0]) : [];
+    // Indicate when the source's original key differs from the dashboard's ID.
+    const contemId = firstColumns.includes("indicador_id");
     return NextResponse.json(
-      { ok: true, fonte: "bigquery", indicadores },
+      { ok: true, fonte: "bigquery", indicadores, colunas: firstColumns, possui_indicador_id: contemId },
       { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" } },
     );
   } catch (error) {
     console.error("Indicadores BigQuery:", error instanceof Error ? error.message : "erro");
     const detail = error instanceof Error ? error.message : "unknown";
-    const safeCode = /^(query_http_[0-9]{3}_[a-zA-Z0-9_-]+|job_pending|pagination_required|schema_missing_indicador_id)$/.test(detail) ? detail : "auth_or_server_error";
+    const safeCode = /^(query_http_[0-9]{3}_[a-zA-Z0-9_-]+|job_pending|pagination_required|schema_missing_indicador_id|schema_missing_row_json)$/.test(detail) ? detail : "auth_or_server_error";
     return NextResponse.json(
       { ok: false, error: "Não foi possível carregar os indicadores do BigQuery.", codigo: safeCode },
       { status: 503, headers: { "Cache-Control": "no-store" } },
