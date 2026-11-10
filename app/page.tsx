@@ -689,16 +689,46 @@ export default function Home() {
           ) : (
             <div className="chart-grid">
               {filtrados.map(item => (
-                <article className="panel wide" key={item.indicador_id}>
-                  <div className="panel-head"><div>
-                    <span>{item.indicador_id} · {item.periodo || "Período não informado"}</span>
-                    <h3>{item.titulo}</h3>
-                  </div></div>
-                  <p><b>Tema:</b> {item.tema || "Não informado"} · <b>Territorialidade:</b> {item.territorialidade || "Não informada"}</p>
-                  <p><b>Unidade:</b> {item.unidade || "Não informada"} · <b>Visualização:</b> {item.tipo_visualizacao || "A definir"}</p>
-                  <p><b>Fonte:</b> {item.fonte || "Não informada"}</p>
-                  {item.link_fonte && <p><a href={item.link_fonte} target="_blank" rel="noopener noreferrer">Consultar fonte</a></p>}
-                  <p className="insight">Metadados disponíveis no BigQuery. Valores e séries serão apresentados quando suas tabelas forem carregadas.</p>
+                <article className="panel wide radar-indicator" key={item.indicador_id}>
+                  <div className="panel-head">
+                    <div>
+                      <span>INDICADOR {item.indicador_id} · {item.periodo || "PERÍODO NÃO INFORMADO"}</span>
+                      <h3>{item.titulo}</h3>
+                    </div>
+                    <span className="radar-indicator-status">Metadados cadastrados</span>
+                  </div>
+                  <div className="radar-indicator-tags">
+                    <span>{item.tema || "Tema não informado"}</span>
+                    <span>{item.territorialidade || "Territorialidade não informada"}</span>
+                    <span>{item.unidade || "Unidade não informada"}</span>
+                  </div>
+                  <div className="radar-indicator-preview">
+                    <div className="radar-preview-heading">
+                      <div>
+                        <small>VISUALIZAÇÃO PREVISTA</small>
+                        <h4>{item.tipo_visualizacao?.toLowerCase() === "linha" ? "Gráfico de linhas" : item.tipo_visualizacao || "Visualização a definir"}</h4>
+                      </div>
+                      <span>Sem série de dados</span>
+                    </div>
+                    <div className="radar-chart-empty" role="status">
+                      <div className="radar-chart-grid" aria-hidden="true" />
+                      <div className="radar-chart-message">
+                        <strong>Aguardando os valores deste indicador</strong>
+                        <p>O cadastro já foi encontrado no BigQuery. O gráfico será preenchido quando os dados e recortes forem carregados.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="radar-indicator-footer">
+                    <div>
+                      <strong>Fonte</strong>
+                      <p>{item.fonte || "Não informada"}</p>
+                      {item.link_fonte && <a href={item.link_fonte} target="_blank" rel="noopener noreferrer">Consultar fonte ↗</a>}
+                    </div>
+                    <div>
+                      <strong>Status dos dados</strong>
+                      <p>Valores ainda não carregados no BigQuery</p>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
