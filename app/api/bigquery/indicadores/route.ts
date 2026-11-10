@@ -113,7 +113,7 @@ export async function GET() {
       return decoded && typeof decoded === "object" && !Array.isArray(decoded)
         ? decoded as Record<string, unknown> : {};
     });
-    const normalizados = indicadores.map((row) => ({ ...row, indicador_id: String(row.indicador_id ?? row.id_indicador ?? "") }));
+    const normalizados = indicadores.map((row) => ({ ...row, indicador_id: String(row.indicador_id ?? row.id_indicador ?? "").replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2") }));
     const firstColumns = indicadores.length > 0 ? Object.keys(indicadores[0]) : [];
     // Indicate when the source's original key differs from the dashboard's ID.
     const contemId = firstColumns.includes("indicador_id");
