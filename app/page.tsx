@@ -585,7 +585,7 @@ export default function Home() {
         >
           <span>MAPA DA MULHER CARIOCA</span>
 
-          <b>2026 Digital</b>
+          <b>Digital</b>
         </a>
 
         <nav aria-label="Navegação principal">
@@ -607,7 +607,7 @@ export default function Home() {
         id="inicio"
       >
         <div className="eyebrow">
-          <span>MAPA DA MULHER CARIOCA 2026 DIGITAL</span>
+          <span>MAPA DA MULHER CARIOCA DIGITAL</span>
           <i>✦</i>
         </div>
 
