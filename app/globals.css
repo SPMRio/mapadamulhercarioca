@@ -36,3 +36,16 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .radar-indicator-footer p{font-size:11px;line-height:1.5;color:#4c6276;margin:6px 0}
 .radar-indicator-footer a{color:#6631a0;font-size:11px;text-decoration:underline}
 @media(max-width:680px){.radar-indicator .panel-head{flex-direction:column}.radar-indicator-status{align-self:flex-start}.radar-preview-heading{flex-direction:column;align-items:flex-start}.radar-indicator-footer{grid-template-columns:1fr}.radar-chart-empty{height:260px}}
+
+
+/* Gráfico real do eixo 01 — renda por trimestre */
+.radar-real-chart{padding:20px 22px 24px}
+.radar-series-legend{display:flex;gap:20px;align-items:center;justify-content:center;margin:3px 0 14px}
+.radar-series-legend span{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#344b67}
+.radar-series-legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.radar-data-table-wrap{overflow-x:auto;border:1px solid #e5dfee;border-radius:12px;margin-top:12px}
+.radar-data-table-wrap table{width:100%;border-collapse:collapse;font-size:12px}
+.radar-data-table-wrap th,.radar-data-table-wrap td{text-align:left;padding:12px 15px;border-bottom:1px solid #ece6f0}
+.radar-data-table-wrap th{background:#f4edf8;color:#42305e;font-weight:800}
+.radar-data-table-wrap tr:last-child td{border-bottom:0}
+@media(max-width:560px){.radar-real-chart{padding:12px 10px 16px}.radar-data-table-wrap table{font-size:11px}}
