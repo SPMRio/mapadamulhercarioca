@@ -4,11 +4,11 @@ Aplicação Next.js App Router, publicada na Vercel, com dados públicos do BigQ
 
 ## Arquitetura de publicação
 
-- `app/page.tsx` é um **Server Component** com `revalidate = 300` (ISR: 5 minutos).
+- `app/page.tsx` é um **Server Component** com `revalidate = false` (sem atualização por tempo).
 - `lib/bigquery-static.ts` consulta o BigQuery **somente no servidor**, usando a variável `BIGQUERY_SERVICE_ACCOUNT_JSON`, e armazena o resultado com tags de cache.
 - `app/RadarClient.tsx` recebe os dados já prontos e faz apenas a interação local (trocar eixo, selecionar indicador, mostrar gráfico); **não chama APIs ou BigQuery ao abrir a página**.
-- O HTML da página é pré-gerado e armazenado pelo Next.js/Vercel. O ISR revalida automaticamente após 5 minutos, quando houver nova visita. Uma solicitação inicial após o vencimento pode receber a versão anterior enquanto a nova é gerada.
-- `app/api/revalidate/route.ts` permite invalidar o cache sob demanda **para uma atualização imediata após uma carga validada no BigQuery**, sem novo deploy.
+- O HTML é pré-gerado no Next.js/Vercel e permanece em cache até uma revalidação autorizada.
+- `app/api/revalidate/route.ts` invalida o cache sob demanda **após revisão/publicação dos dados no BigQuery**, sem novo deploy.
 
 ## Configuração segura na Vercel
 
@@ -31,7 +31,7 @@ Content-Type: application/json
 
 Resposta esperada: `{"ok":true,...}`. A próxima visita à página regenerará a versão cacheada. Para invalidar catálogo e todos os eixos implementados, use `{"eixo":"todos"}`.
 
-A revalidação automática de 5 minutos funciona independentemente do webhook; `REVALIDATE_SECRET` é necessário somente para atualização manual imediata.
+A publicação é controlada: configure `REVALIDATE_SECRET` para poder invalidar o cache depois de salvar e conferir os dados no BigQuery.
 
 ## Dados e tabelas
 
@@ -58,6 +58,8 @@ As tabelas dos demais eixos e a ingestão automatizada ainda serão adicionadas 
 
 ## Atualização direta no BigQuery
 
-A única fonte de dados é o **BigQuery** (não há dependência de Google Sheets). Ao fazer `INSERT`, `UPDATE`, `MERGE` ou `DELETE` nas tabelas, nenhuma etapa manual é necessária para o próximo ciclo de ISR: **após pelo menos 5 minutos**, a primeira visita aciona a regeneração do HTML. A visita que dispara o processo pode ver a versão anterior até a regeneração terminar. Não há detecção instantânea de cada mutação no BigQuery nem um processo rodando sem visitas.
+A única fonte de dados é o **BigQuery**, sem Google Sheets. Mudanças por `INSERT`, `UPDATE`, `MERGE` ou `DELETE` **não aparecem automaticamente** no HTML publicado.
 
-Para publicação imediata, chame `/api/revalidate` autenticado depois de gravar os dados. Se for exigida publicação por evento, será necessário implementar um pipeline separado de eventos/auditoria do GCP para acionar esse webhook.
+Quando terminar a edição e conferir os dados, faça uma chamada autorizada a `POST /api/revalidate` com `{"eixo":"01"}` ou `{"eixo":"todos"}`. O cache da página e dos dados é invalidado e a próxima visita provoca a geração do HTML atualizado. A visita que dispara a regeneração pode receber a página anterior; a atualização fica disponível depois que a regeneração termina.
+
+Um novo deploy do código também pode gerar um novo HTML. Não há monitoramento automático de mudanças no BigQuery; a publicação permanece sob controle editorial.
