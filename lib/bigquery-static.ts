@@ -138,70 +138,72 @@ async function query(table: string): Promise<Record<string, unknown>[]> {
   return (response.data.rows ?? []).map(row => JSON.parse(String(row.f?.[fieldIndex]?.v ?? "{}")) as Record<string, unknown>);
 }
 const normalizarId = (id: unknown) => String(id ?? "").replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2");
+function normalizarEixo(valor: unknown): string {
+  const nome = String(valor ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const eixos: Record<string,string> = {
+    "visao geral": "Visão geral", "violencia": "Violência", "cuidados": "Cuidados",
+    "seguranca publica": "Segurança pública", "meninas": "Meninas",
+    "saude": "Saúde", "educacao": "Educação", "emprego e renda": "Emprego e renda",
+    "cultura": "Cultura", "assistencia social": "Assistência social",
+    "mulheres": "Mulheres", "codim": "CODIM"
+  };
+  return eixos[nome] || String(valor ?? "").trim();
+}
 async function catalogo() {
-  let originais: Record<string, unknown>[];
-  try { originais = await query("indicadores"); }
-  catch (error) {
-    if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
-    originais = await query("indicador");
-  }
-  // Os títulos e as fontes do Eixo 1 vêm diretamente da mesma tabela dos dados.
-  // Antes da carga nova, usa o catálogo existente normalmente.
-  let eixo1: Record<string, unknown>[] = [];
-  try { eixo1 = await query("eixo_01_visao_geral"); } catch { /* legado sem a tabela */ }
-  const novos = new Map<string, Record<string, unknown>>();
-  for (const row of eixo1) {
-    const id = normalizarId(row.id_indicador);
-    if (id.startsWith("1.") && row.titulo) novos.set(id, row);
-  }
+  const originais = await query("indicadores");
+  const eixo1 = await query("eixo_01_visao_geral");
   const porId = new Map<string, Record<string, unknown>>();
+  // Metadados oficiais vêm da tabela indicadores, conforme o modelo novo.
   for (const row of originais) {
-    const id = normalizarId(row.id_indicador ?? row.indicador_id);
+    const id = normalizarId(row.indicador_id ?? row.id_indicador);
     if (id) porId.set(id, row);
   }
-  // A tabela "indicadores" é a fonte prioritária dos metadados.
-  // Só usamos metadados repetidos no Eixo 1 quando o indicador faltar no catálogo.
-  for (const [id, row] of novos) {
-    if (!porId.has(id)) porId.set(id, row);
+  // Durante a migração, os dados existentes também podem identificar um indicador
+  // ainda não cadastrado no catálogo (desde que possua título).
+  for (const row of eixo1) {
+    const id = normalizarId(row.indicador_id ?? row.id_indicador);
+    if (id && !porId.has(id) && String(row.titulo ?? "").trim()) {
+      porId.set(id, { ...row, eixo: "Visão geral" });
+    }
   }
   return Array.from(porId.entries()).map(([indicador_id,row]) => ({
     indicador_id,
     titulo: String(row.titulo ?? ""),
-    tema: String(row.tema ?? ""),
+    tema: normalizarEixo(row.eixo ?? row.tema),
     periodo: String(row.periodo ?? ""),
     unidade: String(row.unidade ?? ""),
     territorialidade: String(row.territorialidade ?? ""),
     fonte: String(row.fonte ?? ""),
     link_fonte: String(row.link_fonte ?? ""),
-    nota: String(row.nota_indicador ?? row.nota ?? ""),
-    observacoes: String(row.nota_indicador ?? row.observacoes ?? ""),
-    tipo_visualizacao: String(row.tipo_visualizacao ?? ""),
-  }));
+    nota: String(row.nota_metodologica ?? row.nota_indicador ?? row.nota ?? ""),
+    observacoes: String(row.nota_metodologica ?? row.observacoes ?? ""),
+    tipo_visualizacao: String(row.tipo_visualizacao ?? (indicador_id === "1.2.1" ? "linhas" : "")),
+  })).filter(item => Boolean(item.indicador_id) && Boolean(item.titulo));
 }
 async function valoresEixo01() {
   const rows = await query("eixo_01_visao_geral");
   return rows.filter(row => !("publicar" in row) || String(row.publicar ?? "").toUpperCase() === "SIM")
     .map(row => ({
-      id_indicador: normalizarId(row.id_indicador),
+      id_indicador: normalizarId(row.indicador_id ?? row.id_indicador),
       periodo: String(row.periodo ?? ""),
       territorio: String(row.territorio ?? ""),
-      categoria_recorte: String(row.categoria_recorte ?? ""),
-      serie_subrecorte: String(row.serie_subrecorte ?? ""),
-      valor: Number(row.valor ?? 0),
+      categoria_recorte: String(row.categoria ?? row.categoria_recorte ?? ""),
+      serie_subrecorte: String(row.serie ?? row.serie_subrecorte ?? ""),
+      valor: row.valor == null ? "" : Number(row.valor),
       publicar: "SIM",
       tipo_valor: String(row.tipo_valor ?? ""),
       escala: String(row.escala ?? ""),
       texto: String(row.texto ?? ""),
-      unidade_dado: String(row.unidade_dado ?? ""),
+      unidade_dado: String(row.unidade ?? row.unidade_dado ?? ""),
       nota_dado: String(row.nota_dado ?? ""),
       situacao: String(row.situacao ?? ""),
       ordem: Number(row.ordem ?? 0),
     }));
 }
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v4"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v5-eixo"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
-export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v3"], {
+export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v5-eixo"], {
   tags: ["mapa-eixo-01"], revalidate: false,
 });
