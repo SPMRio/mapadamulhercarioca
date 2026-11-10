@@ -165,10 +165,10 @@ async function valoresEixo01() {
       publicar: "SIM",
     }));
 }
-// Reutiliza respostas por até 24 h. Uma carga publicada invalida as tags por webhook.
+// Cache de cinco minutos sincronizado ao ISR: alterações no BigQuery ficam visíveis\n// na primeira regeneração após o intervalo, sem ação manual ou novo deploy.
 export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v1"], {
-  tags: ["mapa-indicadores"], revalidate: 86400,
+  tags: ["mapa-indicadores"], revalidate: 300,
 });
 export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v1"], {
-  tags: ["mapa-eixo-01"], revalidate: 86400,
+  tags: ["mapa-eixo-01"], revalidate: 300,
 });
