@@ -503,106 +503,57 @@ function PainelCuidados({
 }
 
 export default function Home() {
-  const [indicadores, setIndicadores] = useState<Indicador[]>([]);
-  const [dadosCuidado, setDadosCuidado] = useState<DadoCuidado[]>([]);
-  const [carregandoPlanilha, setCarregandoPlanilha] = useState(true);
-  const [erroPlanilha, setErroPlanilha] = useState("");
+  const [indicadores, setIndicadores] = useState<(Indicador & { tema?: string; status_publicacao?: string; tipo_visualizacao?: string })[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [tema, setTema] = useState("Visão geral");
+  const [regiao, setRegiao] = useState("Todas as regiões");
+  const [indicadorId, setIndicadorId] = useState("");
 
   useEffect(() => {
-    async function carregarPlanilha() {
+    async function carregarIndicadores() {
       try {
-        // Dados detalhados permanecem no Sheets até a migração das tabelas
-        // de valores. Os metadados são atualizados pelo BigQuery quando disponível.
-        const [sheetsResult, bigQueryResult] = await Promise.allSettled([
-          fetch("/api/sheets", { cache: "no-store" }),
-          fetch("/api/bigquery/indicadores", { cache: "no-store" }),
-        ]);
-
-        let indicadoresSheets: Indicador[] = [];
-        let dadosSheets: DadoCuidado[] = [];
-
-        if (sheetsResult.status === "fulfilled" && sheetsResult.value.ok) {
-          const sheets = await sheetsResult.value.json();
-          indicadoresSheets = tabelaParaObjetos<Indicador>(sheets?.indicadores ?? []);
-          dadosSheets = tabelaParaObjetos<DadoCuidado>(sheets?.dados?.cuidado ?? []).map(
-            (item) => ({ ...item, valor: numero(item.valor) }),
-          );
+        const resposta = await fetch("/api/bigquery/indicadores", { cache: "no-store" });
+        if (!resposta.ok) throw new Error("Não foi possível consultar o BigQuery.");
+        const resultado = await resposta.json();
+        if (!resultado?.ok || !Array.isArray(resultado.indicadores)) {
+          throw new Error("Resposta inválida do BigQuery.");
         }
-
-        let indicadoresBigQuery: Indicador[] = [];
-        if (bigQueryResult.status === "fulfilled" && bigQueryResult.value.ok) {
-          const bigQuery = await bigQueryResult.value.json();
-          if (Array.isArray(bigQuery?.indicadores)) {
-            indicadoresBigQuery = bigQuery.indicadores
-              .filter((item: Indicador) => item && String(item.indicador_id ?? "").trim())
-              .map((item: Indicador) => ({
-                ...item,
-                indicador_id: String(item.indicador_id),
-                titulo: String(item.titulo ?? ""),
-                periodo: String(item.periodo ?? ""),
-                unidade: String(item.unidade ?? ""),
-                territorialidade: String(item.territorialidade ?? ""),
-                fonte: String(item.fonte ?? ""),
-                link_fonte: String(item.link_fonte ?? ""),
-                nota: String(item.nota ?? (item as Indicador & { nota_indicador?: string }).nota_indicador ?? ""),
-                observacoes: String(item.observacoes ?? (item as Indicador & { nota_indicador?: string }).nota_indicador ?? ""),
-              }));
-          }
-        }
-
-        // Mantém indicadores que ainda não foram migrados ao BigQuery,
-        // sem duplicar IDs e sem apagar valores válidos do Sheets.
-        const combinados = new Map(
-          indicadoresSheets.map((item) => [item.indicador_id, item] as const),
-        );
-        for (const item of indicadoresBigQuery) {
-          const anterior = combinados.get(item.indicador_id);
-          if (!anterior) {
-            combinados.set(item.indicador_id, item);
-          } else {
-            combinados.set(item.indicador_id, {
-              ...anterior,
-              ...Object.fromEntries(
-                Object.entries(item).filter(([, valor]) => valor !== "" && valor != null),
-              ),
-            });
-          }
-        }
-
-        if (combinados.size === 0 && dadosSheets.length === 0) {
-          throw new Error("Nenhuma fonte de indicadores disponível.");
-        }
-
-        setIndicadores(Array.from(combinados.values()));
-        setDadosCuidado(dadosSheets);
-      } catch (erro) {
-        console.error(erro);
-        setErroPlanilha("Não foi possível carregar os dados de Cuidados.");
+        setIndicadores(resultado.indicadores.filter(
+          (item: Indicador) => String(item?.indicador_id ?? "").trim()
+        ));
+      } catch (error) {
+        setErro(error instanceof Error ? error.message : "Erro ao carregar indicadores.");
       } finally {
-        setCarregandoPlanilha(false);
+        setCarregando(false);
       }
     }
-
-    carregarPlanilha();
+    carregarIndicadores();
   }, []);
 
-  const [tema, setTema] = useState("Visão geral");
-  const [regiao, setRegiao] = useState(
-    "Todo o município",
+  const temasDisponiveis = useMemo(
+    () => Array.from(new Set(indicadores.map(item => String(item.tema ?? "").trim()).filter(Boolean))),
+    [indicadores],
   );
-  const [ano, setAno] = useState("2025");
 
-  const destaque = useMemo(() => {
-    if (tema === "Visão geral") {
-      return "As mulheres são maioria no Rio";
-    }
+  const indicadoresDoTema = useMemo(() =>
+    indicadores.filter(item =>
+      !tema || String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR")
+    ), [indicadores, tema],
+  );
+  const regioes = useMemo(
+    () => Array.from(new Set(indicadoresDoTema.map(item => String(item.territorialidade ?? "").trim()).filter(Boolean))),
+    [indicadoresDoTema],
+  );
+  const filtrados = useMemo(() => indicadoresDoTema.filter(item =>
+    (regiao === "Todas as regiões" || item.territorialidade === regiao) &&
+    (!indicadorId || item.indicador_id === indicadorId)
+  ), [indicadoresDoTema, regiao, indicadorId]);
 
-    return `${tema}: recorte das mulheres cariocas`;
-  }, [tema]);
-
-  function limparFiltros() {
-    setRegiao("Todo o município");
-    setAno("2025");
+  function selecionarTema(novoTema: string) {
+    setTema(novoTema);
+    setRegiao("Todas as regiões");
+    setIndicadorId("");
   }
 
   return (
@@ -625,15 +576,9 @@ export default function Home() {
           href="#inicio"
           aria-label="Mapa da Mulher Carioca - início"
         >
-          <span>MAPA DA</span>
+          <span>MAPA DA MULHER CARIOCA</span>
 
-          <b>
-            MULHER
-            <br />
-            CARIOCA
-          </b>
-
-          <em>2026</em>
+          <b>2026 Digital</b>
         </a>
 
         <nav aria-label="Navegação principal">
@@ -655,15 +600,11 @@ export default function Home() {
         id="inicio"
       >
         <div className="eyebrow">
-          <span>RADAR DE DADOS</span>
+          <span>MAPA DA MULHER CARIOCA 2026 DIGITAL</span>
           <i>✦</i>
         </div>
 
-        <h1>
-          Dados para enxergar
-          <br />
-          as mulheres do Rio.
-        </h1>
+        <h1>Radar de Dados — Visão Geral</h1>
 
         <p>
           Um retrato vivo das desigualdades,
@@ -691,30 +632,17 @@ export default function Home() {
         id="dados"
       >
         <aside className="sidebar">
-          <p>EXPLORE POR TEMA</p>
+          <p>RADAR DE DADOS</p>
 
           <div className="theme-list">
-            {temas.map((item, index) => (
-              <button
-                type="button"
-                className={
-                  tema === item ? "active" : ""
-                }
-                onClick={() => setTema(item)}
-                key={item}
-              >
-                <span>
-                  {String(index + 1).padStart(
-                    2,
-                    "0",
-                  )}
-                </span>
-
-                {item}
+            {["Visão geral", ...temasDisponiveis.filter(item => item.toLowerCase() !== "visão geral")].map((item, index) => (
+              <button type="button" className={tema.toLowerCase() === item.toLowerCase() ? "active" : ""}
+                onClick={() => selecionarTema(item)} key={item}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                {item.toLowerCase() === "visão geral" ? "Visão Geral Radar de Dados" : item}
               </button>
             ))}
           </div>
-
           <div className="source-note">
             <i>↗</i>
 
@@ -728,181 +656,53 @@ export default function Home() {
         </aside>
 
         <div className="content">
-          {tema === "Cuidados" ? (
-            <PainelCuidados
-              indicadores={indicadores}
-              dados={dadosCuidado}
-              carregando={carregandoPlanilha}
-              erro={erroPlanilha}
-            />
-          ) : (
-            <>
           <div className="filters">
             <label>
               REGIÃO
-
-              <select
-                value={regiao}
-                onChange={(event) =>
-                  setRegiao(event.target.value)
-                }
-              >
-                <option>
-                  Todo o município
-                </option>
-                <option>Zona Norte</option>
-                <option>Zona Oeste</option>
-                <option>Zona Sul</option>
-                <option>Centro</option>
+              <select value={regiao} onChange={(e) => { setRegiao(e.target.value); setIndicadorId(""); }}>
+                <option value="Todas as regiões">Todas as regiões</option>
+                {regioes.map(item => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
-
             <label>
-              ANO DE REFERÊNCIA
-
-              <select
-                value={ano}
-                onChange={(event) =>
-                  setAno(event.target.value)
-                }
-              >
-                <option>2025</option>
-                <option>2024</option>
-                <option>2023</option>
+              INDICADOR
+              <select value={indicadorId} onChange={(e) => setIndicadorId(e.target.value)}>
+                <option value="">Todos os indicadores</option>
+                {indicadoresDoTema.filter(item => regiao === "Todas as regiões" || item.territorialidade === regiao)
+                  .map(item => <option key={item.indicador_id} value={item.indicador_id}>{item.indicador_id} — {item.titulo}</option>)}
               </select>
             </label>
-
-            <button
-              type="button"
-              onClick={limparFiltros}
-            >
-              Limpar filtros
-            </button>
+            <button type="button" onClick={() => { setRegiao("Todas as regiões"); setIndicadorId(""); }}>Limpar filtros</button>
           </div>
-
           <div className="section-title">
-            <span>01.</span>
-
+            <span>{String(Math.max(1, ["Visão geral", ...temasDisponiveis.filter(item => item.toLowerCase() !== "visão geral")].findIndex(item => item.toLowerCase() === tema.toLowerCase()) + 1)).padStart(2,"0")}.</span>
             <div>
-              <p>{tema.toUpperCase()}</p>
-              <h2>{destaque}</h2>
+              <p>RADAR DE DADOS</p>
+              <h2>{tema.toLowerCase() === "visão geral" ? "Visão Geral Radar de Dados" : tema}</h2>
             </div>
           </div>
-
-          <div className="kpis">
-            <article className="kpi purple">
-              <span>POPULAÇÃO FEMININA</span>
-
-              <strong>3,4 milhões</strong>
-
-              <p>
-                <b>+1,8%</b> desde o último Censo
-              </p>
-
-              <i>✦</i>
-            </article>
-
-            <article className="kpi white">
-              <span>PARTE DA POPULAÇÃO</span>
-
-              <div className="donut-row">
-                <Donut value={53.6} />
-
-                <p>
-                  <b>53,6%</b>
-                  <br />
-                  mulheres
-                  <br />
-                  <small>46,4% homens</small>
-                </p>
-              </div>
-            </article>
-
-            <article className="kpi yellow">
-              <span>RAZÃO DE SEXO</span>
-
-              <strong>86,5</strong>
-
-              <p>
-                homens para cada
-                <br />
-                <b>100 mulheres</b>
-              </p>
-
-              <i>♀</i>
-            </article>
-          </div>
-
-          <div className="chart-grid">
-            <article className="panel wide">
-              <div className="panel-head">
-                <div>
-                  <span>PERFIL ETÁRIO</span>
-
-                  <h3>
-                    Em todas as fases da vida
-                  </h3>
-                </div>
-
-                <div className="legend">
-                  <i />
-                  Mulheres
-                  <i />
-                  Homens
-                </div>
-              </div>
-
-              <Bars />
-
-              <p className="insight">
-                <b>✦ Leitura do dado</b> A
-                presença feminina cresce nas
-                faixas etárias mais altas, reflexo
-                da maior longevidade das mulheres.
-              </p>
-            </article>
-
-            <article className="panel lilac">
-              <span>
-                DISTRIBUIÇÃO POR IDADE
-              </span>
-
-              <h3>
-                Quase metade tem
-                <br />
-                entre 15 e 44 anos
-              </h3>
-
-              <div className="age-bars">
-                {faixas.map((faixa) => (
-                  <div key={faixa.label}>
-                    <span>{faixa.label}</span>
-
-                    <p>
-                      <i
-                        style={{
-                          width: `${faixa.value * 3.2}%`,
-                        }}
-                      />
-
-                      <b>
-                        {String(
-                          faixa.value,
-                        ).replace(".", ",")}
-                        %
-                      </b>
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <small>
-                Percentual sobre o total de
-                mulheres
-              </small>
-            </article>
-          </div>
-            </>
+          {carregando ? (
+            <div className="care-state">Carregando indicadores do BigQuery…</div>
+          ) : erro ? (
+            <div className="care-state error">{erro}</div>
+          ) : filtrados.length === 0 ? (
+            <div className="care-state">Nenhum indicador disponível para esses filtros no BigQuery.</div>
+          ) : (
+            <div className="chart-grid">
+              {filtrados.map(item => (
+                <article className="panel wide" key={item.indicador_id}>
+                  <div className="panel-head"><div>
+                    <span>{item.indicador_id} · {item.periodo || "Período não informado"}</span>
+                    <h3>{item.titulo}</h3>
+                  </div></div>
+                  <p><b>Tema:</b> {item.tema || "Não informado"} · <b>Territorialidade:</b> {item.territorialidade || "Não informada"}</p>
+                  <p><b>Unidade:</b> {item.unidade || "Não informada"} · <b>Visualização:</b> {item.tipo_visualizacao || "A definir"}</p>
+                  <p><b>Fonte:</b> {item.fonte || "Não informada"}</p>
+                  {item.link_fonte && <p><a href={item.link_fonte} target="_blank" rel="noopener noreferrer">Consultar fonte</a></p>}
+                  <p className="insight">Metadados disponíveis no BigQuery. Valores e séries serão apresentados quando suas tabelas forem carregadas.</p>
+                </article>
+              ))}
+            </div>
           )}
         </div>
       </section>
