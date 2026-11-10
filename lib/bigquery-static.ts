@@ -1,0 +1,174 @@
+import "server-only";
+import { createSign } from "node:crypto";
+import { request } from "node:https";
+import { unstable_cache } from "next/cache";
+
+type Account = { client_email: string; private_key: string; project_id: string };
+type QueryResult = {
+  jobComplete?: boolean;
+  schema?: { fields?: { name: string }[] };
+  rows?: { f?: { v?: string | null }[] }[];
+  pageToken?: string;
+};
+export type IndicadorRegistro = {
+  indicador_id: string;
+  titulo: string;
+  tema: string;
+  periodo: string;
+  unidade: string;
+  territorialidade: string;
+  fonte: string;
+  link_fonte: string;
+  nota: string;
+  observacoes: string;
+  tipo_visualizacao: string;
+};
+export type DadoEixo01Registro = {
+  id_indicador: string;
+  periodo: string;
+  territorio: string;
+  categoria_recorte: string;
+  serie_subrecorte: string;
+  valor: string | number;
+  publicar: string;
+};
+function jsonRequest<T>(url: string, method: "GET" | "POST", body?: unknown, authorization?: string): Promise<{status: number; data: T}> {
+  return new Promise((resolve, reject) => {
+    const data = body === undefined ? undefined : JSON.stringify(body);
+    const req = request(url, {
+      method,
+      headers: {
+        ...(data ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}),
+        ...(authorization ? { Authorization: `Bearer ${authorization}` } : {}),
+      },
+      timeout: 20000,
+    }, res => {
+      const chunks: Buffer[] = [];
+      res.on("data", chunk => chunks.push(Buffer.from(chunk)));
+      res.on("end", () => {
+        try {
+          resolve({ status: res.statusCode ?? 500, data: JSON.parse(Buffer.concat(chunks).toString("utf8")) as T });
+        } catch { reject(new Error("Resposta inválida do Google Cloud.")); }
+      });
+      res.on("error", reject);
+    });
+    req.on("timeout", () => req.destroy(new Error("Tempo de resposta excedido.")));
+    req.on("error", reject);
+    if (data) req.write(data);
+    req.end();
+  });
+}
+function credentials(): Account {
+  const raw = process.env.BIGQUERY_SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error("BIGQUERY_SERVICE_ACCOUNT_JSON ausente.");
+  const parsed = JSON.parse(raw) as Partial<Account>;
+  if (!parsed.client_email || !parsed.private_key || parsed.project_id !== "rj-spm-rio") {
+    throw new Error("Conta de serviço inválida para o projeto.");
+  }
+  return parsed as Account;
+}
+function b64(value: string | Buffer) { return Buffer.from(value).toString("base64url"); }
+async function accessToken(): Promise<string> {
+  const account = credentials();
+  const now = Math.floor(Date.now() / 1000);
+  const unsigned = [
+    b64(JSON.stringify({ alg: "RS256", typ: "JWT" })),
+    b64(JSON.stringify({
+      iss: account.client_email,
+      scope: "https://www.googleapis.com/auth/bigquery",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    })),
+  ].join(".");
+  const signer = createSign("RSA-SHA256");
+  signer.update(unsigned); signer.end();
+  const assertion = unsigned + "." + b64(signer.sign(account.private_key.replace(/\\n/g, "\n")));
+  const form = new URLSearchParams({
+    grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+    assertion,
+  }).toString();
+  const result = await new Promise<{access_token?: string}>((resolve, reject) => {
+    const req = request("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(form) },
+      timeout: 20000,
+    }, res => {
+      const chunks: Buffer[] = [];
+      res.on("data", chunk => chunks.push(Buffer.from(chunk)));
+      res.on("end", () => {
+        if (res.statusCode !== 200) return reject(new Error("Falha de autenticação Google."));
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); }
+        catch { reject(new Error("Token inválido.")); }
+      });
+    });
+    req.on("timeout", () => req.destroy(new Error("Tempo de autenticação excedido.")));
+    req.on("error", reject);
+    req.write(form); req.end();
+  });
+  if (!result.access_token) throw new Error("Google não retornou acesso.");
+  return result.access_token;
+}
+async function query(table: string): Promise<Record<string, unknown>[]> {
+  const auth = await accessToken();
+  const response = await jsonRequest<QueryResult & {error?: {message?: string}}>(
+    "https://bigquery.googleapis.com/bigquery/v2/projects/rj-spm-rio/queries",
+    "POST",
+    {
+      query: `SELECT TO_JSON_STRING(t) AS linha_json FROM \`rj-spm-rio.projeto_mapa_mulher.${table}\` t LIMIT 1000`,
+      useLegacySql: false, location: "southamerica-east1",
+      maximumBytesBilled: "1000000000", timeoutMs: 10000, maxResults: 1000,
+    },
+    auth,
+  );
+  if (response.status !== 200) {
+    if (/not found/i.test(response.data.error?.message ?? "")) throw new Error("table_not_found");
+    throw new Error("Falha de consulta ao BigQuery.");
+  }
+  if (!response.data.jobComplete || response.data.pageToken) throw new Error("Consulta do BigQuery incompleta.");
+  const fieldIndex = response.data.schema?.fields?.findIndex(field => field.name === "linha_json") ?? -1;
+  if (fieldIndex < 0) throw new Error("Esquema inesperado no BigQuery.");
+  return (response.data.rows ?? []).map(row => JSON.parse(String(row.f?.[fieldIndex]?.v ?? "{}")) as Record<string, unknown>);
+}
+const normalizarId = (id: unknown) => String(id ?? "").replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2");
+async function catalogo() {
+  let rows: Record<string, unknown>[];
+  try { rows = await query("indicadores"); }
+  catch (error) {
+    if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
+    rows = await query("indicador");
+  }
+  return rows.map(row => ({
+    indicador_id: normalizarId(row.id_indicador ?? row.indicador_id),
+    titulo: String(row.titulo ?? ""),
+    tema: String(row.tema ?? ""),
+    periodo: String(row.periodo ?? ""),
+    unidade: String(row.unidade ?? ""),
+    territorialidade: String(row.territorialidade ?? ""),
+    fonte: String(row.fonte ?? ""),
+    link_fonte: String(row.link_fonte ?? ""),
+    nota: String(row.nota_indicador ?? row.nota ?? ""),
+    observacoes: String(row.nota_indicador ?? row.observacoes ?? ""),
+    tipo_visualizacao: String(row.tipo_visualizacao ?? ""),
+  })).filter(item => Boolean(item.indicador_id));
+}
+async function valoresEixo01() {
+  const rows = await query("eixo_01_visao_geral");
+  return rows.filter(row => String(row.publicar ?? "").toUpperCase() === "SIM")
+    .map(row => ({
+      id_indicador: normalizarId(row.id_indicador),
+      periodo: String(row.periodo ?? ""),
+      territorio: String(row.territorio ?? ""),
+      categoria_recorte: String(row.categoria_recorte ?? ""),
+      serie_subrecorte: String(row.serie_subrecorte ?? ""),
+      valor: String(row.valor ?? ""),
+      publicar: "SIM",
+    }));
+}
+// Reutiliza respostas por até 24 h. Uma carga publicada invalida as tags por webhook.
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v1"], {
+  tags: ["mapa-indicadores"], revalidate: 86400,
+});
+export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v1"], {
+  tags: ["mapa-eixo-01"], revalidate: 86400,
+});
