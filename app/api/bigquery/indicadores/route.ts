@@ -67,29 +67,40 @@ function normalizeValue(cell: BigQueryCell | undefined): string {
 export async function GET() {
   try {
     const auth = await token(credentials());
-    const response = await fetch("https://bigquery.googleapis.com/bigquery/v2/projects/rj-spm-rio/queries", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${auth}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: "SELECT TO_JSON_STRING(t) AS linha_json FROM `rj-spm-rio.projeto_mapa_mulher.indicador` AS t LIMIT 1000",
-        useLegacySql: false,
-        location: "southamerica-east1",
-        maximumBytesBilled: "1000000000",
-        timeoutMs: 10000,
-        maxResults: 1000,
-      }),
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      const detail = await response.json().catch(() => null) as { error?: { errors?: { reason?: string }[]; status?: string; message?: string } } | null;
-      console.error("Falha de consulta BigQuery:", response.status, detail?.error?.message);
-      const reason = detail?.error?.errors?.[0]?.reason ?? detail?.error?.status ?? "http_error";
-      throw new Error(`query_http_${response.status}_${String(reason).replace(/[^a-zA-Z0-9_-]/g, "")}`);
+    // A tabela antiga permanece como fallback durante a renomeação controlada.
+    let payload: BigQueryResult | undefined;
+    for (const tabela of ["indicadores", "indicador"]) {
+      const response = await fetch("https://bigquery.googleapis.com/bigquery/v2/projects/rj-spm-rio/queries", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `SELECT TO_JSON_STRING(t) AS linha_json FROM \`rj-spm-rio.projeto_mapa_mulher.${tabela}\` AS t LIMIT 1000`,
+          useLegacySql: false,
+          location: "southamerica-east1",
+          maximumBytesBilled: "1000000000",
+          timeoutMs: 10000,
+          maxResults: 1000,
+        }),
+        cache: "no-store",
+      });
+      if (response.ok) {
+        payload = (await response.json()) as BigQueryResult;
+        break;
+      }
+      // Fallback apenas quando a nova tabela ainda não existe.
+      const detail = await response.json().catch(() => null) as {
+        error?: { errors?: { reason?: string }[]; message?: string }
+      } | null;
+      const missing = response.status === 404 ||
+        (response.status === 400 && /not found/i.test(detail?.error?.message ?? ""));
+      if (tabela === "indicadores" && missing) continue;
+      console.error("Falha ao consultar catálogo BigQuery:", response.status);
+      throw new Error(`query_http_${response.status}`);
     }
-    const payload = (await response.json()) as BigQueryResult;
+    if (!payload) throw new Error("catalogo_indisponivel");
     if (!payload.jobComplete) throw new Error("job_pending");
     if (payload.pageToken) throw new Error("pagination_required");
     const columns = payload.schema?.fields?.map(field => field.name) ?? [];
