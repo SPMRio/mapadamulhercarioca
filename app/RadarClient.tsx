@@ -649,7 +649,7 @@ export default function RadarClient({
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
       String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR") &&
-      !/^\\s*(?:1[.\\-]1[.\\-]1\\s*[-–—:]?\\s*)?dados em texto corrido\\s*$/i.test(item.titulo.trim())
+      !/dados em texto corrido/i.test(item.titulo)
     ), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
