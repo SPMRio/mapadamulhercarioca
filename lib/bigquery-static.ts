@@ -22,6 +22,7 @@ export type IndicadorRegistro = {
   nota: string;
   observacoes: string;
   tipo_visualizacao: string;
+  atualizado_em?: string;
 };
 export type DadoEixo01Registro = {
   id_indicador: string;
@@ -178,6 +179,7 @@ async function catalogo() {
     nota: String(row.nota_metodologica ?? row.nota_indicador ?? row.nota ?? ""),
     observacoes: String(row.nota_metodologica ?? row.observacoes ?? ""),
     tipo_visualizacao: String(row.tipo_visualizacao ?? (indicador_id === "1.2.1" ? "linhas" : "")),
+    atualizado_em: String(row.atualizado_em ?? ""),
   })).filter(item => Boolean(item.indicador_id) && Boolean(item.titulo));
 }
 async function valoresEixo01() {
@@ -201,7 +203,7 @@ async function valoresEixo01() {
     }));
 }
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v5-eixo"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v6-tabs"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
 export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v5-eixo"], {
