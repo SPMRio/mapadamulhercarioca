@@ -653,8 +653,15 @@ function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo
   const grupoTaxa = (m: string) => /taxa/i.test(m);
   const metricaAtual = metricas.includes(metrica) ? metrica : (metricas.find(m => !grupoTaxa(m)) || metricas[0]);
   const linhas = uf
-    ? validos.filter(d => d.serie_subrecorte === metricaAtual)
-    : validos.filter(d => d.tipo_valor !== "texto");
+    ? validos.filter(d => d.serie_subrecorte === metricaAtual && d.categoria_recorte !== "Brasil")
+    : validos.filter(d => d.tipo_valor !== "texto" && (indicador.indicador_id !== "1.2.6" || d.tipo_valor === "percentual"));
+  const periodos = Array.from(new Set(linhas.map(d => d.periodo))).sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const seriesLinha = Array.from(new Set(linhas.map(d => d.serie_subrecorte))).filter(Boolean);
+  const valoresLinha = linhas.map(d => d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor));
+  const minLinha = Math.min(0, ...valoresLinha);
+  const maxLinha = Math.max(minLinha+1,...valoresLinha);
+  const linhaX = (i: number) => 76 + (periodos.length > 1 ? i/(periodos.length-1) : .5)*700;
+  const linhaY = (v: number) => 250-(v-minLinha)/(maxLinha-minLinha)*210;
   const ordered = uf ? [...linhas].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor)) : linhas;
   const max = Math.max(1,...ordered.map(d => Math.abs(Number(d.valor))));
   const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
@@ -668,7 +675,27 @@ function VisualizacaoEixo1({ indicador, dados }: { indicador: Indicador & { tipo
       {serieX && <div className="radar-view-legend">
         {Array.from(new Set(ordered.map(d => d.serie_subrecorte))).filter(Boolean).map(m => <span key={m}>{m}</span>)}
       </div>}
-      <div className="radar-dynamic-bars">
+      {tipo === "linhas" && <svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
+        aria-label={`Evolução de ${indicador.titulo}`}>
+        {[0,1,2,3,4].map(i => {
+          const v = minLinha+(maxLinha-minLinha)*i/4;
+          return <g key={i}><line x1="76" x2="776" y1={linhaY(v)} y2={linhaY(v)} stroke="#e8e0ec" />
+            <text x="65" y={linhaY(v)+5} fontSize="12" textAnchor="end" fill="#53657c">{v.toLocaleString("pt-BR",{maximumFractionDigits:1})}</text></g>;
+        })}
+        {periodos.map((p,i) => <text key={p} x={linhaX(i)} y="277" fontSize="12" textAnchor="middle" fill="#53657c">{p}</text>)}
+        {seriesLinha.map((serie,i) => {
+          const cor = ["#7030b5","#42b3df","#e19c29","#21977e"][i%4];
+          const coords = periodos.map((p,j) => {
+            const d = linhas.find(x => x.periodo === p && x.serie_subrecorte === serie);
+            if (!d) return null;
+            return { x: linhaX(j), y: linhaY(d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor)), label: fmt(d) };
+          }).filter((x): x is {x:number;y:number;label:string} => x !== null);
+          return <g key={serie}>{coords.length>1 && <polyline points={coords.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={cor} strokeWidth="3" />}
+            {coords.map((p,j)=><circle key={j} cx={p.x} cy={p.y} r="5" fill={cor} stroke="white" strokeWidth="2"><title>{serie}: {p.label}</title></circle>)}
+          </g>;
+        })}
+      </svg>}
+      <div className={tipo === "linhas" ? "radar-dynamic-bars radar-bars-secondary" : "radar-dynamic-bars"}>
         {ordered.map((d,i) => (
           <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
             <div className="radar-dynamic-meta">
