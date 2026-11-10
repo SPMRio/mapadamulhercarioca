@@ -509,8 +509,92 @@ function PainelCuidados({
   );
 }
 
+type DadoEixo01 = {
+  id_indicador: string;
+  periodo: string;
+  territorio: string;
+  categoria_recorte: string;
+  serie_subrecorte: string;
+  valor: string | number;
+  publicar: string;
+};
+function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
+  const publicados = dados.filter(d => d.id_indicador === "1.2-1" &&
+    String(d.publicar).toUpperCase() === "SIM" &&
+    ["Mulheres", "Homens"].includes(d.serie_subrecorte) &&
+    Number.isFinite(Number(d.valor)));
+  if (!publicados.length) return null;
+  const periodoOrdem = (p: string) => {
+    const m = p.match(/^([1-4])T(\d{4})$/);
+    return m ? Number(m[2]) * 4 + Number(m[1]) : Number.MAX_SAFE_INTEGER;
+  };
+  const periodos = Array.from(new Set(publicados.map(d => d.periodo)))
+    .sort((a, b) => periodoOrdem(a) - periodoOrdem(b));
+  const series = [
+    { nome: "Mulheres", cor: "#7438b4" },
+    { nome: "Homens", cor: "#259cc9" },
+  ];
+  const valores = publicados.map(d => Number(d.valor));
+  const min = Math.floor(Math.min(...valores) / 250) * 250;
+  const max = Math.ceil(Math.max(...valores) / 250) * 250;
+  const amplitude = max > min ? max - min : 1;
+  const W = 720, H = 310, left = 70, right = 24, top = 26, bottom = 54;
+  const x = (i: number) => left + (periodos.length > 1 ? i / (periodos.length - 1) : 0.5) * (W-left-right);
+  const y = (v: number) => top + (max-v)/amplitude * (H-top-bottom);
+  const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return (
+    <div className="radar-real-chart">
+      <div className="radar-series-legend">
+        {series.map(serie => <span key={serie.nome}><i style={{ background: serie.cor }} />{serie.nome}</span>)}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img"
+        aria-label="Rendimento médio mensal em reais por trimestre, mulheres e homens"
+        style={{ width: "100%", height: "auto", display: "block" }}>
+        {[0,1,2,3,4].map(i => {
+          const valor = min + amplitude * i/4;
+          return <g key={i}>
+            <line x1={left} x2={W-right} y1={y(valor)} y2={y(valor)} stroke="#e4dfeb" />
+            <text x={left-12} y={y(valor)+4} fontSize="12" fill="#52657b" textAnchor="end">{moeda(valor)}</text>
+          </g>;
+        })}
+        {periodos.map((periodo, i) => <text key={periodo} x={x(i)} y={H-20}
+          textAnchor="middle" fontSize="13" fill="#30435f">{periodo}</text>)}
+        {series.map(serie => {
+          const pontos = periodos.map((periodo, i) => {
+            const dado = publicados.find(d => d.periodo === periodo && d.serie_subrecorte === serie.nome);
+            return dado ? { periodo, indice: i, valor: Number(dado.valor) } : null;
+          }).filter((p): p is { periodo: string; indice: number; valor: number } => p !== null);
+          return <g key={serie.nome}>
+            {pontos.length > 1 && <polyline points={pontos.map(p => `${x(p.indice)},${y(p.valor)}`).join(" ")}
+              fill="none" stroke={serie.cor} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />}
+            {pontos.map(p => <circle key={p.periodo} cx={x(p.indice)} cy={y(p.valor)} r="5"
+              fill={serie.cor} stroke="#fff" strokeWidth="2">
+              <title>{serie.nome} · {p.periodo}: {moeda(p.valor)}</title>
+            </circle>)}
+          </g>;
+        })}
+      </svg>
+      <div className="radar-data-table-wrap">
+        <table>
+          <thead><tr><th>Trimestre</th><th>Mulheres</th><th>Homens</th></tr></thead>
+          <tbody>{periodos.map(periodo => <tr key={periodo}>
+            <td>{periodo}</td>
+            {series.map(serie => {
+              const dado = publicados.find(d => d.periodo === periodo && d.serie_subrecorte === serie.nome);
+              return <td key={serie.nome}>{dado ? moeda(Number(dado.valor)) : "—"}</td>;
+            })}
+          </tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [indicadores, setIndicadores] = useState<(Indicador & { tema?: string; status_publicacao?: string; tipo_visualizacao?: string })[]>([]);
+  const [dadosEixo01, setDadosEixo01] = useState<DadoEixo01[]>([]);
+  const [erroDados, setErroDados] = useState("");
+  const [carregandoDados, setCarregandoDados] = useState(true);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [tema, setTema] = useState("Visão geral");
@@ -536,6 +620,21 @@ export default function Home() {
       }
     }
     carregarIndicadores();
+    async function carregarDados() {
+      try {
+        const resposta = await fetch("/api/bigquery/eixo-01", { cache: "no-store" });
+        if (!resposta.ok) throw new Error("Falha ao consultar os valores.");
+        const resultado = await resposta.json();
+        if (!resultado?.ok || !Array.isArray(resultado.dados)) throw new Error("Resposta inválida.");
+        setDadosEixo01(resultado.dados);
+      } catch (error) {
+        console.error("Erro ao consultar dados do eixo 01", error);
+        setErroDados("Os valores ainda não puderam ser carregados do BigQuery.");
+      } finally {
+        setCarregandoDados(false);
+      }
+    }
+    carregarDados();
   }, []);
 
   const temasDisponiveis = useMemo(
@@ -712,18 +811,22 @@ export default function Home() {
                   <div className="radar-indicator-preview">
                     <div className="radar-preview-heading">
                       <div>
-                        <small>VISUALIZAÇÃO PREVISTA</small>
+                        <small>VISUALIZAÇÃO DO INDICADOR</small>
                         <h4>{item.tipo_visualizacao?.toLowerCase() === "linha" ? "Gráfico de linhas" : item.tipo_visualizacao || "Visualização a definir"}</h4>
                       </div>
-                      <span>Sem série de dados</span>
+                      <span>{item.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? "Dados do BigQuery" : "Sem série de dados"}</span>
                     </div>
-                    <div className="radar-chart-empty" role="status">
-                      <div className="radar-chart-grid" aria-hidden="true" />
-                      <div className="radar-chart-message">
-                        <strong>Aguardando os valores deste indicador</strong>
-                        <p>O cadastro já foi encontrado no BigQuery. O gráfico será preenchido quando os dados e recortes forem carregados.</p>
+                    {item.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? (
+                      <GraficoRendimento dados={dadosEixo01} />
+                    ) : (
+                      <div className="radar-chart-empty" role="status">
+                        <div className="radar-chart-grid" aria-hidden="true" />
+                        <div className="radar-chart-message">
+                          <strong>{carregandoDados ? "Carregando valores…" : erroDados || "Aguardando os valores deste indicador"}</strong>
+                          <p>O gráfico será exibido quando os dados e recortes estiverem disponíveis no BigQuery.</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   <div className="radar-indicator-footer">
                     <div>
@@ -733,7 +836,7 @@ export default function Home() {
                     </div>
                     <div>
                       <strong>Status dos dados</strong>
-                      <p>Valores ainda não carregados no BigQuery</p>
+                      <p>{item.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? "Série publicada no BigQuery" : "Valores ainda não disponíveis"}</p>
                     </div>
                   </div>
                 </article>
