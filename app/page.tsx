@@ -519,7 +519,7 @@ type DadoEixo01 = {
   publicar: string;
 };
 function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
-  const publicados = dados.filter(d => d.id_indicador === "1.2-1" &&
+  const publicados = dados.filter(d => d.id_indicador === "1.2.1" &&
     String(d.publicar).toUpperCase() === "SIM" &&
     ["Mulheres", "Homens"].includes(d.serie_subrecorte) &&
     Number.isFinite(Number(d.valor)));
@@ -591,7 +591,7 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
 }
 
 function tituloPublico(titulo: string) {
-  return titulo.replace(/^\s*\d+(?:\.\d+)*-\d+\s*[-–—:]?\s*/, "").trim();
+  return titulo.replace(/^\s*\d+(?:\.\d+)*(?:-\d+)?\s*[-–—:]?\s*/, "").trim();
 }
 
 export default function Home() {
@@ -627,7 +627,7 @@ export default function Home() {
         if (!resposta.ok) throw new Error("Falha ao consultar os valores.");
         const resultado = await resposta.json();
         if (!resultado?.ok || !Array.isArray(resultado.dados)) throw new Error("Dados indisponíveis.");
-        setDadosEixo01(resultado.dados);
+        setDadosEixo01(resultado.dados.map((dado: DadoEixo01) => ({ ...dado, id_indicador: String(dado.id_indicador).replace(/^(\d+(?:\.\d+)*?)-(\d+)$/, "$1.$2") })));
       } catch (error) {
         console.error(error);
         setErroDados("Não foi possível carregar os dados deste indicador.");
@@ -762,7 +762,7 @@ export default function Home() {
                           <h4>{selecionado.tipo_visualizacao?.toLowerCase() === "linha" ? "Gráfico de linhas" : selecionado.tipo_visualizacao || "Visualização"}</h4>
                         </div>
                       </div>
-                      {selecionado.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? (
+                      {selecionado.indicador_id === "1.2.1" && dadosEixo01.some(d => d.id_indicador === "1.2.1" && d.publicar === "SIM") ? (
                         <GraficoRendimento dados={dadosEixo01} />
                       ) : (
                         <div className="radar-chart-empty" role="status">
