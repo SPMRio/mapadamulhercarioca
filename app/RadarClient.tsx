@@ -611,8 +611,21 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
 }
 
 function tituloPublico(titulo: string) {
-  return titulo.replace(/^\s*\d+(?:\.\d+)*(?:-\d+)?\s*[-–—:]?\s*/, "").trim();
+  const nome = titulo.replace(/^\\s*\\d+(?:\\.\\d+)*(?:-\\d+)?\\s*[-–—:]?\\s*/, "").trim();
+  return nome.toLocaleLowerCase("pt-BR") === "dados em texto corrido"
+    ? "Desigualdade de gênero no mundo"
+    : nome;
 }
+
+const destaquesDesigualdadeMundo = [
+  { valor: "70º", rotulo: "Posição do Brasil no ranking mundial", detalhe: "Entre os países avaliados no índice global de igualdade de gênero." },
+  { valor: "71,6%", rotulo: "Paridade geral de gênero", detalhe: "Pontuação do Brasil no índice de 2024 (0,716)." },
+  { valor: "16º", rotulo: "Brasil na América Latina e Caribe", detalhe: "Posição entre 22 países da região." },
+  { valor: "66,7%", rotulo: "Participação econômica e oportunidades", detalhe: "Paridade econômica estimada para o Brasil." },
+  { valor: "72,6%", rotulo: "Participação na força de trabalho", detalhe: "Paridade com avanço de 0,7 ponto percentual." },
+  { valor: "22%", rotulo: "Empoderamento político", detalhe: "Paridade no subíndice de representação e participação política." },
+  { valor: "99,6%", rotulo: "Educação", detalhe: "Paridade no subíndice de educação." },
+];
 
 export default function RadarClient({
   indicadores,
@@ -721,20 +734,40 @@ export default function RadarClient({
           <section className="radar-overview" aria-label={`Painel de infográficos de ${tema}`}>
             <div className="radar-overview-heading">
               <h3>Panorama do eixo</h3>
-              <p>Espaços para os infográficos que serão selecionados conforme os indicadores forem publicados.</p>
+              {tema === "Visão geral" ? (
+                <p>Desigualdade de gênero no mundo · Brasil no Global Gender Gap Report 2024.</p>
+              ) : (
+                <p>Espaços para os infográficos que serão selecionados conforme os indicadores forem publicados.</p>
+              )}
             </div>
-            <div className="radar-infographic-grid">
-              {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
-                <article className="radar-infographic-card" key={nome}>
-                  <span className="radar-infographic-top">INFOGRÁFICO {String(index + 1).padStart(2, "0")}</span>
-                  <div className="radar-infographic-placeholder" aria-hidden="true">
-                    <div className="radar-infographic-symbol">{index === 0 ? "✦" : index === 1 ? "↗" : "◫"}</div>
-                  </div>
-                  <h4>{nome}</h4>
-                  <p>Indicador a definir</p>
-                </article>
-              ))}
-            </div>
+            {tema === "Visão geral" ? (
+              <>
+                <div className="radar-world-grid">
+                  {destaquesDesigualdadeMundo.map((dado) => (
+                    <article className="radar-world-card" key={dado.rotulo}>
+                      <span className="radar-world-card-label">2024 · BRASIL</span>
+                      <strong>{dado.valor}</strong>
+                      <h4>{dado.rotulo}</h4>
+                      <p>{dado.detalhe}</p>
+                    </article>
+                  ))}
+                </div>
+                <p className="radar-world-source">Fonte: Fórum Econômico Mundial, <i>Global Gender Gap Report 2024</i>. Indicador 1.1.1 — Desigualdade de gênero no mundo.</p>
+              </>
+            ) : (
+              <div className="radar-infographic-grid">
+                {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
+                  <article className="radar-infographic-card" key={nome}>
+                    <span className="radar-infographic-top">INFOGRÁFICO {String(index + 1).padStart(2, "0")}</span>
+                    <div className="radar-infographic-placeholder" aria-hidden="true">
+                      <div className="radar-infographic-symbol">{index === 0 ? "✦" : index === 1 ? "↗" : "◫"}</div>
+                    </div>
+                    <h4>{nome}</h4>
+                    <p>Indicador a definir</p>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="radar-explorer" aria-label="Explorar indicadores do eixo">
