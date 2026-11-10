@@ -31,6 +31,13 @@ export type DadoEixo01Registro = {
   serie_subrecorte: string;
   valor: string | number;
   publicar: string;
+  tipo_valor?: string;
+  escala?: string;
+  texto?: string;
+  unidade_dado?: string;
+  nota_dado?: string;
+  situacao?: string;
+  ordem?: number;
 };
 function jsonRequest<T>(url: string, method: "GET" | "POST", body?: unknown, authorization?: string): Promise<{status: number; data: T}> {
   return new Promise((resolve, reject) => {
@@ -132,12 +139,21 @@ async function query(table: string): Promise<Record<string, unknown>[]> {
 }
 const normalizarId = (id: unknown) => String(id ?? "").replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2");
 async function catalogo() {
-  let rows: Record<string, unknown>[];
-  try { rows = await query("indicadores"); }
+  let originais: Record<string, unknown>[];
+  try { originais = await query("indicadores"); }
   catch (error) {
     if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
-    rows = await query("indicador");
+    originais = await query("indicador");
   }
+  let novos: Record<string, unknown>[] = [];
+  try { novos = await query("eixo_01_indicadores_v2"); }
+  catch (error) {
+    if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
+  }
+  // O catálogo dedicado ao Eixo 1 substitui somente os registros antigos desse eixo.
+  const rows = novos.length
+    ? [...originais.filter(item => String(item.tema ?? "").toLocaleLowerCase("pt-BR") !== "visão geral"), ...novos]
+    : originais;
   return rows.map(row => ({
     indicador_id: normalizarId(row.id_indicador ?? row.indicador_id),
     titulo: String(row.titulo ?? ""),
@@ -153,22 +169,36 @@ async function catalogo() {
   })).filter(item => Boolean(item.indicador_id));
 }
 async function valoresEixo01() {
-  const rows = await query("eixo_01_visao_geral");
-  return rows.filter(row => String(row.publicar ?? "").toUpperCase() === "SIM")
+  let rows: Record<string, unknown>[];
+  let tabelaNova = true;
+  try { rows = await query("eixo_01_dados_v2"); }
+  catch (error) {
+    if (!(error instanceof Error) || error.message !== "table_not_found") throw error;
+    rows = await query("eixo_01_visao_geral");
+    tabelaNova = false;
+  }
+  return rows.filter(row => tabelaNova || String(row.publicar ?? "").toUpperCase() === "SIM")
     .map(row => ({
       id_indicador: normalizarId(row.id_indicador),
       periodo: String(row.periodo ?? ""),
       territorio: String(row.territorio ?? ""),
-      categoria_recorte: String(row.categoria_recorte ?? ""),
-      serie_subrecorte: String(row.serie_subrecorte ?? ""),
-      valor: String(row.valor ?? ""),
+      categoria_recorte: String(row.categoria ?? row.categoria_recorte ?? ""),
+      serie_subrecorte: String(row.serie ?? row.serie_subrecorte ?? ""),
+      valor: Number(row.valor ?? 0),
       publicar: "SIM",
+      tipo_valor: String(row.tipo_valor ?? ""),
+      escala: String(row.escala ?? ""),
+      texto: String(row.texto ?? ""),
+      unidade_dado: String(row.unidade_dado ?? ""),
+      nota_dado: String(row.nota_dado ?? ""),
+      situacao: String(row.situacao ?? ""),
+      ordem: Number(row.ordem ?? 0),
     }));
 }
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v1"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v2"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
-export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v1"], {
+export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v2"], {
   tags: ["mapa-eixo-01"], revalidate: false,
 });
