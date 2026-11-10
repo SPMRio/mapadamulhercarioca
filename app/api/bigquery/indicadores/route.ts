@@ -74,7 +74,7 @@ export async function GET() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        query: "SELECT * FROM `rj-spm-rio.projeto_mapa_mulher.indicador` ORDER BY indicador_id LIMIT 1000",
+        query: "SELECT * FROM `rj-spm-rio.projeto_mapa_mulher.indicador` LIMIT 1000",
         useLegacySql: false,
         location: "southamerica-east1",
         maximumBytesBilled: "1000000000",
@@ -84,13 +84,16 @@ export async function GET() {
       cache: "no-store",
     });
     if (!response.ok) {
-      console.error("Falha de consulta BigQuery:", response.status);
-      throw new Error("BigQuery indisponível.");
+      const detail = await response.json().catch(() => null) as { error?: { errors?: { reason?: string }[]; status?: string; message?: string } } | null;
+      console.error("Falha de consulta BigQuery:", response.status, detail?.error?.message);
+      const reason = detail?.error?.errors?.[0]?.reason ?? detail?.error?.status ?? "http_error";
+      throw new Error(`query_http_${response.status}_${String(reason).replace(/[^a-zA-Z0-9_-]/g, "")}`);
     }
     const payload = (await response.json()) as BigQueryResult;
-    if (!payload.jobComplete || payload.pageToken) throw new Error("Resultado incompleto do BigQuery.");
+    if (!payload.jobComplete) throw new Error("job_pending");
+    if (payload.pageToken) throw new Error("pagination_required");
     const columns = payload.schema?.fields?.map(field => field.name) ?? [];
-    if (!columns.includes("indicador_id")) throw new Error("Esquema inesperado no BigQuery.");
+    if (!columns.includes("indicador_id")) throw new Error("schema_missing_indicador_id");
     const indicadores = (payload.rows ?? []).map(row =>
       Object.fromEntries(columns.map((column, index) => [column, normalizeValue(row.f?.[index])]))
     );
@@ -100,8 +103,10 @@ export async function GET() {
     );
   } catch (error) {
     console.error("Indicadores BigQuery:", error instanceof Error ? error.message : "erro");
+    const detail = error instanceof Error ? error.message : "unknown";
+    const safeCode = /^(query_http_[0-9]{3}_[a-zA-Z0-9_-]+|job_pending|pagination_required|schema_missing_indicador_id)$/.test(detail) ? detail : "auth_or_server_error";
     return NextResponse.json(
-      { ok: false, error: "Não foi possível carregar os indicadores do BigQuery." },
+      { ok: false, error: "Não foi possível carregar os indicadores do BigQuery.", codigo: safeCode },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
