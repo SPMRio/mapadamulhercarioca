@@ -511,21 +511,70 @@ export default function Home() {
   useEffect(() => {
     async function carregarPlanilha() {
       try {
-        const resposta = await fetch("/api/sheets");
+        // Dados detalhados permanecem no Sheets até a migração das tabelas
+        // de valores. Os metadados são atualizados pelo BigQuery quando disponível.
+        const [sheetsResult, bigQueryResult] = await Promise.allSettled([
+          fetch("/api/sheets", { cache: "no-store" }),
+          fetch("/api/bigquery/indicadores", { cache: "no-store" }),
+        ]);
 
-        if (!resposta.ok) {
-          throw new Error("Erro ao consultar a API");
+        let indicadoresSheets: Indicador[] = [];
+        let dadosSheets: DadoCuidado[] = [];
+
+        if (sheetsResult.status === "fulfilled" && sheetsResult.value.ok) {
+          const sheets = await sheetsResult.value.json();
+          indicadoresSheets = tabelaParaObjetos<Indicador>(sheets?.indicadores ?? []);
+          dadosSheets = tabelaParaObjetos<DadoCuidado>(sheets?.dados?.cuidado ?? []).map(
+            (item) => ({ ...item, valor: numero(item.valor) }),
+          );
         }
 
-        const resultado = await resposta.json();
-        setIndicadores(
-          tabelaParaObjetos<Indicador>(resultado?.indicadores ?? []),
+        let indicadoresBigQuery: Indicador[] = [];
+        if (bigQueryResult.status === "fulfilled" && bigQueryResult.value.ok) {
+          const bigQuery = await bigQueryResult.value.json();
+          if (Array.isArray(bigQuery?.indicadores)) {
+            indicadoresBigQuery = bigQuery.indicadores
+              .filter((item: Indicador) => item && String(item.indicador_id ?? "").trim())
+              .map((item: Indicador) => ({
+                ...item,
+                indicador_id: String(item.indicador_id),
+                titulo: String(item.titulo ?? ""),
+                periodo: String(item.periodo ?? ""),
+                unidade: String(item.unidade ?? ""),
+                territorialidade: String(item.territorialidade ?? ""),
+                fonte: String(item.fonte ?? ""),
+                link_fonte: String(item.link_fonte ?? ""),
+                nota: String(item.nota ?? (item as Indicador & { nota_indicador?: string }).nota_indicador ?? ""),
+                observacoes: String(item.observacoes ?? (item as Indicador & { nota_indicador?: string }).nota_indicador ?? ""),
+              }));
+          }
+        }
+
+        // Mantém indicadores que ainda não foram migrados ao BigQuery,
+        // sem duplicar IDs e sem apagar valores válidos do Sheets.
+        const combinados = new Map(
+          indicadoresSheets.map((item) => [item.indicador_id, item] as const),
         );
-        setDadosCuidado(
-          tabelaParaObjetos<DadoCuidado>(resultado?.dados?.cuidado ?? []).map(
-            (item) => ({ ...item, valor: numero(item.valor) }),
-          ),
-        );
+        for (const item of indicadoresBigQuery) {
+          const anterior = combinados.get(item.indicador_id);
+          if (!anterior) {
+            combinados.set(item.indicador_id, item);
+          } else {
+            combinados.set(item.indicador_id, {
+              ...anterior,
+              ...Object.fromEntries(
+                Object.entries(item).filter(([, valor]) => valor !== "" && valor != null),
+              ),
+            });
+          }
+        }
+
+        if (combinados.size === 0 && dadosSheets.length === 0) {
+          throw new Error("Nenhuma fonte de indicadores disponível.");
+        }
+
+        setIndicadores(Array.from(combinados.values()));
+        setDadosCuidado(dadosSheets);
       } catch (erro) {
         console.error(erro);
         setErroPlanilha("Não foi possível carregar os dados de Cuidados.");
