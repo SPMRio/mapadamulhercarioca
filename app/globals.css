@@ -39,7 +39,14 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 
 
 /* Gráfico real do eixo 01 — renda por trimestre */
-.radar-real-chart{padding:20px 22px 24px}
+.radar-real-chart{padding:12px 18px 18px}
+/* Limita a altura do gráfico em telas largas, preservando sua proporção e legibilidade. */
+.radar-real-chart svg{max-width:760px;margin:0 auto}
+.radar-indicator{gap:12px}
+.radar-indicator .panel-head h3{margin-top:4px}
+.radar-indicator-tags span{padding:6px 10px}
+.radar-indicator-select{margin:14px 0 12px}
+.radar-explorer>.radar-indicator{margin-top:12px}
 .radar-series-legend{display:flex;gap:20px;align-items:center;justify-content:center;margin:3px 0 14px}
 .radar-series-legend span{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#344b67}
 .radar-series-legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
