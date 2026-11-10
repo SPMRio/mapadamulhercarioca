@@ -50,6 +50,7 @@ const faixas = [
 type Indicador = {
   indicador_id: string;
   titulo: string;
+  descricao?: string;
   periodo: string;
   unidade: string;
   territorialidade: string;
@@ -552,7 +553,6 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
   const x = (i: number) => left + (periodos.length > 1 ? i / (periodos.length - 1) : 0.5) * (W-left-right);
   const y = (v: number) => top + (max-v)/amplitude * (H-top-bottom);
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-  const numeroGrafico = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
   const mostrarTooltip = (e: React.MouseEvent<SVGCircleElement> | React.FocusEvent<SVGCircleElement>, serie: string, periodo: string, valor: number, cor: string) => {
     const ponto = e.currentTarget.getBoundingClientRect();
     const container = e.currentTarget.closest(".radar-real-chart")?.getBoundingClientRect();
@@ -572,7 +572,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
           const valor = min + amplitude * i/4;
           return <g key={i}>
             <line x1={left} x2={W-right} y1={y(valor)} y2={y(valor)} stroke="#e4dfeb" />
-            <text x={left-12} y={y(valor)+4} fontSize="14" fill="#52657b" textAnchor="end">{numeroGrafico(valor)}</text>
+            <text x={left-12} y={y(valor)+4} fontSize="14" fill="#52657b" textAnchor="end">{moeda(valor)}</text>
           </g>;
         })}
         {periodos.map((periodo, i) => <text key={periodo} x={x(i)} y={H-20}
@@ -587,7 +587,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
               fill="none" stroke={serie.cor} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" className="radar-animated-line" pathLength={1} />}
             {pontos.map(p => <circle key={p.periodo} cx={x(p.indice)} cy={y(p.valor)} r="6"
               fill={serie.cor} stroke="#fff" strokeWidth="2" tabIndex={0} role="img"
-              aria-label={`${serie.nome}, ${p.periodo}: ${numeroGrafico(p.valor)}`}
+              aria-label={`${serie.nome}, ${p.periodo}: ${moeda(p.valor)}`}
               onMouseEnter={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
               onMouseMove={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
               onMouseLeave={() => setTooltip(null)}
@@ -601,7 +601,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
         <div className="radar-chart-tooltip" style={{ left: tooltip.left, top: tooltip.top }} role="status">
           <span className="radar-tooltip-series"><i style={{ background: tooltip.cor }} />{tooltip.serie}</span>
           <strong>{tooltip.periodo}</strong>
-          <b>{numeroGrafico(tooltip.valor)}</b>
+          <b>{moeda(tooltip.valor)}</b>
         </div>
       )}
       </>}
@@ -910,12 +910,12 @@ export default function RadarClient({
                     <div className="panel-head">
                       <div>
                         <h3>{tituloPublico(selecionado.titulo)}</h3>
+                        {selecionado.descricao?.trim() && <p className="radar-indicator-description">{selecionado.descricao}</p>}
                       </div>
                     </div>
                     <div className="radar-indicator-tags">
                       <span>{selecionado.tema}</span>
                       {Array.from(new Set(dadosEixo01.filter(d => d.id_indicador === selecionado.indicador_id).map(d => d.territorio).filter(Boolean))).slice(0, 2).map(t => <span key={t}>{t}</span>)}
-                      {Array.from(new Set(dadosEixo01.filter(d => d.id_indicador === selecionado.indicador_id).map(d => d.unidade_dado).filter(Boolean))).slice(0, 2).map(u => <span key={u}>{u}</span>)}
                     </div>
                     <div className="radar-indicator-tabs" role="tablist" aria-label="Visualização dos dados">
                       <button type="button" role="tab" id="indicador-aba-grafico" aria-controls="indicador-conteudo" aria-selected={abaVisualizacao === "grafico"}
