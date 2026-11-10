@@ -590,285 +590,216 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
   );
 }
 
+function tituloPublico(titulo: string) {
+  return titulo.replace(/^\s*\d+(?:\.\d+)*-\d+\s*[-–—:]?\s*/, "").trim();
+}
+
 export default function Home() {
   const [indicadores, setIndicadores] = useState<(Indicador & { tema?: string; status_publicacao?: string; tipo_visualizacao?: string })[]>([]);
   const [dadosEixo01, setDadosEixo01] = useState<DadoEixo01[]>([]);
-  const [erroDados, setErroDados] = useState("");
-  const [carregandoDados, setCarregandoDados] = useState(true);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-  const [tema, setTema] = useState("Visão geral");
-  const [regiao, setRegiao] = useState("Todas as regiões");
+  const [erroDados, setErroDados] = useState("");
+  const [carregandoDados, setCarregandoDados] = useState(true);
+  const [tema, setTema] = useState(temas[0]);
   const [indicadorId, setIndicadorId] = useState("");
 
   useEffect(() => {
     async function carregarIndicadores() {
       try {
         const resposta = await fetch("/api/bigquery/indicadores", { cache: "no-store" });
-        if (!resposta.ok) throw new Error("Não foi possível consultar o BigQuery.");
+        if (!resposta.ok) throw new Error("Falha ao consultar catálogo de indicadores.");
         const resultado = await resposta.json();
-        if (!resultado?.ok || !Array.isArray(resultado.indicadores)) {
-          throw new Error("Resposta inválida do BigQuery.");
-        }
+        if (!resultado?.ok || !Array.isArray(resultado.indicadores)) throw new Error("Catálogo indisponível.");
         setIndicadores(resultado.indicadores.filter(
           (item: Indicador) => String(item?.indicador_id ?? "").trim()
         ));
       } catch (error) {
-        setErro(error instanceof Error ? error.message : "Erro ao carregar indicadores.");
+        console.error(error);
+        setErro("Não foi possível carregar os indicadores.");
       } finally {
         setCarregando(false);
       }
     }
-    carregarIndicadores();
     async function carregarDados() {
       try {
         const resposta = await fetch("/api/bigquery/eixo-01", { cache: "no-store" });
         if (!resposta.ok) throw new Error("Falha ao consultar os valores.");
         const resultado = await resposta.json();
-        if (!resultado?.ok || !Array.isArray(resultado.dados)) throw new Error("Resposta inválida.");
+        if (!resultado?.ok || !Array.isArray(resultado.dados)) throw new Error("Dados indisponíveis.");
         setDadosEixo01(resultado.dados);
       } catch (error) {
-        console.error("Erro ao consultar dados do eixo 01", error);
-        setErroDados("Os valores ainda não puderam ser carregados do BigQuery.");
+        console.error(error);
+        setErroDados("Não foi possível carregar os dados deste indicador.");
       } finally {
         setCarregandoDados(false);
       }
     }
-    carregarDados();
+    void Promise.all([carregarIndicadores(), carregarDados()]);
   }, []);
-
-  const temasDisponiveis = useMemo(
-    () => Array.from(new Set(indicadores.map(item => String(item.tema ?? "").trim()).filter(Boolean))),
-    [indicadores],
-  );
 
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
-      !tema || String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR")
+      String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR")
     ), [indicadores, tema],
   );
-  const regioes = useMemo(
-    () => Array.from(new Set(indicadoresDoTema.map(item => String(item.territorialidade ?? "").trim()).filter(Boolean))),
-    [indicadoresDoTema],
-  );
-  const filtrados = useMemo(() => indicadoresDoTema.filter(item =>
-    (regiao === "Todas as regiões" || item.territorialidade === regiao) &&
-    (!indicadorId || item.indicador_id === indicadorId)
-  ), [indicadoresDoTema, regiao, indicadorId]);
-
+  const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
   function selecionarTema(novoTema: string) {
     setTema(novoTema);
-    setRegiao("Todas as regiões");
     setIndicadorId("");
   }
 
   return (
     <main>
-      <div
-        className="color-band"
-        aria-hidden="true"
-      >
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-        <i />
-      </div>
-
+      <div className="color-band" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
       <header className="topbar">
-        <a
-          className="brand"
-          href="#inicio"
-          aria-label="Mapa da Mulher Carioca - início"
-        >
-          <span>MAPA DA MULHER CARIOCA</span>
-
-          <b>Digital</b>
+        <a className="brand" href="#inicio" aria-label="Mapa da Mulher Carioca - início">
+          <span>MAPA DA MULHER CARIOCA</span><b>Digital</b>
         </a>
-
         <nav aria-label="Navegação principal">
-          <a href="#dados">Dados</a>
-          <a href="#sobre">Sobre</a>
+          <a href="#dados">Dados</a><a href="#sobre">Sobre</a>
         </nav>
-
-        <button
-          className="download"
-          type="button"
-          onClick={() => window.print()}
-        >
+        <button className="download" type="button" onClick={() => window.print()}>
           Baixar relatório <span>↓</span>
         </button>
       </header>
-
-      <section
-        className="intro"
-        id="inicio"
-      >
-        <div className="eyebrow">
-          <span>MAPA DA MULHER CARIOCA DIGITAL</span>
-          <i>✦</i>
-        </div>
-
+      <section className="intro" id="inicio">
+        <div className="eyebrow"><span>MAPA DA MULHER CARIOCA DIGITAL</span><i>✦</i></div>
         <h1>Radar de Dados — Visão Geral</h1>
-
-        <p>
-          Um retrato vivo das desigualdades,
-          conquistas e condições de vida das
-          mulheres cariocas, organizado para
-          apoiar políticas públicas e transformar
-          a cidade.
-        </p>
-
+        <p>Um retrato vivo das desigualdades, conquistas e condições de vida das mulheres cariocas,
+          organizado para apoiar políticas públicas e transformar a cidade.</p>
         <div className="meta">
-          <span>
-            Indicadores disponíveis no{" "}
-            <b>BigQuery</b>
-          </span>
-
-          <span>
-            Fontes indicadas individualmente em cada indicador
-          </span>
+          <span>Indicadores organizados por eixo temático</span>
+          <span>Fontes identificadas em cada indicador</span>
         </div>
       </section>
-
-      <section
-        className="dashboard"
-        id="dados"
-      >
+      <section className="dashboard" id="dados">
         <aside className="sidebar">
           <p>RADAR DE DADOS</p>
-
           <div className="theme-list">
             {temas.map((item, index) => (
-              <button type="button" className={tema.toLowerCase() === item.toLowerCase() ? "active" : ""}
+              <button type="button" className={tema === item ? "active" : ""}
                 onClick={() => selecionarTema(item)} key={item}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
-                {item.toLowerCase() === "visão geral" ? "Visão Geral Radar de Dados" : item}
+                {item === "Visão geral" ? "Visão Geral Radar de Dados" : item}
               </button>
             ))}
           </div>
-          <div className="source-note">
-            <i>↗</i>
-
-            <p>
-              <b>Dados abertos</b>
-              <br />
-              Consulte as fontes e baixe as bases
-              utilizadas neste painel.
-            </p>
+          <div className="source-note"><i>↗</i>
+            <p><b>Dados abertos</b><br />Consulte as fontes de cada indicador publicado.</p>
           </div>
         </aside>
-
         <div className="content">
-          <div className="filters">
-            <label>
-              REGIÃO
-              <select value={regiao} onChange={(e) => { setRegiao(e.target.value); setIndicadorId(""); }}>
-                <option value="Todas as regiões">Todas as regiões</option>
-                {regioes.map(item => <option key={item} value={item}>{item}</option>)}
-              </select>
-            </label>
-            <label>
-              INDICADOR
-              <select value={indicadorId} onChange={(e) => setIndicadorId(e.target.value)}>
-                <option value="">Todos os indicadores</option>
-                {indicadoresDoTema.filter(item => regiao === "Todas as regiões" || item.territorialidade === regiao)
-                  .map(item => <option key={item.indicador_id} value={item.indicador_id}>{item.indicador_id} — {item.titulo}</option>)}
-              </select>
-            </label>
-            <button type="button" onClick={() => { setRegiao("Todas as regiões"); setIndicadorId(""); }}>Limpar filtros</button>
-          </div>
           <div className="section-title">
-            <span>{String(Math.max(1, ["Visão geral", ...temasDisponiveis.filter(item => item.toLowerCase() !== "visão geral")].findIndex(item => item.toLowerCase() === tema.toLowerCase()) + 1)).padStart(2,"0")}.</span>
+            <span>{String(temas.indexOf(tema) + 1).padStart(2, "0")}.</span>
             <div>
               <p>RADAR DE DADOS</p>
-              <h2>{tema.toLowerCase() === "visão geral" ? "Visão Geral Radar de Dados" : tema}</h2>
+              <h2>{tema === "Visão geral" ? "Visão Geral Radar de Dados" : tema}</h2>
             </div>
           </div>
-          {carregando ? (
-            <div className="care-state">Carregando indicadores do BigQuery…</div>
-          ) : erro ? (
-            <div className="care-state error">{erro}</div>
-          ) : filtrados.length === 0 ? (
-            <div className="care-state">{indicadoresDoTema.length === 0 ? "Ainda não há indicadores cadastrados neste tema no BigQuery." : "Nenhum indicador corresponde aos filtros selecionados."}</div>
-          ) : (
-            <div className="chart-grid">
-              {filtrados.map(item => (
-                <article className="panel wide radar-indicator" key={item.indicador_id}>
-                  <div className="panel-head">
-                    <div>
-                      <span>INDICADOR {item.indicador_id} · {item.periodo || "PERÍODO NÃO INFORMADO"}</span>
-                      <h3>{item.titulo}</h3>
-                    </div>
-                    <span className="radar-indicator-status">Metadados cadastrados</span>
+
+          <section className="radar-overview" aria-label={`Painel de infográficos de ${tema}`}>
+            <div className="radar-overview-heading">
+              <h3>Panorama do eixo</h3>
+              <p>Espaços para os infográficos que serão selecionados conforme os indicadores forem publicados.</p>
+            </div>
+            <div className="radar-infographic-grid">
+              {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
+                <article className="radar-infographic-card" key={nome}>
+                  <span className="radar-infographic-top">INFOGRÁFICO {String(index + 1).padStart(2, "0")}</span>
+                  <div className="radar-infographic-placeholder" aria-hidden="true">
+                    <div className="radar-infographic-symbol">{index === 0 ? "✦" : index === 1 ? "↗" : "◫"}</div>
                   </div>
-                  <div className="radar-indicator-tags">
-                    <span>{item.tema || "Tema não informado"}</span>
-                    <span>{item.territorialidade || "Territorialidade não informada"}</span>
-                    <span>{item.unidade || "Unidade não informada"}</span>
-                  </div>
-                  <div className="radar-indicator-preview">
-                    <div className="radar-preview-heading">
-                      <div>
-                        <small>VISUALIZAÇÃO DO INDICADOR</small>
-                        <h4>{item.tipo_visualizacao?.toLowerCase() === "linha" ? "Gráfico de linhas" : item.tipo_visualizacao || "Visualização a definir"}</h4>
-                      </div>
-                      <span>{item.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? "Dados do BigQuery" : "Sem série de dados"}</span>
-                    </div>
-                    {item.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? (
-                      <GraficoRendimento dados={dadosEixo01} />
-                    ) : (
-                      <div className="radar-chart-empty" role="status">
-                        <div className="radar-chart-grid" aria-hidden="true" />
-                        <div className="radar-chart-message">
-                          <strong>{carregandoDados ? "Carregando valores…" : erroDados || "Aguardando os valores deste indicador"}</strong>
-                          <p>O gráfico será exibido quando os dados e recortes estiverem disponíveis no BigQuery.</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="radar-indicator-footer">
-                    <div>
-                      <strong>Fonte</strong>
-                      <p>{item.fonte || "Não informada"}</p>
-                      {item.link_fonte && <a href={item.link_fonte} target="_blank" rel="noopener noreferrer">Consultar fonte ↗</a>}
-                    </div>
-                    <div>
-                      <strong>Status dos dados</strong>
-                      <p>{item.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? "Série publicada no BigQuery" : "Valores ainda não disponíveis"}</p>
-                    </div>
-                  </div>
+                  <h4>{nome}</h4>
+                  <p>Indicador a definir</p>
                 </article>
               ))}
             </div>
-          )}
+          </section>
+
+          <section className="radar-explorer" aria-label="Explorar indicadores do eixo">
+            <div className="radar-explorer-heading">
+              <div>
+                <span>EXPLORE OS DADOS</span>
+                <h3>Indicadores de {tema}</h3>
+                <p>Selecione um indicador para visualizar seus dados, gráfico e fonte.</p>
+              </div>
+            </div>
+            {carregando ? (
+              <div className="care-state">Carregando indicadores…</div>
+            ) : erro ? (
+              <div className="care-state error">{erro}</div>
+            ) : indicadoresDoTema.length === 0 ? (
+              <div className="care-state">Os indicadores deste eixo ainda não foram publicados.</div>
+            ) : (
+              <>
+                <label className="radar-indicator-select">
+                  SELECIONE UM INDICADOR
+                  <select value={indicadorId} onChange={event => setIndicadorId(event.target.value)}>
+                    <option value="">Escolha um indicador</option>
+                    {indicadoresDoTema.map(item => (
+                      <option value={item.indicador_id} key={item.indicador_id}>{tituloPublico(item.titulo)}</option>
+                    ))}
+                  </select>
+                </label>
+                {selecionado && (
+                  <article className="panel wide radar-indicator">
+                    <div className="panel-head">
+                      <div>
+                        <span>{selecionado.periodo || "Período não informado"}</span>
+                        <h3>{tituloPublico(selecionado.titulo)}</h3>
+                      </div>
+                    </div>
+                    <div className="radar-indicator-tags">
+                      <span>{selecionado.tema || "Tema não informado"}</span>
+                      <span>{selecionado.territorialidade || "Territorialidade não informada"}</span>
+                      <span>{selecionado.unidade || "Unidade não informada"}</span>
+                    </div>
+                    <div className="radar-indicator-preview">
+                      <div className="radar-preview-heading">
+                        <div>
+                          <small>VISUALIZAÇÃO DO INDICADOR</small>
+                          <h4>{selecionado.tipo_visualizacao?.toLowerCase() === "linha" ? "Gráfico de linhas" : selecionado.tipo_visualizacao || "Visualização"}</h4>
+                        </div>
+                      </div>
+                      {selecionado.indicador_id === "1.2-1" && dadosEixo01.some(d => d.id_indicador === "1.2-1" && d.publicar === "SIM") ? (
+                        <GraficoRendimento dados={dadosEixo01} />
+                      ) : (
+                        <div className="radar-chart-empty" role="status">
+                          <div className="radar-chart-grid" aria-hidden="true" />
+                          <div className="radar-chart-message">
+                            <strong>{carregandoDados ? "Carregando dados…" : erroDados || "Dados ainda não disponíveis"}</strong>
+                            <p>O gráfico aparecerá quando os dados deste indicador estiverem publicados.</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="radar-indicator-footer">
+                      <div>
+                        <strong>Fonte</strong>
+                        <p>{selecionado.fonte || "Não informada"}</p>
+                        {selecionado.link_fonte && (
+                          <a href={selecionado.link_fonte} target="_blank" rel="noopener noreferrer">Consultar fonte ↗</a>
+                        )}
+                      </div>
+                      {selecionado.observacoes && (
+                        <div><strong>Nota metodológica</strong><p>{selecionado.observacoes}</p></div>
+                      )}
+                    </div>
+                  </article>
+                )}
+              </>
+            )}
+          </section>
         </div>
       </section>
-
       <footer id="sobre">
-        <div>
-          <b>
-            MAPA DA
-            <br />
-            MULHER CARIOCA
-          </b>
-
-          <span>2026</span>
-        </div>
-
-        <p>
-          Uma iniciativa da Secretaria Especial
-          de Políticas para Mulheres e Cuidados
-          da Prefeitura do Rio.
-        </p>
-
+        <div><b>MAPA DA<br />MULHER CARIOCA</b><span>2026</span></div>
+        <p>Uma iniciativa da Secretaria Especial de Políticas para Mulheres e Cuidados da Prefeitura do Rio.</p>
         <div className="footer-links">
           <a href="#dados">Metodologia</a>
           <a href="#dados">Fontes dos dados</a>
-          <a href="#inicio">
-            Voltar ao topo ↑
-          </a>
+          <a href="#inicio">Voltar ao topo ↑</a>
         </div>
       </footer>
     </main>
