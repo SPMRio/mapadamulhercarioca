@@ -195,3 +195,6 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 @keyframes radar-bar-reveal{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media(prefers-reduced-motion:reduce){.radar-animated-line{animation:none;stroke-dashoffset:0}.radar-real-chart circle,.radar-eixo-linechart circle,.radar-dynamic-track>div{animation:none}}
 @media(max-width:680px){.radar-indicator-tabs{margin-left:12px}.radar-indicator-tabs button{padding:9px 15px}}
+
+.radar-table-update{padding:17px 24px 0;color:#586d84;font-size:12px}
+.radar-table-update strong{color:var(--navy)}
