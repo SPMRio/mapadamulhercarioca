@@ -129,3 +129,15 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .radar-select-empty{padding:18px 14px;color:#66798e;font-size:13px;text-align:center}
 .radar-indicator-preview{margin-top:2px}
 @media(max-width:680px){.radar-select-trigger{font-size:13px;padding:13px 14px}.radar-select-menu{border-radius:12px}.radar-select-option{font-size:13px;padding:12px}}
+
+
+/* Visão Geral — cards do Global Gender Gap Report */
+.radar-world-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.radar-world-card{background:#fff;border:1px solid #e1d5e9;border-radius:18px;padding:22px;display:flex;flex-direction:column;min-width:0;box-shadow:0 4px 16px rgba(23,56,95,.035)}
+.radar-world-card-label{color:#773aaf;font-weight:850;font-size:10px;letter-spacing:.12em}
+.radar-world-card strong{display:block;color:var(--purple);font-size:clamp(33px,3.8vw,53px);letter-spacing:-.045em;line-height:1.1;margin:18px 0 12px}
+.radar-world-card h4{font-size:16px;line-height:1.3;color:var(--navy);margin:0 0 7px}
+.radar-world-card p{font-size:12px;line-height:1.55;color:#63778b;margin:0}
+.radar-world-source{font-size:11px;line-height:1.5;color:#687b8f;margin:14px 0 0}
+@media(max-width:1050px){.radar-world-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.radar-world-grid{grid-template-columns:1fr}.radar-world-card{padding:19px}.radar-world-card strong{font-size:39px;margin:13px 0 9px}}
