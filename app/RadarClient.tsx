@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
 } from "react";
@@ -626,6 +627,10 @@ export default function RadarClient({
   const carregandoDados = false;
   const [tema, setTema] = useState(temas[0]);
   const [indicadorId, setIndicadorId] = useState("");
+  const [seletorAberto, setSeletorAberto] = useState(false);
+  const [buscaIndicador, setBuscaIndicador] = useState("");
+  const seletorRef = useRef<HTMLDivElement>(null);
+  const buscaRef = useRef<HTMLInputElement>(null);
 
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
@@ -633,9 +638,35 @@ export default function RadarClient({
     ), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
+  const indicadoresFiltrados = useMemo(() => {
+    const busca = buscaIndicador.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+    return indicadoresDoTema.filter(item =>
+      tituloPublico(item.titulo).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").includes(busca)
+    );
+  }, [indicadoresDoTema, buscaIndicador]);
+  useEffect(() => {
+    if (!seletorAberto) return;
+    const fecharFora = (event: PointerEvent) => {
+      if (seletorRef.current && !seletorRef.current.contains(event.target as Node)) setSeletorAberto(false);
+    };
+    const fecharEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSeletorAberto(false);
+    };
+    document.addEventListener("pointerdown", fecharFora);
+    document.addEventListener("keydown", fecharEscape);
+    return () => {
+      document.removeEventListener("pointerdown", fecharFora);
+      document.removeEventListener("keydown", fecharEscape);
+    };
+  }, [seletorAberto]);
+  useEffect(() => {
+    if (seletorAberto) buscaRef.current?.focus();
+  }, [seletorAberto]);
   function selecionarTema(novoTema: string) {
     setTema(novoTema);
     setIndicadorId("");
+    setSeletorAberto(false);
+    setBuscaIndicador("");
   }
 
   return (
@@ -721,15 +752,42 @@ export default function RadarClient({
               <div className="care-state">Os indicadores deste eixo ainda não foram publicados.</div>
             ) : (
               <>
-                <label className="radar-indicator-select">
-                  SELECIONE UM INDICADOR
-                  <select value={indicadorId} onChange={event => setIndicadorId(event.target.value)}>
-                    <option value="">Escolha um indicador</option>
-                    {indicadoresDoTema.map(item => (
-                      <option value={item.indicador_id} key={item.indicador_id}>{tituloPublico(item.titulo)}</option>
-                    ))}
-                  </select>
-                </label>
+                <div className="radar-indicator-select" ref={seletorRef}>
+                  <span className="radar-select-label">SELECIONE UM INDICADOR</span>
+                  <button type="button" className={`radar-select-trigger${seletorAberto ? " is-open" : ""}`}
+                    aria-haspopup="listbox" aria-expanded={seletorAberto} aria-controls="radar-indicator-options"
+                    onClick={() => { setBuscaIndicador(""); setSeletorAberto(aberto => !aberto); }}>
+                    <span>{selecionado ? tituloPublico(selecionado.titulo) : "Escolha um indicador"}</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                  {seletorAberto && (
+                    <div className="radar-select-menu">
+                      <div className="radar-select-search">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                        </svg>
+                        <input ref={buscaRef} type="search" value={buscaIndicador}
+                          aria-label="Buscar indicador" placeholder="Buscar indicador pelo nome..."
+                          onChange={event => setBuscaIndicador(event.target.value)} />
+                      </div>
+                      <div id="radar-indicator-options" className="radar-select-options" role="listbox" aria-label="Indicadores disponíveis">
+                        {indicadoresFiltrados.length ? indicadoresFiltrados.map(item => (
+                          <button type="button" role="option" key={item.indicador_id}
+                            aria-selected={indicadorId === item.indicador_id}
+                            className={`radar-select-option${indicadorId === item.indicador_id ? " selected" : ""}`}
+                            onClick={() => { setIndicadorId(item.indicador_id); setSeletorAberto(false); setBuscaIndicador(""); }}>
+                            <span>{tituloPublico(item.titulo)}</span>
+                            {indicadorId === item.indicador_id && <span className="radar-option-check" aria-hidden="true">✓</span>}
+                          </button>
+                        )) : <div className="radar-select-empty">Nenhum indicador encontrado.</div>}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {selecionado && (
                   <article className="panel wide radar-indicator">
                     <div className="panel-head">
@@ -743,12 +801,6 @@ export default function RadarClient({
                       <span>{selecionado.unidade || "Unidade não informada"}</span>
                     </div>
                     <div className="radar-indicator-preview">
-                      <div className="radar-preview-heading">
-                        <div>
-                          <small>VISUALIZAÇÃO DO INDICADOR</small>
-                          <h4>{selecionado.tipo_visualizacao?.toLowerCase() === "linha" ? "Gráfico de linhas" : selecionado.tipo_visualizacao || "Visualização"}</h4>
-                        </div>
-                      </div>
                       {selecionado.indicador_id === "1.2.1" && dadosEixo01.some(d => d.id_indicador === "1.2.1" && d.publicar === "SIM") ? (
                         <GraficoRendimento dados={dadosEixo01} />
                       ) : (
