@@ -523,6 +523,7 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
     String(d.publicar).toUpperCase() === "SIM" &&
     ["Mulheres", "Homens"].includes(d.serie_subrecorte) &&
     Number.isFinite(Number(d.valor)));
+  const [tooltip, setTooltip] = useState<null | { serie: string; periodo: string; valor: number; cor: string; left: number; top: number }>(null);
   if (!publicados.length) return null;
   const periodoOrdem = (p: string) => {
     const m = p.match(/^([1-4])T(\d{4})$/);
@@ -538,10 +539,16 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
   const min = Math.floor(Math.min(...valores) / 250) * 250;
   const max = Math.ceil(Math.max(...valores) / 250) * 250;
   const amplitude = max > min ? max - min : 1;
-  const W = 720, H = 310, left = 70, right = 24, top = 26, bottom = 54;
+  const W = 900, H = 390, left = 88, right = 28, top = 30, bottom = 54;
   const x = (i: number) => left + (periodos.length > 1 ? i / (periodos.length - 1) : 0.5) * (W-left-right);
   const y = (v: number) => top + (max-v)/amplitude * (H-top-bottom);
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const mostrarTooltip = (e: React.MouseEvent<SVGCircleElement> | React.FocusEvent<SVGCircleElement>, serie: string, periodo: string, valor: number, cor: string) => {
+    const ponto = e.currentTarget.getBoundingClientRect();
+    const container = e.currentTarget.closest(".radar-real-chart")?.getBoundingClientRect();
+    if (!container) return;
+    setTooltip({ serie, periodo, valor, cor, left: ponto.left + ponto.width / 2 - container.left, top: ponto.top - container.top - 10 });
+  };
   return (
     <div className="radar-real-chart">
       <div className="radar-series-legend">
@@ -554,11 +561,11 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
           const valor = min + amplitude * i/4;
           return <g key={i}>
             <line x1={left} x2={W-right} y1={y(valor)} y2={y(valor)} stroke="#e4dfeb" />
-            <text x={left-12} y={y(valor)+4} fontSize="12" fill="#52657b" textAnchor="end">{moeda(valor)}</text>
+            <text x={left-12} y={y(valor)+4} fontSize="14" fill="#52657b" textAnchor="end">{moeda(valor)}</text>
           </g>;
         })}
         {periodos.map((periodo, i) => <text key={periodo} x={x(i)} y={H-20}
-          textAnchor="middle" fontSize="13" fill="#30435f">{periodo}</text>)}
+          textAnchor="middle" fontSize="14" fill="#30435f">{periodo}</text>)}
         {series.map(serie => {
           const pontos = periodos.map((periodo, i) => {
             const dado = publicados.find(d => d.periodo === periodo && d.serie_subrecorte === serie.nome);
@@ -566,14 +573,26 @@ function GraficoRendimento({ dados }: { dados: DadoEixo01[] }) {
           }).filter((p): p is { periodo: string; indice: number; valor: number } => p !== null);
           return <g key={serie.nome}>
             {pontos.length > 1 && <polyline points={pontos.map(p => `${x(p.indice)},${y(p.valor)}`).join(" ")}
-              fill="none" stroke={serie.cor} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />}
-            {pontos.map(p => <circle key={p.periodo} cx={x(p.indice)} cy={y(p.valor)} r="5"
-              fill={serie.cor} stroke="#fff" strokeWidth="2">
-              <title>{serie.nome} · {p.periodo}: {moeda(p.valor)}</title>
-            </circle>)}
+              fill="none" stroke={serie.cor} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />}
+            {pontos.map(p => <circle key={p.periodo} cx={x(p.indice)} cy={y(p.valor)} r="6"
+              fill={serie.cor} stroke="#fff" strokeWidth="2" tabIndex={0} role="img"
+              aria-label={`${serie.nome}, ${p.periodo}: ${moeda(p.valor)}`}
+              onMouseEnter={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
+              onMouseMove={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
+              onMouseLeave={() => setTooltip(null)}
+              onFocus={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
+              onBlur={() => setTooltip(null)}
+            />)}
           </g>;
         })}
       </svg>
+      {tooltip && (
+        <div className="radar-chart-tooltip" style={{ left: tooltip.left, top: tooltip.top }} role="status">
+          <span className="radar-tooltip-series"><i style={{ background: tooltip.cor }} />{tooltip.serie}</span>
+          <strong>{tooltip.periodo}</strong>
+          <b>{moeda(tooltip.valor)}</b>
+        </div>
+      )}
       <div className="radar-data-table-wrap">
         <table>
           <thead><tr><th>Trimestre</th><th>Mulheres</th><th>Homens</th></tr></thead>
@@ -692,7 +711,6 @@ export default function RadarClient({
               <div>
                 <span>EXPLORE OS DADOS</span>
                 <h3>Indicadores de {tema}</h3>
-                <p>Selecione um indicador para visualizar seus dados, gráfico e fonte.</p>
               </div>
             </div>
             {carregando ? (
@@ -716,7 +734,6 @@ export default function RadarClient({
                   <article className="panel wide radar-indicator">
                     <div className="panel-head">
                       <div>
-                        <span>{selecionado.periodo || "Período não informado"}</span>
                         <h3>{tituloPublico(selecionado.titulo)}</h3>
                       </div>
                     </div>
