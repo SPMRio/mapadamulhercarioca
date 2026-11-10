@@ -615,7 +615,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
             })}
           </tr>)}</tbody>
         </table>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -708,12 +708,12 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
             <div className="radar-dynamic-track"><div style={{width:`${Math.max(1, Math.abs(Number(d.valor))/max*100)}%`}} /></div>
           </div>
         ))}
-      </div>
+      </div>}
       {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
         <table><thead><tr><th>Período</th><th>Categoria</th><th>Série</th><th>Valor</th></tr></thead>
           <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{fmt(d)}</td></tr>)}</tbody>
         </table>
-      </div>
+      </div>}
       {avisos.length > 0 && <p className="radar-data-notice">Alguns registros ainda exigem conferência de fonte, escala ou total. Consulte a documentação antes de utilizar esses dados como definitivos.</p>}
     </div>
   );
