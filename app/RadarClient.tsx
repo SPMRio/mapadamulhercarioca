@@ -640,6 +640,7 @@ export default function RadarClient({
   const carregandoDados = false;
   const [tema, setTema] = useState(temas[0]);
   const [indicadorId, setIndicadorId] = useState("");
+  const [mundoAberto, setMundoAberto] = useState(false);
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [buscaIndicador, setBuscaIndicador] = useState("");
   const seletorRef = useRef<HTMLDivElement>(null);
@@ -647,7 +648,8 @@ export default function RadarClient({
 
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
-      String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR")
+      String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR") &&
+      !/^\\s*(?:1[.\\-]1[.\\-]1\\s*[-–—:]?\\s*)?dados em texto corrido\\s*$/i.test(item.titulo.trim())
     ), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
@@ -678,6 +680,7 @@ export default function RadarClient({
   function selecionarTema(novoTema: string) {
     setTema(novoTema);
     setIndicadorId("");
+    setMundoAberto(false);
     setSeletorAberto(false);
     setBuscaIndicador("");
   }
@@ -734,41 +737,53 @@ export default function RadarClient({
           <section className="radar-overview" aria-label={`Painel de infográficos de ${tema}`}>
             <div className="radar-overview-heading">
               <h3>Panorama do eixo</h3>
-              {tema === "Visão geral" ? (
-                <p>Desigualdade de gênero no mundo · Brasil no Global Gender Gap Report 2024.</p>
-              ) : (
-                <p>Espaços para os infográficos que serão selecionados conforme os indicadores forem publicados.</p>
-              )}
+              <p>Espaços reservados para os infográficos que serão selecionados para destaque.</p>
             </div>
-            {tema === "Visão geral" ? (
-              <>
-                <div className="radar-world-grid">
-                  {destaquesDesigualdadeMundo.map((dado) => (
-                    <article className="radar-world-card" key={dado.rotulo}>
-                      <span className="radar-world-card-label">2024 · BRASIL</span>
-                      <strong>{dado.valor}</strong>
-                      <h4>{dado.rotulo}</h4>
-                      <p>{dado.detalhe}</p>
-                    </article>
-                  ))}
-                </div>
-                <p className="radar-world-source">Fonte: Fórum Econômico Mundial, <i>Global Gender Gap Report 2024</i>. Indicador 1.1.1 — Desigualdade de gênero no mundo.</p>
-              </>
-            ) : (
-              <div className="radar-infographic-grid">
-                {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
-                  <article className="radar-infographic-card" key={nome}>
-                    <span className="radar-infographic-top">INFOGRÁFICO {String(index + 1).padStart(2, "0")}</span>
-                    <div className="radar-infographic-placeholder" aria-hidden="true">
-                      <div className="radar-infographic-symbol">{index === 0 ? "✦" : index === 1 ? "↗" : "◫"}</div>
-                    </div>
-                    <h4>{nome}</h4>
-                    <p>Indicador a definir</p>
-                  </article>
-                ))}
-              </div>
-            )}
+            <div className="radar-infographic-grid">
+              {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
+                <article className="radar-infographic-card" key={nome}>
+                  <span className="radar-infographic-top">INFOGRÁFICO {String(index + 1).padStart(2, "0")}</span>
+                  <div className="radar-infographic-placeholder" aria-hidden="true">
+                    <div className="radar-infographic-symbol">{index === 0 ? "✦" : index === 1 ? "↗" : "◫"}</div>
+                  </div>
+                  <h4>{nome}</h4>
+                  <p>Indicador a definir</p>
+                </article>
+              ))}
+            </div>
           </section>
+
+          {tema === "Visão geral" && (
+            <section className="radar-world-section" aria-label="Desigualdade de gênero no mundo">
+              <button className="radar-world-toggle" type="button"
+                aria-expanded={mundoAberto} aria-controls="radar-world-content"
+                onClick={() => setMundoAberto(aberto => !aberto)}>
+                <span className="radar-world-number">1.1</span>
+                <span className="radar-world-toggle-label">
+                  <strong>Desigualdade de gênero no mundo</strong>
+                  <small>Dados do Brasil no Global Gender Gap Report 2024</small>
+                </span>
+                <svg className={mundoAberto ? "expanded" : ""} width="22" height="22" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              {mundoAberto && (
+                <div id="radar-world-content" className="radar-world-content">
+                  <div className="radar-world-grid">
+                    {destaquesDesigualdadeMundo.map(dado => (
+                      <article className="radar-world-card" key={dado.rotulo}>
+                        <span className="radar-world-card-label">2024 · BRASIL</span>
+                        <strong>{dado.valor}</strong>
+                        <h4>{dado.rotulo}</h4>
+                        <p>{dado.detalhe}</p>
+                      </article>
+                    ))}
+                  </div>
+                  <p className="radar-world-source">Fonte: Fórum Econômico Mundial, <i>Global Gender Gap Report 2024</i>.</p>
+                </div>
+              )}
+            </section>
+          )}
 
           <section className="radar-explorer" aria-label="Explorar indicadores do eixo">
             <div className="radar-explorer-heading">
