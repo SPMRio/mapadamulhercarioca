@@ -198,3 +198,6 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 
 .radar-table-update{padding:17px 24px 0;color:#586d84;font-size:12px}
 .radar-table-update strong{color:var(--navy)}
+
+/* Descrição oficial do indicador, abaixo do título */
+.radar-indicator-description{margin:10px 0 0;color:#60738a;font-size:14px;line-height:1.6;max-width:900px;font-weight:400}
