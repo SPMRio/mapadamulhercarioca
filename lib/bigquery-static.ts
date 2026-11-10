@@ -13,6 +13,7 @@ type QueryResult = {
 export type IndicadorRegistro = {
   indicador_id: string;
   titulo: string;
+  descricao: string;
   tema: string;
   periodo: string;
   unidade: string;
@@ -176,6 +177,7 @@ async function catalogo() {
   return Array.from(porId.entries()).map(([indicador_id,row]) => ({
     indicador_id,
     titulo: String(row.titulo ?? ""),
+    descricao: String(row.descricao ?? ""),
     tema: normalizarEixo(row.eixo ?? row.tema),
     periodo: String(row.periodo ?? ""),
     unidade: String(row.unidade ?? ""),
@@ -209,7 +211,7 @@ async function valoresEixo01() {
     }));
 }
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v7-datas"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v8-descricao"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
 export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v5-eixo"], {
