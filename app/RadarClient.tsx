@@ -629,14 +629,16 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
 function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   const [metrica, setMetrica] = useState("");
   const [ordem, setOrdem] = useState<"maior" | "menor">("maior");
+  const [pontoAtivo, setPontoAtivo] = useState<null | {periodo:string;serie:string;valor:string;cor:string;x:number;y:number}>(null);
   const registros = dados.filter(d => d.id_indicador === indicador.indicador_id);
   const validos = registros.filter(d => String(d.valor).trim() !== "" && Number.isFinite(Number(d.valor)));
-  const tipo = (indicador.tipo_visualizacao || "").trim().toLowerCase();
+  const tipoCadastrado = (indicador.tipo_visualizacao || "").trim().toLowerCase();
+  const tipo = ["1.2.2", "1.2.3", "1.3.3"].includes(indicador.indicador_id) ? "barras" : tipoCadastrado;
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   const fmt = (d: DadoEixo01) => {
     const n = Number(d.valor);
     if (d.tipo_valor === "moeda" || d.unidade_dado === "R$") return moeda(n);
-    if (d.unidade_dado === "%") return `${(d.escala === "0–1" ? n * 100 : n).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+    if (d.unidade_dado === "%" || /proporção|percentual/i.test(d.metrica ?? "")) return `${(d.escala === "0–1" ? n * 100 : n).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
     if (d.unidade_dado === "posição") return `${n}º`;
     return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   };
@@ -702,9 +704,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const uf = tipo === "barras_uf";
   const grupoTaxa = (m: string) => /taxa/i.test(m);
   const metricaAtual = metricas.includes(metrica) ? metrica : (metricas.find(m => !grupoTaxa(m)) || metricas[0]);
-  const linhas = uf
-    ? validos.filter(d => d.serie_subrecorte === metricaAtual && d.categoria_recorte !== "Brasil")
-    : validos.filter(d => d.tipo_valor !== "texto" && (indicador.indicador_id !== "1.2.6" || d.tipo_valor === "percentual"));
+  const linhas = validos.filter(d => d.tipo_valor !== "texto");
   const periodos = Array.from(new Set(linhas.map(d => d.periodo))).sort((a,b) => a.localeCompare(b, "pt-BR"));
   const nomeSerie = (d: DadoEixo01) => d.serie_subrecorte || d.categoria_recorte || (d.territorio && periodos.length > 1 ? d.territorio : "") || "Total";
   const seriesLinha = Array.from(new Set(linhas.map(nomeSerie))).filter(Boolean);
@@ -717,20 +717,22 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const maxLinha = Math.max(minLinha+1,...valoresLinha);
   const linhaX = (i: number) => 76 + (periodos.length > 1 ? i/(periodos.length-1) : .5)*700;
   const linhaY = (v: number) => 250-(v-minLinha)/(maxLinha-minLinha)*210;
-  const ordered = uf ? [...linhas].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor)) : linhas;
+  const metricasComparacao = indicador.indicador_id === "1.2.2";
+  const comparacao = linhas.filter(d => !metricasComparacao || !metricaUFAtual || d.metrica === metricaUFAtual);
+  const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
   const max = Math.max(1,...ordered.map(d => Math.abs(Number(d.valor))));
   const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
   return (
     <div className="radar-dynamic-view">
-      {uf && aba === "grafico" && <div className="radar-view-controls">
-        {metricas.map(m => <button type="button" key={m} className={metricaAtual === m ? "active" : ""} onClick={() => setMetrica(m)}>{m}</button>)}
+      {aba === "grafico" && metricasComparacao && <div className="radar-view-controls">
+        {metricasUF.map(m => <button type="button" key={m} className={metricaUFAtual === m ? "active" : ""} onClick={() => setMetricaUF(m)}>{m}</button>)}
         <button type="button" onClick={() => setOrdem(v => v === "maior" ? "menor" : "maior")}>Ordenar: {ordem === "maior" ? "maiores" : "menores"}</button>
       </div>}
       {serieX && aba === "grafico" && <div className="radar-view-legend">
         {Array.from(new Set(ordered.map(d => d.serie_subrecorte))).filter(Boolean).map(m => <span key={m}>{m}</span>)}
       </div>}
-      {aba === "grafico" && graficoTemporal && <svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
+      {aba === "grafico" && graficoTemporal && <div className="radar-line-wrap"><svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
         aria-label={`Evolução de ${indicador.titulo}`}>
         {[0,1,2,3,4].map(i => {
           const v = minLinha+(maxLinha-minLinha)*i/4;
@@ -743,23 +745,34 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
           const coords = periodos.map((p,j) => {
             const d = linhas.find(x => x.periodo === p && nomeSerie(x) === serie);
             if (!d) return null;
-            return { x: linhaX(j), y: linhaY(d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor)), label: fmt(d) };
-          }).filter((x): x is {x:number;y:number;label:string} => x !== null);
+            return { x: linhaX(j), y: linhaY(d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor)), label: fmt(d), periodo: p };
+          }).filter((x): x is {x:number;y:number;label:string;periodo:string} => x !== null);
           return <g key={serie}>{coords.length>1 && <polyline points={coords.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={cor} strokeWidth="3" className="radar-animated-line" pathLength={1} />}
-            {coords.map((p,j)=><circle key={j} cx={p.x} cy={p.y} r="5" fill={cor} stroke="white" strokeWidth="2"><title>{serie}: {p.label}</title></circle>)}
+            {coords.map((p,j)=><circle key={j} cx={p.x} cy={p.y} r="7" fill={cor} stroke="white" strokeWidth="2" tabIndex={0}
+              aria-label={`${p.periodo}, ${serie}: ${p.label}`}
+              onMouseEnter={() => setPontoAtivo({periodo:p.periodo,serie,valor:p.label,cor,x:p.x,y:p.y})}
+              onMouseLeave={() => setPontoAtivo(null)}
+              onFocus={() => setPontoAtivo({periodo:p.periodo,serie,valor:p.label,cor,x:p.x,y:p.y})}
+              onBlur={() => setPontoAtivo(null)}>
+              <title>{p.periodo} · {serie}: {p.label}</title>
+            </circle>)}
           </g>;
         })}
-      </svg>}
+      </svg>
+      {pontoAtivo && <div className="radar-line-point-tooltip" role="status" style={{left:`${pontoAtivo.x/820*100}%`,top:`${pontoAtivo.y/290*100}%`}}>
+        <span><i style={{background:pontoAtivo.cor}} />{pontoAtivo.serie}</span>
+        <strong>{pontoAtivo.periodo}</strong>
+        <b>{pontoAtivo.valor}</b>
+      </div>}
+      </div>}
       {aba === "grafico" && !graficoTemporal && <>
-        {tipo === "linhas" && <p style={{marginBottom:12}}>Este indicador tem apenas um período. A comparação está em barras, pois uma evolução em linhas exige pelo menos dois períodos.</p>}
-        {metricasUF.length > 1 && <div className="radar-view-controls">
-          {metricasUF.map(m => <button type="button" key={m} className={metricaUFAtual === m ? "active" : ""} onClick={() => setMetricaUF(m)}>{m}</button>)}
-        </div>}
+        {tipo === "linhas" && <p style={{marginBottom:12}}>Comparação dos valores disponíveis.</p>}
+        {/* A métrica só é filtrada para a comparação por UF. */}
         <div className="radar-dynamic-bars">
-        {ordered.filter(d => metricasUF.length <= 1 || d.metrica === metricaUFAtual).map((d,i) => (
+        {ordered.map((d,i) => (
           <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
             <div className="radar-dynamic-meta">
-              <span>{[d.territorio, d.categoria_recorte, d.serie_subrecorte, d.metrica].filter(Boolean).join(" · ") || d.periodo}</span>
+              <span>{[d.territorio, d.categoria_recorte, d.serie_subrecorte].filter(Boolean).join(" · ") || d.metrica || d.periodo}</span>
               <strong>{fmt(d)}</strong>
             </div>
             <div className="radar-dynamic-track"><div style={{width:`${Math.max(1, Math.abs(Number(d.valor))/max*100)}%`}} /></div>
@@ -1001,7 +1014,7 @@ export default function RadarClient({
                       </div>
                     </div>
                     <div className="radar-indicator-tags">
-                      <span>{selecionado.tema}</span>
+                      <span>{selecionado.tema === "Visão geral" ? "Radar de Dados" : selecionado.tema}</span>
                       {Array.from(new Set(dadosEixo01.filter(d => d.id_indicador === selecionado.indicador_id).map(d => d.territorio).filter(Boolean))).slice(0, 2).map(t => <span key={t}>{t}</span>)}
                     </div>
                     <div className="radar-indicator-tabs" role="tablist" aria-label="Visualização dos dados">
