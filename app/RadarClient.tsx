@@ -24,6 +24,8 @@ const temas = [
   "CODIM",
 ];
 
+const tituloEixo = (tema: string) => tema === "Visão geral" ? "Radar de Dados — Visão Geral" : tema;
+
 const faixas = [
   {
     label: "0–14",
@@ -842,7 +844,11 @@ export default function RadarClient({
       <div className="color-band" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
       <header className="topbar">
         <a className="brand" href="#inicio" aria-label="Mapa da Mulher Carioca - início">
-          <span>MAPA DA MULHER CARIOCA</span><b>Digital</b>
+          <span className="spm-mark" aria-label="SPM-Rio, Políticas para Mulheres e Cuidados">
+            <strong className="spm-mark-prefeitura">PREFEITURA RIO</strong>
+            <span className="spm-mark-divider" aria-hidden="true" />
+            <span className="spm-mark-org">Políticas para<br />Mulheres e Cuidados</span>
+          </span>
         </a>
         <nav aria-label="Navegação principal">
           <a href="#dados">Dados</a><a href="#sobre">Sobre</a>
@@ -852,24 +858,25 @@ export default function RadarClient({
         </button>
       </header>
       <section className="intro" id="inicio">
-        <div className="eyebrow"><span>MAPA DA MULHER CARIOCA DIGITAL</span><i>✦</i></div>
-        <h1>Radar de Dados — Visão Geral</h1>
-        <p>Um retrato vivo das desigualdades, conquistas e condições de vida das mulheres cariocas,
-          organizado para apoiar políticas públicas e transformar a cidade.</p>
+        <div className="eyebrow"><span>SECRETARIA DE POLÍTICAS PARA MULHERES E CUIDADOS</span><i>✦</i></div>
+        <h1>Mapa da Mulher Carioca</h1>
+        <p>Um panorama das condições de vida das mulheres no Rio de Janeiro, reunindo indicadores, análises e fontes para apoiar decisões e políticas públicas.</p>
         <div className="meta">
-          <span>Indicadores organizados por eixo temático</span>
-          <span>Fontes identificadas em cada indicador</span>
+          <span>12 eixos temáticos</span>
+          <span>Indicadores e séries históricas</span>
+          <span>Dados e fontes para consulta</span>
         </div>
+        <a className="intro-explore" href="#dados">Explorar indicadores <span aria-hidden="true">↓</span></a>
       </section>
       <section className="dashboard" id="dados">
         <aside className="sidebar">
-          <p>RADAR DE DADOS</p>
+          <p>EIXOS TEMÁTICOS</p>
           <div className="theme-list">
             {temas.map((item, index) => (
               <button type="button" className={tema === item ? "active" : ""}
                 onClick={() => selecionarTema(item)} key={item}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
-                {item === "Visão geral" ? "Visão Geral Radar de Dados" : item}
+                {tituloEixo(item)}
               </button>
             ))}
           </div>
@@ -881,15 +888,15 @@ export default function RadarClient({
           <div className="section-title">
             <span>{String(temas.indexOf(tema) + 1).padStart(2, "0")}.</span>
             <div>
-              <p>RADAR DE DADOS</p>
-              <h2>{tema === "Visão geral" ? "Visão Geral Radar de Dados" : tema}</h2>
+              <p>MAPA DA MULHER CARIOCA</p>
+              <h2>{tituloEixo(tema)}</h2>
             </div>
           </div>
 
           <section className="radar-overview" aria-label={`Painel de infográficos de ${tema}`}>
             <div className="radar-overview-heading">
-              <h3>Panorama do eixo</h3>
-              <p>Espaços reservados para os infográficos que serão selecionados para destaque.</p>
+              <h3>{tema === "Visão geral" ? "Panorama do Radar de Dados" : `Panorama de ${tema}`}</h3>
+              <p>Explore os indicadores, acompanhe os recortes disponíveis e consulte as fontes utilizadas.</p>
             </div>
             <div className="radar-infographic-grid">
               {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
@@ -1027,7 +1034,7 @@ export default function RadarClient({
         </div>
       </section>
       <footer id="sobre">
-        <div><b>MAPA DA<br />MULHER CARIOCA</b><span>2026</span></div>
+        <div><b>MAPA DA<br />MULHER CARIOCA</b></div>
         <p>Uma iniciativa da Secretaria Especial de Políticas para Mulheres e Cuidados da Prefeitura do Rio.</p>
         <div className="footer-links">
           <a href="#dados">Metodologia</a>
