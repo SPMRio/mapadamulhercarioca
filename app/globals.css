@@ -254,3 +254,12 @@ body{background:var(--paper)}
 footer{background:#410d7b}
 @media(max-width:900px){.intro{grid-template-columns:1.2fr .8fr;padding:52px 24px}.intro h1{font-size:clamp(47px,7vw,76px)}.intro-art svg{max-height:350px}}
 @media(max-width:650px){.intro{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:44px 22px 0;min-height:0}.intro h1{font-size:clamp(46px,12vw,64px)}.intro p{font-size:16px}.intro-art{align-self:center;width:100%;max-height:260px;overflow:hidden}.intro-art svg{width:min(100%,330px);max-height:none}.meta{gap:12px;margin-top:25px}.meta span{font-size:11px}.topbar{height:78px}}
+
+.radar-line-wrap{position:relative;width:100%;min-width:0}
+.radar-line-wrap svg{display:block;width:100%;height:auto;overflow:visible}
+.radar-eixo-linechart circle{cursor:crosshair;outline:none}
+.radar-eixo-linechart circle:focus{stroke:#1b2448;stroke-width:3}
+.radar-line-point-tooltip{position:absolute;transform:translate(-50%,calc(-100% - 16px));pointer-events:none;background:#fff;color:#24164d;border:1px solid #ded2f1;border-radius:12px;box-shadow:0 8px 24px #32175b29;padding:10px 14px;min-width:118px;z-index:4;text-align:left;white-space:nowrap}
+.radar-line-point-tooltip span{display:flex;align-items:center;gap:7px;font-size:11px}
+.radar-line-point-tooltip i{height:9px;width:9px;border-radius:50%;display:inline-block}
+.radar-line-point-tooltip strong,.radar-line-point-tooltip b{display:block;font-size:13px;margin-top:3px}
