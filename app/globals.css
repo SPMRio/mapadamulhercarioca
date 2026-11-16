@@ -220,3 +220,37 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .brand .spm-mark-divider{display:block;width:1px;height:36px;background:#b3b5c5;flex:none;letter-spacing:0}
 .brand .spm-mark-org{font-size:13px;font-weight:650;letter-spacing:normal;line-height:1.2}
 @media(max-width:560px){.brand .spm-mark{gap:7px}.brand .spm-mark-prefeitura{font-size:11px}.brand .spm-mark-org{font-size:10px}.brand .spm-mark-divider{height:28px}}
+
+/* Identidade editorial derivada da comunicação visual do Mapa da Mulher Carioca 2026 */
+:root{--purple:#6d2dad;--lilac:#c488f4;--navy:#13335a;--blue:#42b9eb;--yellow:#fad049;--paper:#faf7ff;--ink:#32175b}
+body{background:var(--paper)}
+.color-band{height:9px;grid-template-columns:25% 20% 10% 25% 10% 10%}
+.topbar{height:92px;border-bottom:1px solid #e5d7f3}
+.brand .spm-mark{color:#410d7b}
+.brand .spm-mark-prefeitura{font-weight:900;color:#410d7b}
+.brand .spm-mark-org{color:#6d2dad}
+.download{border-radius:7px;background:#410d7b}
+.intro{display:grid;grid-template-columns:minmax(0,1.14fr) minmax(280px,.86fr);gap:20px;align-items:center;min-height:510px;padding:64px 6vw 66px;background:#fff}
+.intro:after{display:none}
+.intro-content{position:relative;z-index:1}
+.eyebrow{color:#6d2dad;letter-spacing:.105em}
+.intro h1{font-size:clamp(54px,6vw,96px);max-width:780px;line-height:.96;letter-spacing:-.06em;color:#410d7b}
+.intro h1 span{color:#a566df}
+.intro p{font-size:18px;max-width:630px;color:#5b4c70}
+.intro-art{align-self:stretch;display:flex;align-items:end;justify-content:center;min-width:0;overflow:hidden}
+.intro-art svg{display:block;width:min(100%,480px);height:auto;max-height:430px}
+.meta{gap:22px;flex-wrap:wrap;margin-top:30px;color:#644c79}
+.meta span{border-left-color:#42b9eb;font-size:12px}
+.intro-explore{background:#6d2dad;border-radius:8px}
+.intro-explore:hover{background:#410d7b}
+.dashboard{border-top:7px solid #c488f4}
+.sidebar{background:#410d7b}
+.theme-list button{border-bottom-color:#7845a7;color:#e7d8f4}
+.theme-list button.active{background:#c488f4;color:#410d7b;border-radius:7px}
+.theme-list button.active span{color:#410d7b}
+.section-title p,.section-title>span{color:#6d2dad}
+.panel{border-color:#e5d7f3}
+.radar-overview,.radar-explorer{border-color:#e5d7f3}
+footer{background:#410d7b}
+@media(max-width:900px){.intro{grid-template-columns:1.2fr .8fr;padding:52px 24px}.intro h1{font-size:clamp(47px,7vw,76px)}.intro-art svg{max-height:350px}}
+@media(max-width:650px){.intro{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:44px 22px 0;min-height:0}.intro h1{font-size:clamp(46px,12vw,64px)}.intro p{font-size:16px}.intro-art{align-self:center;width:100%;max-height:260px;overflow:hidden}.intro-art svg{width:min(100%,330px);max-height:none}.meta{gap:12px;margin-top:25px}.meta span{font-size:11px}.topbar{height:78px}}
