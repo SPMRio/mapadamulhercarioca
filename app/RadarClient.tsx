@@ -724,6 +724,9 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const max = Math.max(1,...ordered.map(d => Math.abs(Number(d.valor))));
   const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
+  const barrasVerticais = tipo === "barras" || tipo === "barras_uf" || tipo === "barras_populacao";
+  const coresBarras = ["#7132b2", "#a66ddd", "#42b9eb", "#c58df1"];
+  const maxVertical = Math.max(1, ...ordered.map(d => Math.abs(Number(d.valor))));
   return (
     <div className="radar-dynamic-view">
       {aba === "grafico" && metricasComparacao && <div className="radar-view-controls">
@@ -769,17 +772,44 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       {aba === "grafico" && !graficoTemporal && <>
         {tipo === "linhas" && <p style={{marginBottom:12}}>Comparação dos valores disponíveis.</p>}
         {/* A métrica só é filtrada para a comparação por UF. */}
-        <div className="radar-dynamic-bars">
-        {ordered.map((d,i) => (
-          <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
-            <div className="radar-dynamic-meta">
-              <span>{[d.territorio, d.categoria_recorte, d.serie_subrecorte].filter(Boolean).join(" · ") || d.metrica || d.periodo}</span>
-              <strong>{fmt(d)}</strong>
+        {barrasVerticais ? (
+          <div className="radar-vertical-scroll" role="region" aria-label={`Comparação em barras verticais: ${indicador.titulo}`} tabIndex={0}>
+            <div className="radar-vertical-chart" style={{minWidth: `${Math.max(580, ordered.length * 62)}px`}}>
+              <div className="radar-vertical-plot">
+                {[0,1,2,3,4].map(tick => (
+                  <div className="radar-vertical-gridline" key={tick} style={{bottom:`${tick*25}%`}}>
+                    <span>{(maxVertical*tick/4).toLocaleString("pt-BR",{maximumFractionDigits:2})}</span>
+                  </div>
+                ))}
+                <div className="radar-vertical-columns">
+                  {ordered.map((d,i) => {
+                    const nome = d.territorio && d.territorio !== "Brasil" ? d.territorio :
+                      (d.serie_subrecorte || d.categoria_recorte || d.territorio || d.periodo);
+                    const valor = Math.abs(Number(d.valor));
+                    return <div className="radar-vertical-item" key={`${d.indicador_id}-${i}`}>
+                      <div className="radar-vertical-bar" style={{
+                        height:`${valor/maxVertical*100}%`,
+                        background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]
+                      }} tabIndex={0} role="img" aria-label={`${nome}: ${fmt(d)}`}>
+                        <span className="radar-vertical-tooltip">{nome}: {fmt(d)}</span>
+                      </div>
+                      <span className="radar-vertical-label" title={nome}>{nome}</span>
+                    </div>;
+                  })}
+                </div>
+              </div>
             </div>
-            <div className="radar-dynamic-track"><div style={{width:`${Math.max(1, Math.abs(Number(d.valor))/max*100)}%`}} /></div>
           </div>
-        ))}
-      </div></>}
+        ) : (
+          <div className="radar-dynamic-bars">
+            {ordered.map((d,i) => (
+              <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
+                <div className="radar-dynamic-meta"><span>{[d.territorio,d.categoria_recorte,d.serie_subrecorte].filter(Boolean).join(" · ") || d.metrica || d.periodo}</span><strong>{fmt(d)}</strong></div>
+                <div className="radar-dynamic-track"><div style={{width:`${Math.max(1,Math.abs(Number(d.valor))/max*100)}%`}} /></div>
+              </div>
+            ))}
+          </div>
+        )}</>
       {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
         <table><thead><tr><th>Período</th><th>Território</th><th>Categoria</th><th>Série</th><th>Métrica</th><th>Valor</th></tr></thead>
           <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.territorio}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{d.metrica}</td><td>{d.texto || fmt(d)}</td></tr>)}</tbody>
