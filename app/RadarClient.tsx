@@ -517,6 +517,7 @@ type DadoEixo01 = {
   territorio: string;
   categoria_recorte: string;
   serie_subrecorte: string;
+  metrica?: string;
   valor: string | number;
   publicar: string;
   atualizado_em?: string;
@@ -626,8 +627,9 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
 function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   const [metrica, setMetrica] = useState("");
   const [ordem, setOrdem] = useState<"maior" | "menor">("maior");
-  const validos = dados.filter(d => d.id_indicador === indicador.indicador_id && Number.isFinite(Number(d.valor)));
-  const tipo = indicador.tipo_visualizacao || "";
+  const registros = dados.filter(d => d.id_indicador === indicador.indicador_id);
+  const validos = registros.filter(d => String(d.valor).trim() !== "" && Number.isFinite(Number(d.valor)));
+  const tipo = (indicador.tipo_visualizacao || "").trim().toLowerCase();
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   const fmt = (d: DadoEixo01) => {
     const n = Number(d.valor);
@@ -636,7 +638,18 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     if (d.unidade_dado === "posição") return `${n}º`;
     return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   };
-  if (!validos.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis.</p></div>;
+  if (tipo === "texto" && aba === "grafico") return (
+    <div className="radar-world-grid">
+      {registros.filter(d => d.texto?.trim()).map((d, i) => (
+        <article className="radar-world-card" key={i}>
+          <span className="radar-world-card-label">{[d.periodo, d.territorio].filter(Boolean).join(" · ")}</span>
+          <h4>{d.categoria_recorte || "Informação"}</h4>
+          <p>{d.texto}</p>
+        </article>
+      ))}
+    </div>
+  );
+  if (!validos.length && tipo !== "texto") return <div className="radar-chart-empty"><p>Dados ainda não disponíveis.</p></div>;
   if (tipo === "cards" && aba === "grafico") return (
     <>
       <div className="radar-world-grid">
@@ -652,6 +665,37 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     </>
   );
   const isPir = tipo === "piramide";
+  if (isPir && aba === "grafico") {
+    const faixas = Array.from(new Set(validos.map(d => d.categoria_recorte))).filter(Boolean);
+    const maxPir = Math.max(1, ...validos.map(d => Math.abs(Number(d.valor))));
+    const fmtPir = (n: number) => Math.abs(n).toLocaleString("pt-BR", {maximumFractionDigits:0});
+    return (
+      <div style={{padding:"16px 4px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 125px 1fr",gap:12,marginBottom:14,textAlign:"center",fontWeight:700}}>
+          <span>Homens</span><span>Faixa etária</span><span>Mulheres</span>
+        </div>
+        {faixas.map(faixa => {
+          const homens = Math.abs(Number(validos.find(d => d.categoria_recorte === faixa && /homens/i.test(d.serie_subrecorte))?.valor ?? 0));
+          const mulheres = Math.abs(Number(validos.find(d => d.categoria_recorte === faixa && /mulheres/i.test(d.serie_subrecorte))?.valor ?? 0));
+          return <div key={faixa} style={{display:"grid",gridTemplateColumns:"1fr 125px 1fr",alignItems:"center",gap:12,marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:8}}>
+              <small>{fmtPir(homens)}</small>
+              <div style={{width:"75%",display:"flex",justifyContent:"flex-end"}}>
+                <div title={`Homens: ${fmtPir(homens)}`} style={{width:`${homens/maxPir*100}%`,height:22,background:"#42b3df",borderRadius:"5px 0 0 5px"}} />
+              </div>
+            </div>
+            <span style={{fontSize:12,textAlign:"center"}}>{faixa}</span>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:"75%"}}>
+                <div title={`Mulheres: ${fmtPir(mulheres)}`} style={{width:`${mulheres/maxPir*100}%`,height:22,background:"#7030b5",borderRadius:"0 5px 5px 0"}} />
+              </div>
+              <small>{fmtPir(mulheres)}</small>
+            </div>
+          </div>;
+        })}
+      </div>
+    );
+  }
   const metricas = Array.from(new Set(validos.map(d => d.serie_subrecorte).filter(Boolean)));
   const uf = tipo === "barras_uf";
   const grupoTaxa = (m: string) => /taxa/i.test(m);
@@ -660,7 +704,12 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     ? validos.filter(d => d.serie_subrecorte === metricaAtual && d.categoria_recorte !== "Brasil")
     : validos.filter(d => d.tipo_valor !== "texto" && (indicador.indicador_id !== "1.2.6" || d.tipo_valor === "percentual"));
   const periodos = Array.from(new Set(linhas.map(d => d.periodo))).sort((a,b) => a.localeCompare(b, "pt-BR"));
-  const seriesLinha = Array.from(new Set(linhas.map(d => d.serie_subrecorte))).filter(Boolean);
+  const nomeSerie = (d: DadoEixo01) => d.serie_subrecorte || d.categoria_recorte || (d.territorio && periodos.length > 1 ? d.territorio : "") || "Total";
+  const seriesLinha = Array.from(new Set(linhas.map(nomeSerie))).filter(Boolean);
+  const graficoTemporal = tipo === "linhas" && periodos.length > 1;
+  const metricasUF = Array.from(new Set(validos.map(d => d.metrica).filter((m): m is string => Boolean(m))));
+  const [metricaUF, setMetricaUF] = [metrica, setMetrica];
+  const metricaUFAtual = metricasUF.includes(metricaUF) ? metricaUF : (metricasUF.find(m => /quantidade|casos/i.test(m)) || metricasUF[0]);
   const valoresLinha = linhas.map(d => d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor));
   const minLinha = Math.min(0, ...valoresLinha);
   const maxLinha = Math.max(minLinha+1,...valoresLinha);
@@ -679,7 +728,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       {serieX && aba === "grafico" && <div className="radar-view-legend">
         {Array.from(new Set(ordered.map(d => d.serie_subrecorte))).filter(Boolean).map(m => <span key={m}>{m}</span>)}
       </div>}
-      {aba === "grafico" && tipo === "linhas" && <svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
+      {aba === "grafico" && graficoTemporal && <svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
         aria-label={`Evolução de ${indicador.titulo}`}>
         {[0,1,2,3,4].map(i => {
           const v = minLinha+(maxLinha-minLinha)*i/4;
@@ -690,7 +739,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         {seriesLinha.map((serie,i) => {
           const cor = ["#7030b5","#42b3df","#e19c29","#21977e"][i%4];
           const coords = periodos.map((p,j) => {
-            const d = linhas.find(x => x.periodo === p && x.serie_subrecorte === serie);
+            const d = linhas.find(x => x.periodo === p && nomeSerie(x) === serie);
             if (!d) return null;
             return { x: linhaX(j), y: linhaY(d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor)), label: fmt(d) };
           }).filter((x): x is {x:number;y:number;label:string} => x !== null);
@@ -699,20 +748,25 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
           </g>;
         })}
       </svg>}
-      {aba === "grafico" && <div className={tipo === "linhas" ? "radar-dynamic-bars radar-bars-secondary" : "radar-dynamic-bars"}>
-        {ordered.map((d,i) => (
+      {aba === "grafico" && !graficoTemporal && <>
+        {tipo === "linhas" && <p style={{marginBottom:12}}>Este indicador tem apenas um período. A comparação está em barras, pois uma evolução em linhas exige pelo menos dois períodos.</p>}
+        {metricasUF.length > 1 && <div className="radar-view-controls">
+          {metricasUF.map(m => <button type="button" key={m} className={metricaUFAtual === m ? "active" : ""} onClick={() => setMetricaUF(m)}>{m}</button>)}
+        </div>}
+        <div className="radar-dynamic-bars">
+        {ordered.filter(d => metricasUF.length <= 1 || d.metrica === metricaUFAtual).map((d,i) => (
           <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
             <div className="radar-dynamic-meta">
-              <span>{isPir ? `${d.categoria_recorte} · ${d.serie_subrecorte}` : (uf ? d.categoria_recorte : `${d.periodo} · ${d.categoria_recorte} · ${d.serie_subrecorte}`)}</span>
+              <span>{[d.territorio, d.categoria_recorte, d.serie_subrecorte, d.metrica].filter(Boolean).join(" · ") || d.periodo}</span>
               <strong>{fmt(d)}</strong>
             </div>
             <div className="radar-dynamic-track"><div style={{width:`${Math.max(1, Math.abs(Number(d.valor))/max*100)}%`}} /></div>
           </div>
         ))}
-      </div>}
+      </div></>}
       {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
-        <table><thead><tr><th>Período</th><th>Categoria</th><th>Série</th><th>Valor</th></tr></thead>
-          <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{fmt(d)}</td></tr>)}</tbody>
+        <table><thead><tr><th>Período</th><th>Território</th><th>Categoria</th><th>Série</th><th>Métrica</th><th>Valor</th></tr></thead>
+          <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.territorio}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{d.metrica}</td><td>{d.texto || fmt(d)}</td></tr>)}</tbody>
         </table>
       </div>}
       {avisos.length > 0 && <p className="radar-data-notice">Alguns registros ainda exigem conferência de fonte, escala ou total. Consulte a documentação antes de utilizar esses dados como definitivos.</p>}
