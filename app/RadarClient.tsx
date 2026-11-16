@@ -1046,7 +1046,16 @@ export default function RadarClient({
                     </div>
                     <div className="radar-indicator-tags">
                       <span>{selecionado.tema === "Visão geral" ? "Radar de Dados" : selecionado.tema}</span>
-                      {Array.from(new Set(dadosEixo01.filter(d => d.id_indicador === selecionado.indicador_id).map(d => d.territorio).filter(Boolean))).slice(0, 2).map(t => <span key={t}>{t}</span>)}
+                      {(() => {
+                        const territorios = Array.from(new Set(dadosEixo01
+                          .filter(d => d.id_indicador === selecionado.indicador_id)
+                          .map(d => d.territorio?.trim())
+                          .filter((t): t is string => Boolean(t))));
+                        if (territorios.length > 2) {
+                          return <span>{territorios.length} territórios</span>;
+                        }
+                        return territorios.map(t => <span key={t}>{t}</span>);
+                      })()}
                     </div>
                     <div className="radar-indicator-tabs" role="tablist" aria-label="Visualização dos dados">
                       <button type="button" role="tab" id="indicador-aba-grafico" aria-controls="indicador-conteudo" aria-selected={abaVisualizacao === "grafico"}
