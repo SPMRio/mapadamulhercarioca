@@ -201,3 +201,15 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 
 /* Descrição oficial do indicador, abaixo do título */
 .radar-indicator-description{margin:10px 0 0;color:#60738a;font-size:14px;line-height:1.6;max-width:900px;font-weight:400}
+
+/* Identidade institucional do mapa — novembro/2026 */
+.brand{display:flex;align-items:center;line-height:1.1;min-width:0}
+.spm-mark{display:flex;align-items:center;gap:13px;color:#17385f;letter-spacing:normal}
+.spm-mark-prefeitura{font-size:15px;line-height:1.05;font-weight:900;max-width:106px}
+.spm-mark-divider{height:36px;width:1px;background:#b3b5c5;flex:none}
+.spm-mark-org{font-size:13px;line-height:1.2;font-weight:650;color:#604096}
+.intro h1{max-width:1050px;line-height:1.02}
+.intro-explore{display:inline-flex;align-items:center;gap:22px;margin-top:32px;background:var(--navy);color:#fff;padding:15px 22px;border-radius:9px;font-size:14px;font-weight:800}
+.intro-explore:hover{background:var(--purple)}
+.intro-explore span{font-size:18px;color:var(--yellow)}
+@media(max-width:560px){.spm-mark{gap:7px}.spm-mark-prefeitura{font-size:11px;max-width:72px}.spm-mark-org{font-size:10px}.spm-mark-divider{height:28px}.intro-explore{margin-top:24px}}
