@@ -755,7 +755,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
               onMouseLeave={() => setPontoAtivo(null)}
               onFocus={() => setPontoAtivo({periodo:p.periodo,serie,valor:p.label,cor,x:p.x,y:p.y})}
               onBlur={() => setPontoAtivo(null)}>
-              <title>{p.periodo} · {serie}: {p.label}</title>
+              
             </circle>)}
           </g>;
         })}
