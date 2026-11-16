@@ -24,7 +24,7 @@ const temas = [
   "CODIM",
 ];
 
-const tituloEixo = (tema: string) => tema === "Visão geral" ? "Radar de Dados — Visão Geral" : tema;
+const tituloEixo = (tema: string) => tema === "Visão geral" ? "Radar de Dados" : tema;
 
 const faixas = [
   {
@@ -919,7 +919,7 @@ export default function RadarClient({
             </div>
           </div>
 
-          <section className="radar-overview" aria-label={`Painel de infográficos de ${tema}`}>
+          <section className="radar-overview" aria-label={`Painel de infográficos de ${tituloEixo(tema)}`}>
             <div className="radar-overview-heading">
               <h3>{tema === "Visão geral" ? "Panorama do Radar de Dados" : `Panorama de ${tema}`}</h3>
               <p>Explore os indicadores, acompanhe os recortes disponíveis e consulte as fontes utilizadas.</p>
@@ -942,7 +942,7 @@ export default function RadarClient({
             <div className="radar-explorer-heading">
               <div>
                 <span>EXPLORE OS DADOS</span>
-                <h3>Indicadores de {tema}</h3>
+                <h3>Indicadores de {tituloEixo(tema)}</h3>
               </div>
             </div>
             {carregando ? (
