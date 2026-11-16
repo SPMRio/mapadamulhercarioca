@@ -636,7 +636,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   // Para este eixo, a apresentação solicitada prevalece sobre metadados ainda não republicados.
   // O catálogo continua disponível para os outros indicadores.
   const tipo = indicador.indicador_id === "1.2.3" ? "pizza"
-    : ["1.2.2", "1.3.3"].includes(indicador.indicador_id) ? "barras"
+    : ["1.2.2", "1.2.5", "1.3.3"].includes(indicador.indicador_id) ? "barras"
     : tipoCadastrado;
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   const fmt = (d: DadoEixo01) => {
@@ -749,7 +749,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const maxLinha = Math.max(minLinha+1,...valoresLinha);
   const linhaX = (i: number) => 76 + (periodos.length > 1 ? i/(periodos.length-1) : .5)*700;
   const linhaY = (v: number) => 250-(v-minLinha)/(maxLinha-minLinha)*210;
-  const metricasComparacao = indicador.indicador_id === "1.2.2";
+  const metricasComparacao = ["1.2.2", "1.2.5"].includes(indicador.indicador_id);
   const comparacao = linhas.filter(d => !metricasComparacao || !metricaUFAtual || d.metrica === metricaUFAtual);
   const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
   const max = Math.max(1,...ordered.map(d => Math.abs(Number(d.valor))));
