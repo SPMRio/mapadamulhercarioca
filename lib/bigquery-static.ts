@@ -31,6 +31,7 @@ export type DadoEixo01Registro = {
   territorio: string;
   categoria_recorte: string;
   serie_subrecorte: string;
+  metrica?: string;
   valor: string | number;
   publicar: string;
   tipo_valor?: string;
@@ -199,6 +200,7 @@ async function valoresEixo01() {
       territorio: String(row.territorio ?? ""),
       categoria_recorte: String(row.categoria ?? row.categoria_recorte ?? ""),
       serie_subrecorte: String(row.serie ?? row.serie_subrecorte ?? ""),
+      metrica: String(row.metrica ?? ""),
       valor: row.valor == null ? "" : Number(row.valor),
       publicar: "SIM",
       tipo_valor: String(row.tipo_valor ?? ""),
