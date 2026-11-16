@@ -633,7 +633,11 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const registros = dados.filter(d => d.id_indicador === indicador.indicador_id);
   const validos = registros.filter(d => String(d.valor).trim() !== "" && Number.isFinite(Number(d.valor)));
   const tipoCadastrado = (indicador.tipo_visualizacao || "").trim().toLowerCase();
-  const tipo = ["1.2.2", "1.2.3", "1.3.3"].includes(indicador.indicador_id) ? "barras" : tipoCadastrado;
+  // Para este eixo, a apresentação solicitada prevalece sobre metadados ainda não republicados.
+  // O catálogo continua disponível para os outros indicadores.
+  const tipo = indicador.indicador_id === "1.2.3" ? "pizza"
+    : ["1.2.2", "1.3.3"].includes(indicador.indicador_id) ? "barras"
+    : tipoCadastrado;
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   const fmt = (d: DadoEixo01) => {
     const n = Number(d.valor);
@@ -669,6 +673,33 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       </div>
     </>
   );
+  // O total é um agregador e nunca pode virar uma terceira fatia.
+  if (tipo === "pizza" && aba === "grafico") {
+    const fatias = ["Homens", "Mulheres"].map(nome => {
+      const registro = validos.find(d =>
+        (d.serie_subrecorte || d.categoria_recorte).trim().toLocaleLowerCase("pt-BR") === nome.toLocaleLowerCase("pt-BR")
+      );
+      return { nome, registro, valor: registro ? Math.max(0, Number(registro.valor)) : 0 };
+    }).filter(fatia => fatia.registro && fatia.valor > 0);
+    const total = fatias.reduce((soma, fatia) => soma + fatia.valor, 0);
+    if (fatias.length !== 2 || total <= 0) return <div className="radar-chart-empty"><p>Dados de homens e mulheres indisponíveis para esta visualização.</p></div>;
+    const cores = ["#42b9eb", "#7132b2"];
+    const porcentagem = fatias[0].valor / total * 100;
+    return <div className="radar-pie-layout">
+      <div className="radar-pie-circle" role="img"
+        aria-label={fatias.map(f => `${f.nome}: ${f.valor.toLocaleString("pt-BR")} habitantes (${(f.valor/total*100).toLocaleString("pt-BR",{maximumFractionDigits:2})}%)`).join("; ")}
+        style={{background: `conic-gradient(${cores[0]} 0% ${porcentagem}%, ${cores[1]} ${porcentagem}% 100%)`}}/>
+      <div className="radar-pie-legend">
+        <strong>Distribuição da população por sexo</strong>
+        {fatias.map((f,i) => <div className="radar-pie-legend-item" key={f.nome}>
+          <span className="radar-pie-legend-name"><i style={{background:cores[i]}}/>{f.nome}</span>
+          <b>{f.valor.toLocaleString("pt-BR")} habitantes</b>
+          <span>{(f.valor/total*100).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})}%</span>
+        </div>)}
+        <small>Total: {total.toLocaleString("pt-BR")} habitantes</small>
+      </div>
+    </div>;
+  }
   const isPir = tipo === "piramide";
   if (isPir && aba === "grafico") {
     const faixas = Array.from(new Set(validos.map(d => d.categoria_recorte))).filter(Boolean);
