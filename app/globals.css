@@ -213,3 +213,10 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .intro-explore:hover{background:var(--purple)}
 .intro-explore span{font-size:18px;color:var(--yellow)}
 @media(max-width:560px){.spm-mark{gap:7px}.spm-mark-prefeitura{font-size:11px;max-width:72px}.spm-mark-org{font-size:10px}.spm-mark-divider{height:28px}.intro-explore{margin-top:24px}}
+
+/* Sobrescreve as regras antigas de texto da antiga logomarca */
+.brand .spm-mark{display:flex;align-items:center;gap:13px;font-size:initial;font-weight:normal;letter-spacing:normal}
+.brand .spm-mark-prefeitura{font-size:15px;letter-spacing:0;font-weight:900}
+.brand .spm-mark-divider{display:block;width:1px;height:36px;background:#b3b5c5;flex:none;letter-spacing:0}
+.brand .spm-mark-org{font-size:13px;font-weight:650;letter-spacing:normal;line-height:1.2}
+@media(max-width:560px){.brand .spm-mark{gap:7px}.brand .spm-mark-prefeitura{font-size:11px}.brand .spm-mark-org{font-size:10px}.brand .spm-mark-divider{height:28px}}
