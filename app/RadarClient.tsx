@@ -812,7 +812,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       {aba === "grafico" && graficoTemporal && <div className="radar-line-wrap"><svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
         aria-label={`Evolução de ${indicador.titulo}`}>
         {marcasLinha.map(v => {
-          return <g key={i}><line x1="76" x2="776" y1={linhaY(v)} y2={linhaY(v)} stroke="#e8e0ec" />
+          return <g key={v}><line x1="76" x2="776" y1={linhaY(v)} y2={linhaY(v)} stroke="#e8e0ec" />
             <text x="65" y={linhaY(v)+5} fontSize="12" textAnchor="end" fill="#53657c">{Math.round(v).toLocaleString("pt-BR",{maximumFractionDigits:0})}</text></g>;
         })}
         {periodos.map((p,i) => <text key={p} x={linhaX(i)} y="277" fontSize="12" textAnchor="middle" fill="#53657c">{p}</text>)}
