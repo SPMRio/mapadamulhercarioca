@@ -4,7 +4,19 @@ import React from "react";
 function Pessoa({cor="#7131ae",saia=false,tamanho=54}:{cor?:string;saia?:boolean;tamanho?:number}){
 return <svg width={tamanho} height={tamanho*1.35} viewBox="0 0 64 88" fill="none" aria-hidden="true"><circle cx="32" cy="11" r="10" fill={cor}/>{saia?<path d="M24 23h16l8 35H16l8-35Z" fill={cor}/>:<rect x="21" y="23" width="22" height="37" rx="8" fill={cor}/>}<path d="M24 27 15 51M40 27l9 24" stroke={cor} strokeWidth="8" strokeLinecap="round"/><path d="M25 57v23M39 57v23" stroke={cor} strokeWidth="8" strokeLinecap="round"/></svg>}
 function PessoasIlustradas({compacta=false}:{compacta?:boolean}){return <div className={`ri-people-art${compacta?" compact":""}`} aria-hidden="true"><Pessoa cor="#7131ae" saia tamanho={compacta?40:55}/><Pessoa cor="#42b9e5" tamanho={compacta?40:55}/></div>}
-function MundoIlustrado(){return <svg className="ri-world-art" viewBox="0 0 190 150" fill="none" aria-hidden="true"><path d="M44 12 61 91" stroke="#7435b1" strokeWidth="5" strokeLinecap="round"/><path d="M64 18Q111 -3 168 21v74q-57 -24-104 -3V18Z" fill="#7435b1"/><path d="m86 36 15-8 14 4 5 10-10 3-4 14-12 5-8-8-4-12Zm37-3 17-1 8 10-9 13-5 16-10 8-7-6 3-20Zm-24 38 10 7 4 11-8 3-7-10Z" fill="#f9eafa"/><circle cx="110" cy="107" r="12" fill="#7435b1"/><path d="M99 124h22l9 21H90l9-21Z" fill="#7435b1"/><path d="M87 143h57" stroke="#7435b1" strokeWidth="7" strokeLinecap="round"/><path d="M10 142h57v-18H38v-15H10v33Z" fill="#7435b1"/></svg>}
+function MundoIlustrado() {
+  return <svg className="ri-world-art" viewBox="0 0 220 240" fill="none" aria-hidden="true">
+    <path d="M67 17 109 180" stroke="#7430ae" strokeWidth="6" strokeLinecap="round"/>
+    <path d="M82 30C113 39 148 12 193 31L200 105C170 87 143 106 99 103L82 30Z" fill="#7430ae"/>
+    <path d="m107 49 20-12 20 5 7 12-10 6-4 18-15 4-7-13-11-7Zm44-6 20 0 12 13-10 12-11 9-3 13-11-8 2-22ZM126 83l10 8 1 11-10-4-7-9Z" fill="#fff" opacity=".96"/>
+    <circle cx="155" cy="135" r="16" fill="#7430ae"/>
+    <path d="M143 157Q155 150 168 160L181 197 151 192 139 177 133 200 119 197 131 163Z" fill="#7430ae"/>
+    <path d="M140 169 113 172M167 166l22 26" stroke="#7430ae" strokeWidth="12" strokeLinecap="round"/>
+    <path d="m150 191 16 29m-30-28-9 23" stroke="#7430ae" strokeWidth="13" strokeLinecap="round"/>
+    <path d="M22 203h30v-22h29v22h23v22H22v-22Z" fill="#7430ae"/>
+    <path d="M95 226h105" stroke="#7430ae" strokeWidth="7" strokeLinecap="round"/>
+  </svg>;
+}
 function MulheresIlustradas(){return <div className="ri-women-art" aria-hidden="true">{["#caa1e9","#9959cb","#7131ae","#caa1e9"].map((cor,i)=><Pessoa key={i} cor={cor} saia tamanho={46}/>)}</div>}
 function TestemunhasIlustradas(){return <svg className="ri-witness-art" viewBox="0 0 110 80" fill="none" aria-hidden="true"><path d="M6 41Q55-13 104 41Q55 94 6 41Z" fill="#dfbbf4" stroke="#7131ae" strokeWidth="4"/><circle cx="55" cy="41" r="23" fill="#7131ae"/><circle cx="55" cy="41" r="10" fill="#fff"/><circle cx="55" cy="41" r="5" fill="#7131ae"/></svg>}
 function RelogiosIlustrados(){return <div className="ri-clocks" aria-hidden="true">{Array.from({length:6},(_,i)=><svg key={i} width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="17" r="12" stroke="#f6d4ff" strokeWidth="2.5"/><path d="M16 8v9l6 4M12 3h8" stroke="#f6d4ff" strokeWidth="2.5" strokeLinecap="round"/></svg>)}</div>}
@@ -34,13 +46,16 @@ export default function RadarInfografico() {
       </div>
       <div className="ri-top-grid">
         <article className="ri-card ri-world">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">◎</span><h4>Mundo</h4></div>
-          <p className="ri-subhead">Brasil no Índice Global de Lacuna de Gênero (2024)</p>
-          <div className="ri-world-composition"><div className="ri-world-stats">
-            <Stat valor="70º" legenda="lugar no mundo, entre 146 países" />
-            <Stat valor="16º" legenda="lugar na América Latina" />
+          <h4 className="ri-world-title">ÍNDICE GLOBAL DE DISPARIDADE DE GÊNERO</h4>
+          <div className="ri-world-body">
+            <div className="ri-world-copy">
+              <span className="ri-world-country">BRASIL</span>
+              <div className="ri-world-rank"><strong>70º</strong><p>País no mundo</p></div>
+              <div className="ri-world-rank"><strong>16º</strong><p>País na América Latina</p></div>
+            </div>
+            <MundoIlustrado />
           </div>
-          <MundoIlustrado /></div><small className="ri-source">Fonte: Global Gender Gap Report 2024, World Economic Forum</small>
+          <small className="ri-world-source">Fonte: Global Gender Gap Report 2024, World Economic Forum</small>
         </article>
         <article className="ri-card">
           <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">♙</span><h4>Brasil · População</h4></div>
