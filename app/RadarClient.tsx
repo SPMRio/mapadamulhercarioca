@@ -1126,7 +1126,7 @@ export default function RadarClient({
                         </div>
                       )}
                       {dadosEixo01.some(d => d.id_indicador === selecionado.indicador_id) ? (
-                        selecionado.indicador_id === "1.2.1" ? <GraficoRendimento dados={dadosEixo01} aba={abaVisualizacao} /> : <VisualizacaoEixo1 indicador={selecionado} dados={dadosEixo01} aba={abaVisualizacao} />
+                        <VisualizacaoEixo1 indicador={selecionado} dados={dadosEixo01} aba={abaVisualizacao} />
                       ) : (
                         <div className="radar-chart-empty" role="status">
                           <div className="radar-chart-grid" aria-hidden="true" />
