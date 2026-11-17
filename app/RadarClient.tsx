@@ -649,6 +649,105 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
 }
 
 
+// Barras empilhadas: uma barra por combinação de dimensões, uma cor por série.
+// Valores são agregados somente dentro da mesma combinação de período, território,
+// categoria, série e métrica; nunca mistura métricas distintas.
+function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
+  const [metricaSelecionada, setMetricaSelecionada] = useState("");
+  const validos = dados.filter(d => d.tipo_valor !== "texto" && String(d.valor).trim() !== "" && Number.isFinite(Number(d.valor)));
+  const metricas = Array.from(new Set(validos.map(d => (d.metrica ?? "").trim()).filter(Boolean)));
+  const metrica = metricas.includes(metricaSelecionada) ? metricaSelecionada : metricas[0] || "";
+  const linhas = metricas.length > 1 ? validos.filter(d => (d.metrica ?? "").trim() === metrica) : validos;
+  const distintos = (selecionar: (d: DadoEixo01) => string) =>
+    new Set(linhas.map(d => selecionar(d).trim()).filter(Boolean)).size;
+  const multiTerritorio = distintos(d => d.territorio) > 1;
+  const multiCategoria = distintos(d => d.categoria_recorte) > 1;
+  const multiPeriodo = distintos(d => d.periodo) > 1;
+  const multiSerie = distintos(d => d.serie_subrecorte) > 1;
+  // Se não há série, categorias são segmentos quando o eixo distingue territórios/períodos.
+  const categoriaComoSerie = !multiSerie && !linhas.some(d => d.serie_subrecorte.trim()) &&
+    multiCategoria && (multiTerritorio || multiPeriodo);
+  const grupo = (d: DadoEixo01) => {
+    const partes = [
+      multiTerritorio ? d.territorio : "",
+      multiCategoria && !categoriaComoSerie ? d.categoria_recorte : "",
+      multiPeriodo ? exibirPeriodo(d.periodo) : "",
+    ].filter(Boolean);
+    return partes.join(" · ") || d.categoria_recorte || d.territorio || exibirPeriodo(d.periodo) || "Total";
+  };
+  const serie = (d: DadoEixo01) => categoriaComoSerie ? d.categoria_recorte :
+    d.serie_subrecorte || (multiCategoria ? "Total" : d.categoria_recorte || "Valor");
+  const registros = new Map<string, { nome: string; partes: Map<string, number> }>();
+  const nomesSeries: string[] = [];
+  const percentual = linhas.length > 0 && linhas.every(d =>
+    d.unidade_dado?.trim() === "%" || /percentual|proporção/i.test(d.metrica ?? "")
+  );
+  const valoresFracionarios = percentual && linhas.every(d => Math.abs(Number(d.valor)) <= 1);
+  const fator = valoresFracionarios ? 100 : 1;
+  let existemNegativos = false;
+  for (const d of linhas) {
+    const valor = Number(d.valor) * fator;
+    if (valor < 0) { existemNegativos = true; continue; }
+    const nome = grupo(d);
+    const nomeSerie = serie(d);
+    if (!nomesSeries.includes(nomeSerie)) nomesSeries.push(nomeSerie);
+    if (!registros.has(nome)) registros.set(nome, { nome, partes: new Map() });
+    const partes = registros.get(nome)!.partes;
+    partes.set(nomeSerie, (partes.get(nomeSerie) ?? 0) + valor);
+  }
+  const barras = Array.from(registros.values());
+  const maior = Math.max(0, ...barras.map(b => Array.from(b.partes.values()).reduce((a, v) => a + v, 0)));
+  const passoBruto = Math.max(0.01, maior / 4);
+  const potencia = 10 ** Math.floor(Math.log10(passoBruto));
+  const n = passoBruto / potencia;
+  const passo = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * potencia;
+  const teto = Math.max(passo, Math.ceil(maior / passo) * passo);
+  const casas = percentual ? 2 : Number.isInteger(passo) ? 0 : 2;
+  const numero = (valor: number) => valor.toLocaleString("pt-BR", { maximumFractionDigits: casas });
+  const formato = (valor: number) => numero(valor) + (percentual ? "%" : "");
+  const cores = ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
+  if (!barras.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis para barras empilhadas.</p></div>;
+  return <div className="radar-stacked-root">
+    {metricas.length > 1 && <div className="radar-view-controls" aria-label="Selecionar métrica">
+      {metricas.map(m => <button type="button" key={m} className={metrica === m ? "active" : ""} onClick={() => setMetricaSelecionada(m)}>{m}</button>)}
+    </div>}
+    <div className="radar-view-legend">
+      {nomesSeries.map((nome, i) => <span key={nome} className="radar-stacked-legend-item">
+        <i style={{ background: cores[i % cores.length] }} aria-hidden="true" />{nome}
+      </span>)}
+    </div>
+    <div className="radar-stacked-scroll" role="region" tabIndex={0} aria-label={`Gráfico de barras empilhadas: ${titulo}`}>
+      <div className="radar-stacked-chart" style={{ minWidth: `${Math.max(560, barras.length * 100)}px` }}>
+        <div className="radar-stacked-plot">
+          {[0,1,2,3,4].map(i => <div className="radar-stacked-gridline" key={i} style={{ bottom: `${i * 25}%` }}>
+            <span>{formato(teto * i / 4)}</span>
+          </div>)}
+          <div className="radar-stacked-columns">
+            {barras.map(barra => {
+              const total = Array.from(barra.partes.values()).reduce((a, v) => a + v, 0);
+              return <div className="radar-stacked-item" key={barra.nome}>
+                <div className="radar-stacked-stack" style={{ height: `${total / teto * 100}%` }} aria-label={`${barra.nome}: ${formato(total)}`}>
+                  {nomesSeries.map((nome, i) => {
+                    const valor = barra.partes.get(nome) ?? 0;
+                    if (valor <= 0) return null;
+                    return <div className="radar-stacked-segment" key={nome}
+                      style={{ height: `${valor / total * 100}%`, background: cores[i % cores.length] }}
+                      role="img" tabIndex={0}
+                      aria-label={`${barra.nome}, ${nome}: ${formato(valor)}`}
+                      title={`${barra.nome} · ${nome}: ${formato(valor)}`} />;
+                  })}
+                </div>
+                <span className="radar-stacked-label" title={barra.nome}>{barra.nome}</span>
+              </div>;
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+    {existemNegativos && <p className="radar-data-notice">Valores negativos não foram incluídos nas barras empilhadas.</p>}
+  </div>;
+}
+
 // As visualizações são geradas pelos registros da tabela de dados do eixo, não por constantes no front-end.
 function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   const [metrica, setMetrica] = useState("");
@@ -765,6 +864,9 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         })}
       </div>
     );
+  }
+  if (tipo === "barras_empilhadas" && aba === "grafico") {
+    return <GraficoBarrasEmpilhadas dados={validos} titulo={indicador.titulo} />;
   }
   const metricas = Array.from(new Set(validos.map(d => d.serie_subrecorte).filter(Boolean)));
   const uf = tipo === "barras_uf";
