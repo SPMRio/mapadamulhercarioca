@@ -623,3 +623,42 @@ footer{background:#410d7b}
 @media(max-width:1150px){.ri-root .ri-pop-icons{min-height:160px;height:auto}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(113px,10vw,165px)}.ri-root .ri-pop-unificada-grid{gap:16px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:90px}}
 @media(max-width:760px){.ri-root .ri-pop-unificada{min-height:0}.ri-root .ri-pop-unificada-grid{grid-template-columns:1fr 1fr;gap:16px}.ri-root .ri-pop-icons{min-height:115px;height:auto}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(80px,17vw,133px)}.ri-root .ri-pop-numbers strong{font-size:clamp(23px,5vw,33px)}.ri-root .ri-rj-sex{font-size:13px;margin:14px 0}.ri-root .ri-pop-rj h5{font-size:15px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:64px}.ri-root .ri-pop-old strong{font-size:30px}.ri-root .ri-pop-old span:not(.material-symbols-rounded){font-size:12px}}
 @media(max-width:420px){.ri-root .ri-pop-icons{min-height:85px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(65px,18vw,95px)}.ri-root .ri-pop-unificada-grid{gap:10px}.ri-root .ri-pop-numbers strong{font-size:22px}.ri-root .ri-pop-old{gap:5px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:45px}.ri-root .ri-pop-old strong{font-size:26px}}
+
+/* Primeira fileira: Mundo + População + Feminicídio; cards mais compactos. */
+.ri-root .ri-top-grid{display:grid;grid-template-columns:minmax(0,.87fr) minmax(0,1.27fr) minmax(0,1fr);gap:13px;align-items:start}
+.ri-root .ri-top-grid>.ri-card{min-width:0}
+.ri-root .ri-world{min-height:320px;padding:16px 15px 11px}
+.ri-root .ri-world-title{font-size:clamp(13px,1vw,17px)}
+.ri-root .ri-world-rank strong{font-size:clamp(46px,3.8vw,65px)}
+.ri-root .ri-material-globe{font-size:clamp(85px,8vw,132px);min-height:125px}
+.ri-root .ri-pop-unificada{min-height:320px;padding:16px 15px 11px}
+.ri-root .ri-pop-unificada-grid{grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:12px}
+.ri-root .ri-pop-title{font-size:18px;margin-bottom:10px}
+.ri-root .ri-pop-icons{min-height:135px}
+.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(75px,6vw,115px)}
+.ri-root .ri-pop-numbers strong{font-size:clamp(21px,1.9vw,30px)}
+.ri-root .ri-rj-sex{font-size:clamp(12px,1vw,15px);margin:12px 0}
+.ri-root .ri-pop-rj h5{font-size:14px;margin:4px 0}
+.ri-root .ri-pop-old{gap:6px}
+.ri-root .ri-pop-old>.material-symbols-rounded{font-size:clamp(46px,4.5vw,70px)}
+.ri-root .ri-pop-old strong{font-size:clamp(25px,2.4vw,37px)}
+.ri-root .ri-pop-old span:not(.material-symbols-rounded){font-size:12px}
+.ri-root .ri-top-grid>.ri-femicide{padding:18px;align-self:start}
+.ri-root .ri-top-grid .ri-femicide-hero strong{font-size:clamp(44px,4vw,64px)}
+.ri-root .ri-top-grid .ri-clocks{margin:10px 0 6px;gap:4px}
+.ri-root .ri-top-grid .ri-clocks svg{max-width:27px}
+.ri-root .ri-top-grid .ri-femicide-frequency{gap:8px}
+.ri-root .ri-top-grid .ri-femicide-frequency div{padding:9px}
+.ri-root .ri-mid-grid{display:grid;grid-template-columns:minmax(0,1fr);margin-top:13px}
+.ri-root .ri-mid-grid>.ri-violence{width:100%}
+@media(max-width:1180px){
+ .ri-root .ri-top-grid{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+ .ri-root .ri-top-grid>.ri-femicide{grid-column:1/-1}
+ .ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(90px,9vw,140px)}
+}
+@media(max-width:760px){
+ .ri-root .ri-top-grid{grid-template-columns:1fr}
+ .ri-root .ri-top-grid>.ri-femicide{grid-column:auto}
+ .ri-root .ri-world,.ri-root .ri-pop-unificada{min-height:0}
+ .ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(80px,17vw,130px)}
+}
