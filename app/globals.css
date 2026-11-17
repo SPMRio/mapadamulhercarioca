@@ -519,3 +519,10 @@ footer{background:#410d7b}
 @media(max-width:760px){.ri-heading{display:block}.ri-heading p{text-align:left;margin-top:7px}.ri-top-grid,.ri-mid-grid,.ri-income-grid{grid-template-columns:1fr}.ri-world{grid-column:auto}.ri-income-rio{border:0;border-top:1px solid #c59d39;padding:20px 0 0}.ri-income-facts{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:450px){.ri-card{padding:17px}.ri-world-stats{gap:11px}.ri-witness{grid-template-columns:1fr}.ri-income{padding:18px}.ri-income-facts{grid-template-columns:1fr 1fr}.ri-income-facts>div:last-child{grid-column:1/-1}.ri-rate{gap:6px}}
 @media print{.ri-root{break-inside:avoid}.ri-card,.ri-income{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* O tooltip flutua na janela, fora do contêiner de rolagem, e nunca fica cortado. */
+.radar-unified-tooltip.radar-tooltip-floating{
+  position:fixed!important;z-index:10000!important;bottom:auto!important;right:auto!important;
+  transform:none!important;opacity:1!important;pointer-events:none!important;
+  min-width:150px;max-width:min(280px,calc(100vw - 20px));width:max-content;
+}
