@@ -807,7 +807,13 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
   const barrasVerticais = tipo === "barras" || tipo === "barras_uf" || tipo === "barras_populacao";
   const coresBarras = ["#7132b2", "#a66ddd", "#42b9eb", "#c58df1"];
-  const maxVertical = passoEixo(Math.max(0, ...ordered.map(d => Math.abs(Number(d.valor))))) * 4;
+  const maiorValorVertical = Math.max(0, ...ordered.map(d => Math.abs(Number(d.valor))));
+  // Taxas por 100 mil habitantes podem ser menores que 1. Nesses casos,
+  // usar teto 1 evita barras quase invisíveis no intervalo artificial 0–4.
+  const escalaTaxaUF = indicador.indicador_id === "1.2.2" && /taxa/i.test(metricaUFAtual ?? "");
+  const maxVertical = escalaTaxaUF && maiorValorVertical <= 1
+    ? 1
+    : passoEixo(maiorValorVertical) * 4;
   return (
     <div className="radar-dynamic-view">
       {aba === "grafico" && metricasComparacao && <div className="radar-view-controls">
@@ -864,7 +870,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
               <div className="radar-vertical-plot">
                 {[0,1,2,3,4].map(tick => (
                   <div className="radar-vertical-gridline" key={tick} style={{bottom:`${tick*25}%`}}>
-                    <span>{Math.round(maxVertical*tick/4).toLocaleString("pt-BR",{maximumFractionDigits:0})}</span>
+                    <span>{(maxVertical*tick/4).toLocaleString("pt-BR",{maximumFractionDigits: escalaTaxaUF && maxVertical === 1 ? 2 : 0})}</span>
                   </div>
                 ))}
                 <div className="radar-vertical-columns">
