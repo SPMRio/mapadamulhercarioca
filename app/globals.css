@@ -294,7 +294,7 @@ footer{background:#410d7b}
 
 /* Marca institucional oficial no cabeçalho — acompanha a paleta do portal */
 .topbar .brand{display:flex;align-items:center;flex:none;line-height:normal}
-.spm-official-logo{display:block;width:clamp(195px,24vw,300px);height:auto;max-height:76px;object-fit:contain;object-position:left center;flex-shrink:0}
+.spm-official-logo{mask-mode:luminance;display:block;width:clamp(195px,24vw,300px);height:auto;max-height:76px;object-fit:contain;object-position:left center;flex-shrink:0}
 @media(max-width:900px){.spm-official-logo{width:195px;height:58px}}
 @media(max-width:560px){.spm-official-logo{width:168px;height:51px}.topbar{gap:12px}}
 @media print{.spm-official-logo{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
