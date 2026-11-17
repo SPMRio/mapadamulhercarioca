@@ -802,6 +802,28 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const metricasComparacao = ["1.2.2", "1.2.5"].includes(indicador.indicador_id);
   const comparacao = linhas.filter(d => !metricasComparacao || !metricaUFAtual || d.metrica === metricaUFAtual);
   const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
+  // Detecta a dimensão que realmente varia: UFs, categorias, séries ou períodos.
+  // Território fixo (ex.: Rio de Janeiro) não deve substituir nomes das categorias.
+  const distintos = (campo: (d: DadoEixo01) => string) =>
+    new Set(comparacao.map(d => campo(d).trim()).filter(Boolean)).size;
+  const variosTerritorios = distintos(d => d.territorio) > 1;
+  const variasCategorias = distintos(d => d.categoria_recorte) > 1;
+  const variasSeries = distintos(d => d.serie_subrecorte) > 1;
+  const rotuloBarra = (d: DadoEixo01) => {
+    if (variosTerritorios) return d.territorio || d.categoria_recorte || d.serie_subrecorte || d.periodo;
+    if (variasCategorias) {
+      const categoria = d.categoria_recorte || d.serie_subrecorte || d.periodo;
+      // Só acrescenta Série quando houver categorias repetidas entre séries distintas.
+      const repetida = variasSeries && comparacao.some(outro =>
+        outro !== d && outro.categoria_recorte === d.categoria_recorte &&
+        outro.serie_subrecorte !== d.serie_subrecorte
+      );
+      return repetida && d.serie_subrecorte ? `${categoria} · ${d.serie_subrecorte}` : categoria;
+    }
+    if (variasSeries) return d.serie_subrecorte || d.categoria_recorte || d.periodo;
+    if (distintos(d => d.periodo) > 1) return exibirPeriodo(d.periodo);
+    return d.categoria_recorte || d.serie_subrecorte || d.territorio || exibirPeriodo(d.periodo);
+  };
   const max = Math.max(1,...ordered.map(d => Math.abs(Number(d.valor))));
   const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
@@ -875,8 +897,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
                 ))}
                 <div className="radar-vertical-columns">
                   {ordered.map((d,i) => {
-                    const nome = d.territorio && d.territorio !== "Brasil" ? d.territorio :
-                      (d.serie_subrecorte || d.categoria_recorte || d.territorio || d.periodo);
+                    const nome = rotuloBarra(d);
                     const valor = Math.abs(Number(d.valor));
                     return <div className="radar-vertical-item" key={`${d.id_indicador}-${i}`}>
                       <div className="radar-vertical-bar" style={{
