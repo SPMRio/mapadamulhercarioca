@@ -191,31 +191,31 @@ async function catalogo() {
     atualizado_em: datas.get(indicador_id) || String(row.atualizado_em ?? ""),
   })).filter(item => Boolean(item.indicador_id) && Boolean(item.titulo));
 }
-async function valoresEixo01() {
-  const rows = await query("eixo_01_visao_geral");
-  return rows.filter(row => !("publicar" in row) || String(row.publicar ?? "").toUpperCase() === "SIM")
-    .map(row => ({
-      id_indicador: normalizarId(row.indicador_id ?? row.id_indicador),
-      periodo: String(row.periodo ?? ""),
-      territorio: String(row.territorio ?? ""),
-      categoria_recorte: String(row.categoria ?? row.categoria_recorte ?? ""),
-      serie_subrecorte: String(row.serie ?? row.serie_subrecorte ?? ""),
-      metrica: String(row.metrica ?? ""),
-      valor: row.valor == null ? "" : Number(row.valor),
-      publicar: "SIM",
-      tipo_valor: String(row.tipo_valor ?? ""),
-      escala: String(row.escala ?? ""),
-      texto: String(row.texto ?? ""),
-      unidade_dado: String(row.unidade ?? row.unidade_dado ?? ""),
-      nota_dado: String(row.nota_dado ?? ""),
-      situacao: String(row.situacao ?? ""),
-      ordem: Number(row.ordem ?? 0),
-    }));
-}
-// Os eixos compartilham o mesmo modelo de dados para visualização.
-async function valoresEixo03(): Promise<DadoEixo01Registro[]> {
-  const rows = await query("eixo_03_cuidados");
-  return rows.filter(row => !("publicar" in row) || String(row.publicar ?? "").trim().toUpperCase() === "SIM")
+// Todas as tabelas dos eixos seguem a mesma estrutura de dados.
+export const TABELAS_EIXOS = [
+  "eixo_01_visao_geral",
+  "eixo_02_violencia",
+  "eixo_03_cuidados",
+  "eixo_04_seguranca_publica",
+  "eixo_05_meninas",
+  "eixo_06_saude",
+  "eixo_07_educacao",
+  "eixo_08_emprego_renda",
+  "eixo_09_cultura",
+  "eixo_10_assistencia_social",
+  "eixo_11_mulheres",
+  "eixo_12_codim"
+] as const;
+export const NUMEROS_EIXOS = TABELAS_EIXOS.map((_, i) => String(i + 1).padStart(2, "0"));
+
+async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
+  const indice = Number(numero) - 1;
+  if (!/^(0[1-9]|1[0-2])$/.test(numero) || indice < 0 || indice >= TABELAS_EIXOS.length) {
+    throw new Error("Eixo inválido.");
+  }
+  const rows = await query(TABELAS_EIXOS[indice]);
+  return rows
+    .filter(row => !("publicar" in row) || String(row.publicar ?? "").trim().toUpperCase() === "SIM")
     .map(row => ({
       id_indicador: normalizarId(row.indicador_id ?? row.id_indicador),
       periodo: String(row.periodo ?? ""),
@@ -238,10 +238,8 @@ async function valoresEixo03(): Promise<DadoEixo01Registro[]> {
 export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v8-descricao"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
-export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v5-eixo"], {
-  tags: ["mapa-eixo-01"], revalidate: false,
-});
-
-export const getEixo03 = unstable_cache(valoresEixo03, ["mapa-eixo03-v1"], {
-  tags: ["mapa-eixo-03"], revalidate: false,
+// O número do eixo faz parte da chave de cache. Revalidar qualquer importação
+// invalida o conjunto, garantindo que nenhum eixo fique desatualizado.
+export const getDadosEixo = unstable_cache(valoresEixo, ["mapa-eixos-v2"], {
+  tags: ["mapa-eixos"], revalidate: false,
 });
