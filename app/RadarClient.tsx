@@ -4,11 +4,13 @@ import RadarInfografico from "./RadarInfografico";
 
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
 } from "react";
+import { createPortal } from "react-dom";
 
 // Eixos temáticos oficiais do catálogo. São exibidos mesmo antes da carga de dados.
 const temas = [
@@ -651,6 +653,66 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
 }
 
 
+// Tooltip centralizado e posicionado fora das áreas com rolagem dos gráficos.
+// Mede o tamanho real da caixa e escolhe automaticamente acima ou abaixo da barra.
+function BarraComTooltip({
+  className, style, cor, serie, categoria, valor, ariaLabel,
+}: {
+  className: string;
+  style?: CSSProperties;
+  cor: string;
+  serie: string;
+  categoria?: string;
+  valor: string;
+  ariaLabel: string;
+}) {
+  const barra = useRef<HTMLDivElement>(null);
+  const caixa = useRef<HTMLDivElement>(null);
+  const [ativo, setAtivo] = useState(false);
+  const [posicao, setPosicao] = useState<{ x: number; y: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!ativo || !barra.current || !caixa.current) return;
+    const localizar = () => {
+      if (!barra.current || !caixa.current) return;
+      const alvo = barra.current.getBoundingClientRect();
+      const tooltip = caixa.current.getBoundingClientRect();
+      const margem = 10;
+      const espacoAcima = alvo.top - margem;
+      const espacoAbaixo = window.innerHeight - alvo.bottom - margem;
+      const colocarAcima = espacoAcima >= tooltip.height + margem ||
+        (espacoAcima >= espacoAbaixo && espacoAcima >= tooltip.height);
+      const x = Math.max(margem, Math.min(alvo.left + alvo.width / 2 - tooltip.width / 2, window.innerWidth - tooltip.width - margem));
+      const idealY = colocarAcima ? alvo.top - tooltip.height - margem : alvo.bottom + margem;
+      const y = Math.max(margem, Math.min(idealY, window.innerHeight - tooltip.height - margem));
+      setPosicao({x, y});
+    };
+    localizar();
+    window.addEventListener("resize", localizar);
+    // Evita tooltip parado durante rolagem vertical/horizontal.
+    window.addEventListener("scroll", localizar, true);
+    return () => {
+      window.removeEventListener("resize", localizar);
+      window.removeEventListener("scroll", localizar, true);
+    };
+  }, [ativo]);
+  return <>
+    <div ref={barra} className={className} style={style} role="img" tabIndex={0}
+      aria-label={ariaLabel}
+      onMouseEnter={() => {setPosicao(null);setAtivo(true);}}
+      onMouseLeave={() => setAtivo(false)}
+      onFocus={() => {setPosicao(null);setAtivo(true);}}
+      onBlur={() => setAtivo(false)} />
+    {ativo && createPortal(
+      <div ref={caixa} className="radar-unified-tooltip radar-tooltip-floating" role="status"
+        style={{left:posicao?.x ?? -9999,top:posicao?.y ?? -9999,visibility:posicao ? "visible" : "hidden"}}>
+        <strong><i style={{background:cor}} />{serie}</strong>
+        {categoria && categoria !== serie && <span>{categoria}</span>}
+        <b>{valor}</b>
+      </div>, document.body
+    )}
+  </>;
+}
+
 // Barras agrupadas: as séries ficam lado a lado dentro da mesma categoria.
 function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const categorias = Array.from(new Set(dados.map(d => d.categoria_recorte.trim()).filter(Boolean)));
@@ -705,14 +767,10 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
                   if (!dado) return <div key={serie} className="radar-grouped-bar-slot"/>;
                   const n = Math.max(0, valor(dado));
                   return <div className="radar-grouped-bar-slot" key={serie}>
-                    <div className="radar-grouped-bar" style={{height:`${n/teto*100}%`,backgroundColor:cor(serie,j)}}
-                      aria-label={`${grupo.rotulo}, ${serie}: ${formato(n)}`} role="img" tabIndex={0}>
-                      <span className="radar-unified-tooltip" role="status">
-                        <strong><i style={{background:cor(serie,j)}} />{serie}</strong>
-                        <span>{grupo.rotulo}</span>
-                        <b>{formato(n)}</b>
-                      </span>
-                    </div>
+                    <BarraComTooltip className="radar-grouped-bar"
+                      style={{height:`${n/teto*100}%`,backgroundColor:cor(serie,j)}}
+                      cor={cor(serie,j)} serie={serie} categoria={grupo.rotulo} valor={formato(n)}
+                      ariaLabel={`${grupo.rotulo}, ${serie}: ${formato(n)}`} />
                   </div>;
                 })}
               </div>
@@ -806,16 +864,10 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
                   {nomesSeries.map((nome, i) => {
                     const valor = barra.partes.get(nome) ?? 0;
                     if (valor <= 0) return null;
-                    return <div className="radar-stacked-segment" key={nome}
+                    return <BarraComTooltip key={nome} className="radar-stacked-segment"
                       style={{ height: `${valor / total * 100}%`, background: cores[i % cores.length] }}
-                      role="img" tabIndex={0}
-                      aria-label={`${barra.nome}, ${nome}: ${formato(valor)}`}>
-                      <span className="radar-unified-tooltip" role="status">
-                        <strong><i style={{background:cores[i % cores.length]}} />{nome}</strong>
-                        <span>{barra.nome}</span>
-                        <b>{formato(valor)}</b>
-                      </span>
-                    </div>;
+                      cor={cores[i % cores.length]} serie={nome} categoria={barra.nome} valor={formato(valor)}
+                      ariaLabel={`${barra.nome}, ${nome}: ${formato(valor)}`} />;
                   })}
                 </div>
                 <span className="radar-stacked-label" title={barra.nome}>{barra.nome}</span>
@@ -1153,12 +1205,10 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
                     const nome = rotuloBarra(d);
                     const valor = Math.abs(Number(d.valor));
                     return <div className="radar-vertical-item" key={`${d.id_indicador}-${i}`}>
-                      <div className="radar-vertical-bar" style={{
-                        height:`${valor/maxVertical*100}%`,
-                        background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]
-                      }} tabIndex={0} role="img" aria-label={`${nome}: ${fmt(d)}`}>
-                        <span className="radar-unified-tooltip" role="status"><strong><i style={{background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]}} />{nome}</strong><b>{fmt(d)}</b></span>
-                      </div>
+                      <BarraComTooltip className="radar-vertical-bar"
+                        style={{height:`${valor/maxVertical*100}%`,background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]}}
+                        cor={coresBarras[metricasComparacao ? 0 : i%coresBarras.length]}
+                        serie={nome} valor={fmt(d)} ariaLabel={`${nome}: ${fmt(d)}`} />
                       <span className="radar-vertical-label" title={nome}>{nome}</span>
                     </div>;
                   })}
