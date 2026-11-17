@@ -392,3 +392,26 @@ footer{background:#410d7b}
 @media(max-width:900px){.sidebar-catalogo{margin-top:14px;padding-top:12px}.sidebar-catalogo-btn{width:auto}.catalogo-modal{max-height:90dvh}}
 @media(max-width:650px){.catalogo-backdrop{padding:10px}.catalogo-modal{width:100%;max-height:94dvh;border-radius:16px}.catalogo-header{padding:19px 18px 11px}.catalogo-controls{grid-template-columns:1fr;gap:12px;padding:10px 18px 14px}.catalogo-summary{padding:0 18px 12px}.catalogo-results{padding:3px 18px 18px}.catalogo-item{padding:12px 6px}}
 @media print{.sidebar-catalogo,.catalogo-backdrop{display:none!important}}
+
+/* Aparência unificada para todos os tooltips dos gráficos do Radar. */
+.radar-unified-tooltip,.radar-chart-tooltip,.radar-line-point-tooltip,.radar-pie-tooltip{
+  background:#fff;color:#17385f;border:1px solid #dfd1ea;border-radius:12px;
+  box-shadow:0 8px 26px #26113a33;padding:11px 14px;
+  font-size:12px;font-weight:500;line-height:1.4;text-align:left;white-space:normal;
+}
+.radar-unified-tooltip{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
+  z-index:20;display:flex;flex-direction:column;gap:4px;min-width:170px;max-width:270px;width:max-content;
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease}
+.radar-unified-tooltip strong,.radar-pie-tooltip strong{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#17385f}
+.radar-unified-tooltip strong i,.radar-pie-tooltip strong i{display:inline-block;width:11px;height:11px;flex-shrink:0;border-radius:3px}
+.radar-unified-tooltip b,.radar-pie-tooltip span{font-size:15px;font-weight:750;color:#17385f}
+.radar-unified-tooltip span{overflow-wrap:anywhere}
+.radar-grouped-bar,.radar-stacked-segment,.radar-vertical-bar{position:relative}
+.radar-grouped-bar:hover>.radar-unified-tooltip,.radar-grouped-bar:focus-visible>.radar-unified-tooltip,
+.radar-stacked-segment:hover>.radar-unified-tooltip,.radar-stacked-segment:focus-visible>.radar-unified-tooltip,
+.radar-vertical-bar:hover>.radar-unified-tooltip,.radar-vertical-bar:focus-visible>.radar-unified-tooltip{
+  opacity:1;visibility:visible}
+.radar-pie-tooltip{max-width:90%;min-width:170px;display:flex;flex-direction:column;gap:5px}
+.radar-pie-tooltip strong{justify-content:center}
+.radar-pie-tooltip{text-align:center}
+.radar-line-point-tooltip span,.radar-tooltip-series{font-weight:700}
