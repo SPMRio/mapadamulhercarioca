@@ -73,23 +73,6 @@ export default function RadarInfografico() {
           </div>
           <small className="ri-pop-fonte">Fonte: Instituto Brasileiro de Geografia e Estatística (IBGE)</small>
         </article>
-      </div>
-      <div className="ri-mid-grid">
-        <article className="ri-card ri-violence">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">◇</span><h4>Violência doméstica e familiar</h4></div>
-          <div className="ri-big-number"><strong>23,6 milhões</strong><span>de mulheres já sofreram violência no Brasil</span></div>
-          <MulheresIlustradas /><div className="ri-violence-grid">
-            <Stat valor="27%" legenda="das brasileiras · cerca de 1 em cada 4 mulheres" />
-            <Stat valor="30%" legenda="média mundial (OMS)" />
-          </div>
-          <div className="ri-divider" />
-          <h5>Rio de Janeiro</h5>
-          <div className="ri-inline-stats"><Stat valor="2,5 milhões+" legenda="de mulheres" /><Stat valor="3º" legenda="estado com mais casos no país" /></div>
-          <div className="ri-witness-illustration"><TestemunhasIlustradas /><span>Testemunhas nas situações de violência</span></div><div className="ri-witness">
-            <div><strong>7 em cada 10</strong><span>casos tiveram testemunhas</span></div>
-            <div><strong>71%</strong><span>das agressões com testemunhas foram presenciadas por crianças</span></div>
-          </div>
-        </article>
         <article className="ri-card ri-femicide">
           <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">◷</span><h4>Feminicídio</h4></div>
           <div className="ri-femicide-hero"><strong>1.470</strong><span>vítimas no Brasil</span></div>
@@ -107,6 +90,24 @@ export default function RadarInfografico() {
           <div className="ri-inline-stats"><Stat valor="104" legenda="casos" /><Stat valor="2º" legenda="estado com mais vítimas" /></div>
           <div className="ri-rate">Taxa por 100 mil habitantes <b>RJ: 1,35</b><b>Brasil: 1,67</b></div>
         </article>
+      </div>
+      <div className="ri-mid-grid">
+        <article className="ri-card ri-violence">
+          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">◇</span><h4>Violência doméstica e familiar</h4></div>
+          <div className="ri-big-number"><strong>23,6 milhões</strong><span>de mulheres já sofreram violência no Brasil</span></div>
+          <MulheresIlustradas /><div className="ri-violence-grid">
+            <Stat valor="27%" legenda="das brasileiras · cerca de 1 em cada 4 mulheres" />
+            <Stat valor="30%" legenda="média mundial (OMS)" />
+          </div>
+          <div className="ri-divider" />
+          <h5>Rio de Janeiro</h5>
+          <div className="ri-inline-stats"><Stat valor="2,5 milhões+" legenda="de mulheres" /><Stat valor="3º" legenda="estado com mais casos no país" /></div>
+          <div className="ri-witness-illustration"><TestemunhasIlustradas /><span>Testemunhas nas situações de violência</span></div><div className="ri-witness">
+            <div><strong>7 em cada 10</strong><span>casos tiveram testemunhas</span></div>
+            <div><strong>71%</strong><span>das agressões com testemunhas foram presenciadas por crianças</span></div>
+          </div>
+        </article>
+
       </div>
       <article className="ri-income">
         <div className="ri-income-title"><DinheiroIlustrado /><div><span>DESIGUALDADE ECONÔMICA</span><h4>Disparidade de renda</h4></div></div>
