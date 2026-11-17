@@ -13,7 +13,7 @@ function valido(recebido: string, esperado: string) {
 
 // Será acionado pelo serviço de ingestão SOMENTE após uma carga validada no BigQuery.
 // POST /api/revalidate com Authorization: Bearer <REVALIDATE_SECRET>
-// Corpo opcional: { "eixo": "01" } ou { "eixo": "todos" }.
+// Corpo opcional: { "eixo": "01" a "12" } ou { "eixo": "todos" }.
 export async function POST(request: Request) {
   const secret = process.env.REVALIDATE_SECRET;
   if (!secret || secret.length < 32) {
@@ -30,13 +30,12 @@ export async function POST(request: Request) {
       eixo = String((body as { eixo?: unknown }).eixo ?? "todos");
     }
   } catch { /* Corpo vazio equivale a revalidar tudo. */ }
-  if (!["01", "03", "todos"].includes(eixo)) {
+  if (eixo !== "todos" && !/^(0[1-9]|1[0-2])$/.test(eixo)) {
     return NextResponse.json({ ok: false, error: "Eixo inválido." }, { status: 400 });
   }
 
   revalidateTag("mapa-indicadores");
-  if (eixo === "01" || eixo === "todos") revalidateTag("mapa-eixo-01");
-  if (eixo === "03" || eixo === "todos") revalidateTag("mapa-eixo-03");
+  revalidateTag("mapa-eixos");
   revalidatePath("/");
   return NextResponse.json({ ok: true, revalidado: eixo, pagina: "/", mensagem: "Cache invalidado. A página será regenerada no próximo acesso." }, {
     headers: { "Cache-Control": "no-store" },
