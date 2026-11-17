@@ -9,6 +9,7 @@ type QueryResult = {
   schema?: { fields?: { name: string }[] };
   rows?: { f?: { v?: string | null }[] }[];
   pageToken?: string;
+  jobReference?: { jobId?: string; location?: string };
 };
 export type IndicadorRegistro = {
   indicador_id: string;
@@ -125,7 +126,7 @@ async function query(table: string): Promise<Record<string, unknown>[]> {
     "https://bigquery.googleapis.com/bigquery/v2/projects/rj-spm-rio/queries",
     "POST",
     {
-      query: `SELECT TO_JSON_STRING(t) AS linha_json FROM \`rj-spm-rio.projeto_mapa_mulher.${table}\` t LIMIT 1000`,
+      query: `SELECT TO_JSON_STRING(t) AS linha_json FROM \`rj-spm-rio.projeto_mapa_mulher.${table}\` t`,
       useLegacySql: false, location: "southamerica-east1",
       maximumBytesBilled: "1000000000", timeoutMs: 10000, maxResults: 1000,
     },
@@ -133,12 +134,33 @@ async function query(table: string): Promise<Record<string, unknown>[]> {
   );
   if (response.status !== 200) {
     if (/not found/i.test(response.data.error?.message ?? "")) throw new Error("table_not_found");
-    throw new Error("Falha de consulta ao BigQuery.");
+    throw new Error("Falha de consulta ao BigQuery: " + table);
   }
-  if (!response.data.jobComplete || response.data.pageToken) throw new Error("Consulta do BigQuery incompleta.");
-  const fieldIndex = response.data.schema?.fields?.findIndex(field => field.name === "linha_json") ?? -1;
-  if (fieldIndex < 0) throw new Error("Esquema inesperado no BigQuery.");
-  return (response.data.rows ?? []).map(row => JSON.parse(String(row.f?.[fieldIndex]?.v ?? "{}")) as Record<string, unknown>);
+  if (!response.data.jobComplete) throw new Error("Consulta do BigQuery ainda não concluída: " + table);
+  const index = response.data.schema?.fields?.findIndex(field => field.name === "linha_json") ?? -1;
+  if (index < 0) throw new Error("Esquema inesperado no BigQuery: " + table);
+  const resultado: Record<string, unknown>[] = [];
+  const adicionar = (rows: QueryResult["rows"]) => {
+    for (const row of rows ?? []) {
+      resultado.push(JSON.parse(String(row.f?.[index]?.v ?? "{}")) as Record<string, unknown>);
+    }
+  };
+  adicionar(response.data.rows);
+  let token = response.data.pageToken;
+  const job = response.data.jobReference?.jobId;
+  if (token && !job) throw new Error("Consulta paginada sem identificador de job: " + table);
+  while (token) {
+    const url = "https://bigquery.googleapis.com/bigquery/v2/projects/rj-spm-rio/queries/"
+      + encodeURIComponent(job!)
+      + "?location=southamerica-east1&maxResults=1000&pageToken=" + encodeURIComponent(token);
+    const pagina = await jsonRequest<QueryResult & {error?: {message?: string}}>(url, "GET", undefined, auth);
+    if (pagina.status !== 200 || !pagina.data.jobComplete) {
+      throw new Error("Falha na paginação de dados do BigQuery: " + table);
+    }
+    adicionar(pagina.data.rows);
+    token = pagina.data.pageToken;
+  }
+  return resultado;
 }
 const normalizarId = (id: unknown) => String(id ?? "").replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2");
 function normalizarEixo(valor: unknown): string {
