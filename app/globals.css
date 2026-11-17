@@ -325,3 +325,20 @@ footer{background:#410d7b}
 .intro p{max-width:570px}
 @media(max-width:900px){.intro{min-height:520px;padding:60px 24px}.intro::after{background:linear-gradient(90deg,#fff 0%,rgba(255,255,255,.92) 18%,rgba(255,255,255,.67) 36%,rgba(255,255,255,.16) 65%,rgba(255,255,255,0) 85%)}.intro-content{width:75%}}
 @media(max-width:650px){.intro{display:flex;min-height:580px;padding:42px 22px 170px;align-items:flex-start}.intro::before{background-position:60% bottom}.intro::after{background:linear-gradient(180deg,rgba(255,255,255,.98) 0%,rgba(255,255,255,.93) 28%,rgba(255,255,255,.72) 48%,rgba(255,255,255,.08) 73%,rgba(255,255,255,0) 88%)}.intro-content{width:100%;max-width:none}.intro h1{font-size:clamp(42px,11vw,60px)}.intro p{font-size:15px}.intro .meta{margin-top:22px}}
+
+/* Barras agrupadas: Mulheres e Homens (ou outras séries) lado a lado. */
+.radar-grouped-root{width:100%;min-width:0}
+.radar-grouped-legend{display:inline-flex;align-items:center;gap:7px}
+.radar-grouped-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
+.radar-grouped-scroll{overflow-x:auto;overflow-y:hidden;padding:16px 4px 10px;scrollbar-color:#b79ad3 #f4edf8}
+.radar-grouped-chart{width:100%;padding:0 18px 95px 64px;box-sizing:border-box}
+.radar-grouped-plot{height:350px;position:relative;border-bottom:1px solid #d9cce8}
+.radar-grouped-gridline{position:absolute;left:0;right:0;border-top:1px solid #e9e0f0;pointer-events:none}
+.radar-grouped-gridline span{position:absolute;right:calc(100% + 10px);top:-8px;white-space:nowrap;font-size:11px;color:#5d5375;font-variant-numeric:tabular-nums}
+.radar-grouped-categories{position:absolute;inset:0;display:flex;gap:18px;align-items:flex-end}
+.radar-grouped-category{position:relative;flex:1;min-width:135px;height:100%;display:flex;align-items:flex-end}
+.radar-grouped-bars{width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;gap:6px}
+.radar-grouped-bar-slot{flex:1;max-width:58px;height:100%;display:flex;align-items:flex-end;min-width:0}
+.radar-grouped-bar{width:100%;min-height:2px;border-radius:5px 5px 0 0;cursor:help;transition:filter .15s}
+.radar-grouped-bar:hover,.radar-grouped-bar:focus-visible{filter:brightness(1.17);outline:2px solid #392153;outline-offset:2px}
+.radar-grouped-label{position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);width:160px;max-width:100%;text-align:center;font-size:11px;font-weight:600;line-height:1.3;overflow-wrap:break-word;color:#21375b;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
