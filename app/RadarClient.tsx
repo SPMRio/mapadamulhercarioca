@@ -765,8 +765,24 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const [metricaUF, setMetricaUF] = [metrica, setMetrica];
   const metricaUFAtual = metricasUF.includes(metricaUF) ? metricaUF : (metricasUF.find(m => /quantidade|casos/i.test(m)) || metricasUF[0]);
   const valoresLinha = linhas.map(d => d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor));
-  const minLinha = Math.min(0, ...valoresLinha);
-  const maxLinha = Math.max(minLinha+1,...valoresLinha);
+  // Escalas arredondadas com intervalos inteiros (1, 2 ou 5 x potência de 10).
+  // Não arredonda os dados; apenas os números mostrados nos eixos.
+  const passoEixo = (maiorValor: number) => {
+    const bruto = Math.max(1, Math.abs(maiorValor) / 4);
+    const potencia = 10 ** Math.floor(Math.log10(bruto));
+    const normalizado = bruto / potencia;
+    const multiplicador = normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 5 ? 5 : 10;
+    return Math.max(1, multiplicador * potencia);
+  };
+  const minimoOriginal = Math.min(0, ...valoresLinha);
+  const maximoOriginal = Math.max(0, ...valoresLinha);
+  const passoLinha = passoEixo(Math.max(Math.abs(minimoOriginal), Math.abs(maximoOriginal)));
+  const minLinha = Math.floor(minimoOriginal / passoLinha) * passoLinha;
+  const maxLinha = Math.max(passoLinha, Math.ceil(maximoOriginal / passoLinha) * passoLinha);
+  const marcasLinha = Array.from(
+    { length: Math.round((maxLinha - minLinha) / passoLinha) + 1 },
+    (_, i) => minLinha + i * passoLinha
+  );
   const linhaX = (i: number) => 76 + (periodos.length > 1 ? i/(periodos.length-1) : .5)*700;
   const linhaY = (v: number) => 250-(v-minLinha)/(maxLinha-minLinha)*210;
   const metricasComparacao = ["1.2.2", "1.2.5"].includes(indicador.indicador_id);
@@ -777,7 +793,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
   const barrasVerticais = tipo === "barras" || tipo === "barras_uf" || tipo === "barras_populacao";
   const coresBarras = ["#7132b2", "#a66ddd", "#42b9eb", "#c58df1"];
-  const maxVertical = Math.max(1, ...ordered.map(d => Math.abs(Number(d.valor))));
+  const maxVertical = passoEixo(Math.max(0, ...ordered.map(d => Math.abs(Number(d.valor))))) * 4;
   return (
     <div className="radar-dynamic-view">
       {aba === "grafico" && metricasComparacao && <div className="radar-view-controls">
@@ -795,10 +811,9 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       </div>}
       {aba === "grafico" && graficoTemporal && <div className="radar-line-wrap"><svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
         aria-label={`Evolução de ${indicador.titulo}`}>
-        {[0,1,2,3,4].map(i => {
-          const v = minLinha+(maxLinha-minLinha)*i/4;
+        {marcasLinha.map(v => {
           return <g key={i}><line x1="76" x2="776" y1={linhaY(v)} y2={linhaY(v)} stroke="#e8e0ec" />
-            <text x="65" y={linhaY(v)+5} fontSize="12" textAnchor="end" fill="#53657c">{v.toLocaleString("pt-BR",{maximumFractionDigits:1})}</text></g>;
+            <text x="65" y={linhaY(v)+5} fontSize="12" textAnchor="end" fill="#53657c">{Math.round(v).toLocaleString("pt-BR",{maximumFractionDigits:0})}</text></g>;
         })}
         {periodos.map((p,i) => <text key={p} x={linhaX(i)} y="277" fontSize="12" textAnchor="middle" fill="#53657c">{p}</text>)}
         {seriesLinha.map((serie,i) => {
@@ -835,7 +850,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
               <div className="radar-vertical-plot">
                 {[0,1,2,3,4].map(tick => (
                   <div className="radar-vertical-gridline" key={tick} style={{bottom:`${tick*25}%`}}>
-                    <span>{(maxVertical*tick/4).toLocaleString("pt-BR",{maximumFractionDigits:2})}</span>
+                    <span>{Math.round(maxVertical*tick/4).toLocaleString("pt-BR",{maximumFractionDigits:0})}</span>
                   </div>
                 ))}
                 <div className="radar-vertical-columns">
