@@ -256,12 +256,13 @@ async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
       ordem: Number(row.ordem ?? 0),
     }));
 }
-// Os dados permanecem em cache até publicação explícita via /api/revalidate.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v8-descricao"], {
-  tags: ["mapa-indicadores"], revalidate: false,
+// A importação pode invalidar imediatamente o cache via /api/revalidate.
+// Como garantia, os dados também são atualizados automaticamente após 2 minutos.
+// Assim os 12 eixos funcionam sem mudanças de código ou publicações manuais.
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v9-auto"], {
+  tags: ["mapa-indicadores"], revalidate: 120,
 });
-// O número do eixo faz parte da chave de cache. Revalidar qualquer importação
-// invalida o conjunto, garantindo que nenhum eixo fique desatualizado.
-export const getDadosEixo = unstable_cache(valoresEixo, ["mapa-eixos-v2"], {
-  tags: ["mapa-eixos"], revalidate: false,
+// O argumento numero faz parte da chave de cache, isolando cada um dos 12 eixos.
+export const getDadosEixo = unstable_cache(valoresEixo, ["mapa-eixos-v3-auto"], {
+  tags: ["mapa-eixos"], revalidate: 120,
 });
