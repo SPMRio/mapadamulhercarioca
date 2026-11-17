@@ -6,9 +6,7 @@ export const runtime = "nodejs";
 export const revalidate = false;
 
 export default async function Page() {
-  const [indicadores, ...grupos] = await Promise.all([
-    getIndicadores(),
-    ...NUMEROS_EIXOS.map(numero => getDadosEixo(numero)),
-  ]);
+  const indicadores = await getIndicadores();
+  const grupos = await Promise.all(NUMEROS_EIXOS.map(numero => getDadosEixo(numero)));
   return <RadarClient indicadores={indicadores} dadosEixo01={grupos.flat()} />;
 }
