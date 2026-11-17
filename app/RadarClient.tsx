@@ -702,7 +702,15 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   }
   const isPir = tipo === "piramide";
   if (isPir && aba === "grafico") {
-    const faixas = Array.from(new Set(validos.map(d => d.categoria_recorte))).filter(Boolean);
+    const faixas = Array.from(new Set(validos.map(d => d.categoria_recorte)))
+      .filter(Boolean)
+      .sort((a, b) => {
+        const idadeInicial = (faixa: string) => {
+          const numero = faixa.match(/\d+/);
+          return numero ? Number(numero[0]) : Number.POSITIVE_INFINITY;
+        };
+        return idadeInicial(a) - idadeInicial(b) || a.localeCompare(b, "pt-BR", { numeric: true });
+      });
     const maxPir = Math.max(1, ...validos.map(d => Math.abs(Number(d.valor))));
     const fmtPir = (n: number) => Math.abs(n).toLocaleString("pt-BR", {maximumFractionDigits:0});
     return (
