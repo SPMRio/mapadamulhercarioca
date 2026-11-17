@@ -573,3 +573,33 @@ footer{background:#410d7b}
 .material-symbols-rounded{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:"liga";font-feature-settings:"liga";-webkit-font-smoothing:antialiased;font-variation-settings:"FILL" 0,"wght" 400,"GRAD" 0,"opsz" 48}
 .ri-root .ri-material-globe{display:flex;align-items:center;justify-content:center;font-size:clamp(100px,11vw,180px);color:#7430ae;width:100%;height:auto;min-height:175px;max-height:none;line-height:1;filter:none;font-variation-settings:"FILL" 0,"wght" 350,"GRAD" 0,"opsz" 48}
 @media(max-width:650px){.ri-root .ri-material-globe{font-size:clamp(90px,27vw,150px);min-height:140px}}
+
+/* População: Brasil + Município do Rio no mesmo card, sempre fundo branco. */
+.ri-root .ri-top-grid{grid-template-columns:minmax(0,.95fr) minmax(0,1.65fr);align-items:stretch}
+.ri-root .ri-top-grid>.ri-world{grid-column:auto}
+.ri-root .ri-pop-unificada{background:#fff;border:1.7px solid #7832b4;border-radius:20px;box-shadow:none;min-width:0;padding:19px 20px 14px;display:flex;flex-direction:column}
+.ri-root .ri-pop-title{margin:0 0 14px;font-size:clamp(17px,1.45vw,22px);font-weight:900;color:#7430ae;letter-spacing:-.02em}
+.ri-root .ri-pop-unificada-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;flex:1;align-items:start}
+.ri-root .ri-pop-br,.ri-root .ri-pop-rj{min-width:0}
+.ri-root .ri-pop-local{display:inline-flex;align-items:center;gap:3px;border-radius:20px;padding:4px 10px 4px 5px;background:#7832b4;color:#fff;font-size:clamp(9px,.9vw,12px);font-weight:900;line-height:1;white-space:nowrap}
+.ri-root .ri-pop-local .material-symbols-rounded{font-size:20px;color:#46b9e4;font-variation-settings:"FILL" 1,"wght" 600,"GRAD" 0,"opsz" 24}
+.ri-root .ri-pop-icons{display:flex;justify-content:center;align-items:end;gap:2px;margin:11px 0 5px;height:120px}
+.ri-root .ri-pop-icons .material-symbols-rounded{font-size:112px;line-height:1;font-variation-settings:"FILL" 1,"wght" 500,"GRAD" 0,"opsz" 48}
+.ri-root .ri-pop-woman{color:#7430ae}.ri-root .ri-pop-man{color:#43b9e5}
+.ri-root .ri-pop-numbers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.ri-root .ri-pop-numbers>div{display:flex;flex-direction:column;align-items:center;gap:0}
+.ri-root .ri-pop-numbers strong{font-size:clamp(22px,2.4vw,35px);line-height:1;font-weight:900;color:#7430ae;letter-spacing:-.035em}
+.ri-root .ri-pop-numbers>div+div strong{color:#43b9e5}
+.ri-root .ri-pop-numbers span{font-size:12px;color:#3d2a56}
+.ri-root .ri-rj-sex{display:flex;flex-direction:column;gap:5px;margin:20px 0 18px;font-size:clamp(13px,1.15vw,17px);font-weight:650;color:#203756}
+.ri-root .ri-rj-sex b{color:#7430ae;font-weight:900}
+.ri-root .ri-pop-rj h5{font-size:clamp(13px,1.15vw,17px);color:#7430ae;font-weight:900;line-height:1.1;margin:0 0 10px}
+.ri-root .ri-pop-old{display:flex;align-items:center;gap:8px}
+.ri-root .ri-pop-old>.material-symbols-rounded{font-size:65px;line-height:1;color:#183a45;font-variation-settings:"FILL" 1,"wght" 500,"GRAD" 0,"opsz" 48}
+.ri-root .ri-pop-old>div{display:flex;flex-direction:column}
+.ri-root .ri-pop-old strong{font-size:clamp(27px,2.5vw,38px);line-height:1;color:#17385f;font-weight:900}
+.ri-root .ri-pop-old span:not(.material-symbols-rounded){font-size:13px;color:#7430ae}
+.ri-root .ri-pop-fonte{display:block;margin-top:auto;padding-top:14px;color:#806995;font-size:9px}
+@media(max-width:1150px){.ri-root .ri-pop-unificada-grid{gap:13px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:85px}.ri-root .ri-pop-icons{height:95px}}
+@media(max-width:760px){.ri-root .ri-top-grid{grid-template-columns:1fr}.ri-root .ri-pop-unificada-grid{grid-template-columns:1fr 1fr;gap:14px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:80px}.ri-root .ri-pop-icons{height:90px}}
+@media(max-width:420px){.ri-root .ri-pop-unificada{padding:16px}.ri-root .ri-pop-local{font-size:9px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:64px}.ri-root .ri-pop-icons{height:75px}.ri-root .ri-pop-numbers strong{font-size:22px}.ri-root .ri-rj-sex{font-size:12px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:45px}.ri-root .ri-pop-old strong{font-size:26px}}
