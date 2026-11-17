@@ -1407,12 +1407,6 @@ export default function RadarClient({
         <a className="brand" href="#inicio" aria-label="Mapa da Mulher Carioca - início">
           <img className="spm-official-logo" src="/logo-prefeitura-mulheres.svg" alt="Prefeitura Rio — Políticas para Mulheres e Cuidados" width={300} height={75} />
         </a>
-        <nav aria-label="Navegação principal">
-          <a href="#dados">Dados</a><a href="#sobre">Sobre</a>
-        </nav>
-        <button className="download" type="button" onClick={() => window.print()}>
-          Baixar relatório <span>↓</span>
-        </button>
       </header>
       <section className="intro" id="inicio">
         <div className="intro-content">
