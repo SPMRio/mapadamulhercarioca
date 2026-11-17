@@ -649,6 +649,75 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
 }
 
 
+// Barras agrupadas: as séries ficam lado a lado dentro da mesma categoria.
+function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
+  const categorias = Array.from(new Set(dados.map(d => d.categoria_recorte.trim()).filter(Boolean)));
+  const series = Array.from(new Set(dados.map(d => d.serie_subrecorte.trim()).filter(Boolean)))
+    .sort((a, b) => {
+      const ordemSerie = (nome: string) => /mulher/i.test(nome) ? 0 : /homem/i.test(nome) ? 1 : 2;
+      return ordemSerie(a) - ordemSerie(b) || a.localeCompare(b, "pt-BR");
+    });
+  const territorios = new Set(dados.map(d => d.territorio.trim()).filter(Boolean));
+  const periodos = new Set(dados.map(d => d.periodo.trim()).filter(Boolean));
+  const grupos = new Map<string, { rotulo: string; valores: Map<string, DadoEixo01> }>();
+  for (const d of dados) {
+    const rotulo = [territorios.size > 1 ? d.territorio : "", d.categoria_recorte,
+      periodos.size > 1 ? exibirPeriodo(d.periodo) : ""].filter(Boolean).join(" · ");
+    const chave = JSON.stringify([d.territorio, d.categoria_recorte, d.periodo, d.metrica ?? ""]);
+    if (!grupos.has(chave)) grupos.set(chave, { rotulo, valores: new Map() });
+    grupos.get(chave)!.valores.set(d.serie_subrecorte.trim(), d);
+  }
+  const linhas = Array.from(grupos.values());
+  const porcentagem = dados.every(d => d.unidade_dado?.trim() === "%" ||
+    /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
+  const fator = porcentagem && dados.every(d => Math.abs(Number(d.valor)) <= 1) ? 100 : 1;
+  const valor = (d: DadoEixo01) => Number(d.valor) * fator;
+  const maior = Math.max(0, ...dados.map(d => Math.max(0, valor(d))));
+  const bruto = Math.max(0.25, maior / 4);
+  const potencia = 10 ** Math.floor(Math.log10(bruto));
+  const normalizado = bruto / potencia;
+  const passo = (normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 5 ? 5 : 10) * potencia;
+  const teto = Math.max(passo, Math.ceil(maior / passo) * passo);
+  const numero = (n: number) => n.toLocaleString("pt-BR", {maximumFractionDigits: porcentagem ? 2 : Number.isInteger(passo) ? 0 : 2});
+  const formato = (n: number) => numero(n) + (porcentagem ? "%" : "");
+  const cor = (serie: string, i: number) => /mulher/i.test(serie) ? "#7132b2"
+    : /homem/i.test(serie) ? "#42b9eb"
+    : ["#a66ddd","#269c85","#dc9c32","#4066ad","#c58df1"][i % 5];
+  return <div className="radar-grouped-root">
+    <div className="radar-view-legend">
+      {series.map((serie, i) => <span key={serie} className="radar-grouped-legend">
+        <i style={{background:cor(serie,i)}} aria-hidden="true" />{serie}
+      </span>)}
+    </div>
+    <div className="radar-grouped-scroll" role="region" tabIndex={0} aria-label={`Barras agrupadas: ${titulo}`}>
+      <div className="radar-grouped-chart" style={{minWidth: `${Math.max(580,linhas.length*180)}px`}}>
+        <div className="radar-grouped-plot">
+          {[0,1,2,3,4].map(i => <div key={i} className="radar-grouped-gridline" style={{bottom:`${i*25}%`}}>
+            <span>{formato(teto*i/4)}</span>
+          </div>)}
+          <div className="radar-grouped-categories">
+            {linhas.map((grupo,i) => <div className="radar-grouped-category" key={i}>
+              <div className="radar-grouped-bars">
+                {series.map((serie,j) => {
+                  const dado = grupo.valores.get(serie);
+                  if (!dado) return <div key={serie} className="radar-grouped-bar-slot"/>;
+                  const n = Math.max(0, valor(dado));
+                  return <div className="radar-grouped-bar-slot" key={serie}>
+                    <div className="radar-grouped-bar" style={{height:`${n/teto*100}%`,backgroundColor:cor(serie,j)}}
+                      title={`${grupo.rotulo} · ${serie}: ${formato(n)}`}
+                      aria-label={`${grupo.rotulo}, ${serie}: ${formato(n)}`} role="img" tabIndex={0}/>
+                  </div>;
+                })}
+              </div>
+              <span className="radar-grouped-label" title={grupo.rotulo}>{grupo.rotulo}</span>
+            </div>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
 // Barras empilhadas: uma barra por combinação de dimensões, uma cor por série.
 // Valores são agregados somente dentro da mesma combinação de período, território,
 // categoria, série e métrica; nunca mistura métricas distintas.
@@ -904,6 +973,15 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const metricasComparacao = ["1.2.2", "1.2.5"].includes(indicador.indicador_id);
   const comparacao = linhas.filter(d => !metricasComparacao || !metricaUFAtual || d.metrica === metricaUFAtual);
   const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
+  // Ativa agrupamento apenas quando existem diferentes categorias e séries
+  // repetidas nas mesmas categorias. Gráficos por UF sem essa estrutura ficam iguais.
+  const agrupadas = tipo === "barras" && !metricasComparacao &&
+    new Set(comparacao.map(d => d.categoria_recorte.trim()).filter(Boolean)).size > 1 &&
+    new Set(comparacao.map(d => d.serie_subrecorte.trim()).filter(Boolean)).size > 1 &&
+    comparacao.some((d,i) => comparacao.some((outro,j) => i !== j &&
+      d.categoria_recorte.trim() !== "" && d.categoria_recorte === outro.categoria_recorte &&
+      d.serie_subrecorte.trim() !== "" && outro.serie_subrecorte.trim() !== "" &&
+      d.serie_subrecorte !== outro.serie_subrecorte));
   // Detecta a dimensão que realmente varia: UFs, categorias, séries ou períodos.
   // Território fixo (ex.: Rio de Janeiro) não deve substituir nomes das categorias.
   const distintos = (campo: (d: DadoEixo01) => string) =>
@@ -988,7 +1066,9 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       {aba === "grafico" && !graficoTemporal && <>
         {tipo === "linhas" && <p style={{marginBottom:12}}>Comparação dos valores disponíveis.</p>}
         {/* A métrica só é filtrada para a comparação por UF. */}
-        {barrasVerticais ? (
+        {agrupadas ? (
+          <GraficoBarrasAgrupadas dados={comparacao} titulo={indicador.titulo} />
+        ) : barrasVerticais ? (
           <div className="radar-vertical-scroll" role="region" aria-label={`Comparação em barras verticais: ${indicador.titulo}`} tabIndex={0}>
             <div className="radar-vertical-chart" style={{minWidth: `${Math.max(320, ordered.length * 100)}px`}}>
               <div className="radar-vertical-plot">
