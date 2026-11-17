@@ -165,7 +165,7 @@ footer{background:var(--navy);color:#fff;padding:36px 6vw;display:grid;grid-temp
 .radar-view-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
 .radar-view-controls button{padding:9px 13px;border:1px solid #d9cde4;background:#fff;color:var(--navy);font-size:12px;font-weight:700;border-radius:999px;cursor:pointer}
 .radar-view-controls button.active{background:var(--purple);color:#fff;border-color:var(--purple)}
-.radar-view-legend{display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;color:#516680;font-size:12px;font-weight:700}
+.radar-view-legend{display:flex;justify-content:center;align-items:center;column-gap:18px;row-gap:12px;flex-wrap:wrap;margin:0 0 24px;padding:0 16px;color:#516680;font-size:12px;font-weight:700;line-height:1.4}
 .radar-dynamic-bars{display:grid;gap:12px;max-height:520px;overflow:auto}
 .radar-dynamic-line{padding:8px 10px;border-radius:9px}
 .radar-dynamic-line.highlight{background:#f1e6fa;border:1px solid #d4bbe9}
@@ -267,7 +267,7 @@ footer{background:#410d7b}
 
 /* Barras verticais: valores reais, todas as UFs e navegação horizontal em telas estreitas. */
 .radar-vertical-scroll{overflow-x:auto;overflow-y:hidden;padding:34px 6px 14px;scrollbar-color:#b79ad3 #f4edf8}
-.radar-vertical-chart{width:100%;padding:0 16px 105px 56px;box-sizing:border-box}
+.radar-vertical-chart{width:100%;padding:90px 16px 105px 56px;box-sizing:border-box}
 .radar-vertical-plot{height:360px;position:relative;border-bottom:1px solid #d9cce8}
 .radar-vertical-gridline{position:absolute;left:0;right:0;border-top:1px solid #e9e0f0;pointer-events:none}
 .radar-vertical-gridline span{position:absolute;left:-60px;top:-8px;width:50px;text-align:right;font-size:11px;color:#5d5375;font-variant-numeric:tabular-nums}
@@ -315,7 +315,7 @@ footer{background:#410d7b}
 .radar-stacked-legend-item{display:inline-flex;align-items:center;gap:7px}
 .radar-stacked-legend-item i{display:inline-block;width:11px;height:11px;border-radius:3px;flex-shrink:0}
 .radar-stacked-scroll{overflow-x:auto;overflow-y:visible;padding:18px 4px 64px;scrollbar-color:#b79ad3 #f4edf8}
-.radar-stacked-chart{padding:0 16px 0 64px;width:100%}
+.radar-stacked-chart{padding:90px 16px 80px 64px;width:100%;box-sizing:border-box}
 .radar-stacked-plot{position:relative;height:350px;border-bottom:1px solid #d9cce8}
 .radar-stacked-gridline{position:absolute;left:0;right:0;border-top:1px solid #e9e0f0;pointer-events:none}
 .radar-stacked-gridline span{position:absolute;top:-8px;right:calc(100% + 10px);font-size:11px;color:#5d5375;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -340,8 +340,8 @@ footer{background:#410d7b}
 .radar-grouped-root{width:100%;min-width:0}
 .radar-grouped-legend{display:inline-flex;align-items:center;gap:7px}
 .radar-grouped-legend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
-.radar-grouped-scroll{overflow-x:auto;overflow-y:hidden;padding:16px 4px 10px;scrollbar-color:#b79ad3 #f4edf8}
-.radar-grouped-chart{width:100%;padding:0 18px 95px 64px;box-sizing:border-box}
+.radar-grouped-scroll{overflow-x:auto;overflow-y:hidden;padding:0 4px 10px;scrollbar-color:#b79ad3 #f4edf8}
+.radar-grouped-chart{width:100%;padding:90px 18px 95px 64px;box-sizing:border-box}
 .radar-grouped-plot{height:350px;position:relative;border-bottom:1px solid #d9cce8}
 .radar-grouped-gridline{position:absolute;left:0;right:0;border-top:1px solid #e9e0f0;pointer-events:none}
 .radar-grouped-gridline span{position:absolute;right:calc(100% + 10px);top:-8px;white-space:nowrap;font-size:11px;color:#5d5375;font-variant-numeric:tabular-nums}
@@ -399,7 +399,7 @@ footer{background:#410d7b}
   box-shadow:0 8px 26px #26113a33;padding:11px 14px;
   font-size:12px;font-weight:500;line-height:1.4;text-align:left;white-space:normal;
 }
-.radar-unified-tooltip{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
+.radar-unified-tooltip{position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);
   z-index:20;display:flex;flex-direction:column;gap:4px;min-width:170px;max-width:270px;width:max-content;
   opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease}
 .radar-unified-tooltip strong,.radar-pie-tooltip strong{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#17385f}
@@ -415,3 +415,8 @@ footer{background:#410d7b}
 .radar-pie-tooltip strong{justify-content:center}
 .radar-pie-tooltip{text-align:center}
 .radar-line-point-tooltip span,.radar-tooltip-series{font-weight:700}
+
+/* Mantém legendas em linhas separadas dos tooltips das barras. */
+.radar-grouped-legend,.radar-stacked-legend-item{white-space:normal;max-width:100%;line-height:1.35}
+.radar-grouped-root .radar-view-legend,.radar-stacked-root .radar-view-legend{position:relative;z-index:1}
+@media(max-width:680px){.radar-view-legend{gap:10px 14px;margin-bottom:18px;padding:0 8px}.radar-grouped-chart,.radar-stacked-chart{padding-top:100px}}
