@@ -704,8 +704,13 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
                   const n = Math.max(0, valor(dado));
                   return <div className="radar-grouped-bar-slot" key={serie}>
                     <div className="radar-grouped-bar" style={{height:`${n/teto*100}%`,backgroundColor:cor(serie,j)}}
-                      title={`${grupo.rotulo} · ${serie}: ${formato(n)}`}
-                      aria-label={`${grupo.rotulo}, ${serie}: ${formato(n)}`} role="img" tabIndex={0}/>
+                      aria-label={`${grupo.rotulo}, ${serie}: ${formato(n)}`} role="img" tabIndex={0}>
+                      <span className="radar-unified-tooltip" role="status">
+                        <strong><i style={{background:cor(serie,j)}} />{serie}</strong>
+                        <span>{grupo.rotulo}</span>
+                        <b>{formato(n)}</b>
+                      </span>
+                    </div>
                   </div>;
                 })}
               </div>
@@ -802,8 +807,13 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
                     return <div className="radar-stacked-segment" key={nome}
                       style={{ height: `${valor / total * 100}%`, background: cores[i % cores.length] }}
                       role="img" tabIndex={0}
-                      aria-label={`${barra.nome}, ${nome}: ${formato(valor)}`}
-                      title={`${barra.nome} · ${nome}: ${formato(valor)}`} />;
+                      aria-label={`${barra.nome}, ${nome}: ${formato(valor)}`}>
+                      <span className="radar-unified-tooltip" role="status">
+                        <strong><i style={{background:cores[i % cores.length]}} />{nome}</strong>
+                        <span>{barra.nome}</span>
+                        <b>{formato(valor)}</b>
+                      </span>
+                    </div>;
                   })}
                 </div>
                 <span className="radar-stacked-label" title={barra.nome}>{barra.nome}</span>
@@ -934,7 +944,6 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
             onMouseLeave={() => setFatiaAtiva(null)}
             onFocus={() => setFatiaAtiva(i)}
             onBlur={() => setFatiaAtiva(null)}>
-            <title>{`${f.nome}: ${f.valorExibido} · ${formatoPercentual(f.participacao)}`}</title>
           </path>)}
         </svg>
         {ativa && <div className="radar-pie-tooltip" role="status">
@@ -1146,7 +1155,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
                         height:`${valor/maxVertical*100}%`,
                         background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]
                       }} tabIndex={0} role="img" aria-label={`${nome}: ${fmt(d)}`}>
-                        <span className="radar-vertical-tooltip">{nome}: {fmt(d)}</span>
+                        <span className="radar-unified-tooltip" role="status"><strong><i style={{background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]}} />{nome}</strong><b>{fmt(d)}</b></span>
                       </div>
                       <span className="radar-vertical-label" title={nome}>{nome}</span>
                     </div>;
