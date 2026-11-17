@@ -5,13 +5,7 @@ function Pessoa({cor="#7131ae",saia=false,tamanho=54}:{cor?:string;saia?:boolean
 return <svg width={tamanho} height={tamanho*1.35} viewBox="0 0 64 88" fill="none" aria-hidden="true"><circle cx="32" cy="11" r="10" fill={cor}/>{saia?<path d="M24 23h16l8 35H16l8-35Z" fill={cor}/>:<rect x="21" y="23" width="22" height="37" rx="8" fill={cor}/>}<path d="M24 27 15 51M40 27l9 24" stroke={cor} strokeWidth="8" strokeLinecap="round"/><path d="M25 57v23M39 57v23" stroke={cor} strokeWidth="8" strokeLinecap="round"/></svg>}
 function PessoasIlustradas({compacta=false}:{compacta?:boolean}){return <div className={`ri-people-art${compacta?" compact":""}`} aria-hidden="true"><Pessoa cor="#7131ae" saia tamanho={compacta?40:55}/><Pessoa cor="#42b9e5" tamanho={compacta?40:55}/></div>}
 function MundoIlustrado() {
-  return <svg className="ri-world-art" viewBox="0 0 220 220" fill="none" aria-hidden="true">
-    <circle cx="110" cy="110" r="88" fill="#f5edfb" stroke="#7430ae" strokeWidth="7"/>
-    <circle cx="110" cy="110" r="69" stroke="#b780db" strokeWidth="2.5"/>
-    <ellipse cx="110" cy="110" rx="36" ry="88" stroke="#7430ae" strokeWidth="5"/>
-    <path d="M22 110h176M40 72h140M40 148h140" stroke="#7430ae" strokeWidth="4" strokeLinecap="round"/>
-    <path d="m62 72 20-17 18 4 8 14-10 14-17 5-4 24-20-7-8-20Zm61-13 24-9 19 12-4 19-18 11-9 23-14-9 7-25Zm-11 70 23-9 17 16-9 22-21 19-12-16Z" fill="#7430ae"/>
-  </svg>;
+  return <span className="material-symbols-rounded ri-world-art ri-material-globe" aria-hidden="true">public</span>;
 }
 function MulheresIlustradas(){return <div className="ri-women-art" aria-hidden="true">{["#caa1e9","#9959cb","#7131ae","#caa1e9"].map((cor,i)=><Pessoa key={i} cor={cor} saia tamanho={46}/>)}</div>}
 function TestemunhasIlustradas(){return <svg className="ri-witness-art" viewBox="0 0 110 80" fill="none" aria-hidden="true"><path d="M6 41Q55-13 104 41Q55 94 6 41Z" fill="#dfbbf4" stroke="#7131ae" strokeWidth="4"/><circle cx="55" cy="41" r="23" fill="#7131ae"/><circle cx="55" cy="41" r="10" fill="#fff"/><circle cx="55" cy="41" r="5" fill="#7131ae"/></svg>}
