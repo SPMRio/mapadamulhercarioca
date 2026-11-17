@@ -696,19 +696,21 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     const total = fatias.reduce((soma, fatia) => soma + fatia.valor, 0);
     if (fatias.length !== 2 || total <= 0) return <div className="radar-chart-empty"><p>Dados de homens e mulheres indisponíveis para esta visualização.</p></div>;
     const cores = ["#42b9eb", "#7132b2"];
+    const somentePercentuais = indicador.indicador_id === "1.2.3";
+    const formatoPercentual = (valor: number) => `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`;
     const porcentagem = fatias[0].valor / total * 100;
     return <div className="radar-pie-layout">
       <div className="radar-pie-circle" role="img"
-        aria-label={fatias.map(f => `${f.nome}: ${f.valor.toLocaleString("pt-BR")} habitantes (${(f.valor/total*100).toLocaleString("pt-BR",{maximumFractionDigits:2})}%)`).join("; ")}
+        aria-label={fatias.map(f => `${f.nome}: ${formatoPercentual(f.valor / total * 100)}${somentePercentuais ? "" : ` (${f.valor.toLocaleString("pt-BR")} habitantes)`}`).join("; ")}
         style={{background: `conic-gradient(${cores[0]} 0% ${porcentagem}%, ${cores[1]} ${porcentagem}% 100%)`}}/>
       <div className="radar-pie-legend">
         <strong>Distribuição da população por sexo</strong>
         {fatias.map((f,i) => <div className="radar-pie-legend-item" key={f.nome}>
           <span className="radar-pie-legend-name"><i style={{background:cores[i]}}/>{f.nome}</span>
-          <b>{f.valor.toLocaleString("pt-BR")} habitantes</b>
-          <span>{(f.valor/total*100).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:2})}%</span>
+          {!somentePercentuais && <b>{f.valor.toLocaleString("pt-BR")} habitantes</b>}
+          <span>{formatoPercentual(f.valor / total * 100)}</span>
         </div>)}
-        <small>Total: {total.toLocaleString("pt-BR")} habitantes</small>
+        {!somentePercentuais && <small>Total: {total.toLocaleString("pt-BR")} habitantes</small>}
       </div>
     </div>;
   }
