@@ -47,14 +47,31 @@ export default function RadarInfografico() {
           </div>
           <small className="ri-world-source">Fonte: Global Gender Gap Report 2024, World Economic Forum</small>
         </article>
-        <article className="ri-card">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">♙</span><h4>Brasil · População</h4></div>
-          <MulheresHomens mulheres={51.5} homens={48.5} />
-        </article>
-        <article className="ri-card">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">⌖</span><h4>Município do Rio · População</h4></div>
-          <MulheresHomens mulheres={53.2} homens={46.8} />
-          <div className="ri-elder"><Pessoa cor="#7131ae" saia tamanho={28}/><strong>~60%</strong><span>da população idosa é composta por mulheres</span></div>
+        <article className="ri-card ri-pop-unificada">
+          <h4 className="ri-pop-title">POPULAÇÃO</h4>
+          <div className="ri-pop-unificada-grid">
+            <section className="ri-pop-br" aria-label="População do Brasil">
+              <span className="ri-pop-local"><span className="material-symbols-rounded" aria-hidden="true">location_on</span> BRASIL</span>
+              <div className="ri-pop-icons" aria-hidden="true">
+                <span className="material-symbols-rounded ri-pop-woman">woman</span>
+                <span className="material-symbols-rounded ri-pop-man">man</span>
+              </div>
+              <div className="ri-pop-numbers">
+                <div><strong>51,5%</strong><span>Mulheres</span></div>
+                <div><strong>48,5%</strong><span>Homens</span></div>
+              </div>
+            </section>
+            <section className="ri-pop-rj" aria-label="População do município do Rio de Janeiro">
+              <span className="ri-pop-local"><span className="material-symbols-rounded" aria-hidden="true">location_on</span> MUNICÍPIO DO RIO</span>
+              <div className="ri-rj-sex"><span>Mulheres: <b>53,2%</b></span><span>Homens: <b>46,8%</b></span></div>
+              <h5>POPULAÇÃO IDOSA</h5>
+              <div className="ri-pop-old">
+                <span className="material-symbols-rounded" aria-hidden="true">elderly_woman</span>
+                <div><strong>~60%</strong><span>são mulheres</span></div>
+              </div>
+            </section>
+          </div>
+          <small className="ri-pop-fonte">Fonte: Instituto Brasileiro de Geografia e Estatística (IBGE)</small>
         </article>
       </div>
       <div className="ri-mid-grid">
