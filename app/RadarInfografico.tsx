@@ -1,112 +1,76 @@
 import React from "react";
 
-
-function Pessoa({cor="#7131ae",saia=false,tamanho=54}:{cor?:string;saia?:boolean;tamanho?:number}){
-return <svg width={tamanho} height={tamanho*1.35} viewBox="0 0 64 88" fill="none" aria-hidden="true"><circle cx="32" cy="11" r="10" fill={cor}/>{saia?<path d="M24 23h16l8 35H16l8-35Z" fill={cor}/>:<rect x="21" y="23" width="22" height="37" rx="8" fill={cor}/>}<path d="M24 27 15 51M40 27l9 24" stroke={cor} strokeWidth="8" strokeLinecap="round"/><path d="M25 57v23M39 57v23" stroke={cor} strokeWidth="8" strokeLinecap="round"/></svg>}
-function PessoasIlustradas({compacta=false}:{compacta?:boolean}){return <div className={`ri-people-art${compacta?" compact":""}`} aria-hidden="true"><Pessoa cor="#7131ae" saia tamanho={compacta?40:55}/><Pessoa cor="#42b9e5" tamanho={compacta?40:55}/></div>}
-function MundoIlustrado(){return <svg className="ri-world-art" viewBox="0 0 190 150" fill="none" aria-hidden="true"><path d="M44 12 61 91" stroke="#7435b1" strokeWidth="5" strokeLinecap="round"/><path d="M64 18Q111 -3 168 21v74q-57 -24-104 -3V18Z" fill="#7435b1"/><path d="m86 36 15-8 14 4 5 10-10 3-4 14-12 5-8-8-4-12Zm37-3 17-1 8 10-9 13-5 16-10 8-7-6 3-20Zm-24 38 10 7 4 11-8 3-7-10Z" fill="#f9eafa"/><circle cx="110" cy="107" r="12" fill="#7435b1"/><path d="M99 124h22l9 21H90l9-21Z" fill="#7435b1"/><path d="M87 143h57" stroke="#7435b1" strokeWidth="7" strokeLinecap="round"/><path d="M10 142h57v-18H38v-15H10v33Z" fill="#7435b1"/></svg>}
-function MulheresIlustradas(){return <div className="ri-women-art" aria-hidden="true">{["#caa1e9","#9959cb","#7131ae","#caa1e9"].map((cor,i)=><Pessoa key={i} cor={cor} saia tamanho={46}/>)}</div>}
-function TestemunhasIlustradas(){return <svg className="ri-witness-art" viewBox="0 0 110 80" fill="none" aria-hidden="true"><path d="M6 41Q55-13 104 41Q55 94 6 41Z" fill="#dfbbf4" stroke="#7131ae" strokeWidth="4"/><circle cx="55" cy="41" r="23" fill="#7131ae"/><circle cx="55" cy="41" r="10" fill="#fff"/><circle cx="55" cy="41" r="5" fill="#7131ae"/></svg>}
-function RelogiosIlustrados(){return <div className="ri-clocks" aria-hidden="true">{Array.from({length:6},(_,i)=><svg key={i} width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="17" r="12" stroke="#f6d4ff" strokeWidth="2.5"/><path d="M16 8v9l6 4M12 3h8" stroke="#f6d4ff" strokeWidth="2.5" strokeLinecap="round"/></svg>)}</div>}
-function DinheiroIlustrado(){return <svg className="ri-money-art" viewBox="0 0 132 96" fill="none" aria-hidden="true"><rect x="19" y="26" width="70" height="42" rx="5" fill="#7131ae"/><rect x="28" y="35" width="70" height="42" rx="5" fill="#9e5bc9"/><circle cx="63" cy="55" r="14" fill="#ffdf63"/><path d="M62 44v22m7-17c-6-5-14-2-14 3 0 6 14 1 14 8-1 7-12 7-16 2" stroke="#7131ae" strokeWidth="3" strokeLinecap="round"/><path d="M103 29 117 16m-14 0h14v13" stroke="#7131ae" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-
-function Stat({ valor, legenda }: { valor: string; legenda: string }) {
-  return <div className="ri-stat"><strong>{valor}</strong><span>{legenda}</span></div>;
+// Ilustrações vetoriais editoriais, desenhadas no código e independentes de arquivos externos.
+function Pessoa({cor="#7430b3",modelo="saia",pequena=false}:{cor?:string;modelo?:"saia"|"calca";pequena?:boolean}) {
+  return <svg viewBox="0 0 74 120" className={pequena?"rd-person rd-person-small":"rd-person"} aria-hidden="true" fill="none">
+    <circle cx="37" cy="15" r="15" fill={cor}/>
+    {modelo==="saia" ? <path d="M24 36h26l13 53H11l13-53Z" fill={cor}/> : <rect x="20" y="36" width="34" height="55" rx="14" fill={cor}/>}
+    <path d="M22 44 9 78M52 44l13 34" stroke={cor} strokeWidth="12" strokeLinecap="round"/>
+    <path d="M25 88v25M49 88v25" stroke={cor} strokeWidth="14" strokeLinecap="round"/>
+  </svg>;
 }
-function MulheresHomens({ mulheres, homens }: { mulheres: number; homens: number }) {
-  return <div className="ri-population">
-    <PessoasIlustradas />
-    <div className="ri-population-bars" role="img" aria-label={`Mulheres: ${mulheres}%; homens: ${homens}%`}>
-      <span style={{ width: `${mulheres}%` }} /><span style={{ width: `${homens}%` }} />
-    </div>
-    <div className="ri-population-labels">
-      <div><strong>{mulheres.toLocaleString("pt-BR")}%</strong><small>Mulheres</small></div>
-      <div><strong>{homens.toLocaleString("pt-BR")}%</strong><small>Homens</small></div>
-    </div>
-  </div>;
+function BandeiraMundo() {
+  return <svg className="rd-flag-art" viewBox="0 0 210 218" fill="none" aria-hidden="true">
+    <path d="m36 15 47 140" stroke="#752cb0" strokeWidth="7" strokeLinecap="round"/>
+    <path d="M62 23Q110 4 192 22v93q-62-22-107-4L62 23Z" fill="#742cb0"/>
+    <path d="m94 45 18-14 22 5 9 15-14 14-19-1-8 18-16-8 3-17Zm52-3 27 3-2 22-15 19-8-6-6-24Zm-25 44 18-9 10 12-7 14-18-4Z" fill="#fff" opacity=".95"/>
+    <circle cx="126" cy="142" r="16" fill="#742cb0"/>
+    <path d="M115 165h21l18 28h-46l7-28Z" fill="#742cb0"/>
+    <path d="m115 177-15 22m35-18 21 21" stroke="#742cb0" strokeWidth="12" strokeLinecap="round"/>
+    <path d="M44 203h111v10H44zM51 178h42v25H51z" fill="#742cb0"/>
+  </svg>;
 }
+function Lupa() {return <svg viewBox="0 0 70 75" fill="none" aria-hidden="true"><circle cx="28" cy="28" r="23" stroke="currentColor" strokeWidth="6"/><circle cx="28" cy="28" r="12" stroke="currentColor" strokeWidth="3"/><path d="m45 47 19 20" stroke="currentColor" strokeWidth="9" strokeLinecap="round"/></svg>}
+function Relogio() {return <svg viewBox="0 0 42 42" fill="none" aria-hidden="true"><circle cx="21" cy="22" r="16" stroke="currentColor" strokeWidth="3"/><path d="M21 10v12l8 7M15 3h12" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>}
+function SacoDinheiro() {return <svg viewBox="0 0 85 96" fill="none" aria-hidden="true"><path d="M29 8c4 7 8 9 13 9s9-2 13-9l-5 22C66 45 77 65 67 81c-7 11-42 12-49-1-10-17 3-39 20-50L29 8Z" fill="#7830b1"/><path d="M35 22h19" stroke="#ffd34d" strokeWidth="6" strokeLinecap="round"/><text x="42" y="68" fill="#ffd34d" fontSize="37" textAnchor="middle" fontWeight="900">$</text></svg>}
+function GraficoSubida(){return <svg viewBox="0 0 125 100" fill="none" aria-hidden="true"><rect x="10" y="65" width="20" height="28" rx="8" fill="#cb8bef"/><rect x="42" y="48" width="20" height="45" rx="8" fill="#a35bdd"/><rect x="74" y="30" width="20" height="63" rx="8" fill="#cf8dec"/><path d="m8 47 34-25 20 11 43-28m-20 0h20v20" stroke="#fff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+function RendaPessoas(){return <div className="rd-renda-pessoas" aria-hidden="true"><div><Pessoa cor="#7330b1"/><span>R$ 2.973</span></div><i/><div><Pessoa cor="#17385f" modelo="calca"/><span>R$ 3.735</span></div></div>}
+function Habitantes({mulheres,homens}:{mulheres:string;homens:string}) {return <div className="rd-habitantes"><div className="rd-habitantes-fig"><Pessoa cor="#7732b3"/><Pessoa cor="#43b9e5" modelo="calca"/></div><div className="rd-habitantes-numeros"><div><b>{mulheres}</b><span>Mulheres</span></div><div><b>{homens}</b><span>Homens</span></div></div></div>}
+
 export default function RadarInfografico() {
-  return (
-    <div className="ri-root" aria-label="Infográfico do Radar de Dados: panorama de gênero">
-      <div className="ri-heading">
-        <div><span className="ri-kicker">PANORAMA DE GÊNERO</span><h3>Infográfico | Radar de Dados</h3></div>
-        <p>Mundo, Brasil e Rio de Janeiro em perspectiva</p>
-      </div>
-      <div className="ri-top-grid">
-        <article className="ri-card ri-world">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">◎</span><h4>Mundo</h4></div>
-          <p className="ri-subhead">Brasil no Índice Global de Lacuna de Gênero (2024)</p>
-          <div className="ri-world-composition"><div className="ri-world-stats">
-            <Stat valor="70º" legenda="lugar no mundo, entre 146 países" />
-            <Stat valor="16º" legenda="lugar na América Latina" />
-          </div>
-          <MundoIlustrado /></div><small className="ri-source">Fonte: Global Gender Gap Report 2024, World Economic Forum</small>
-        </article>
-        <article className="ri-card">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">♙</span><h4>Brasil · População</h4></div>
-          <MulheresHomens mulheres={51.5} homens={48.5} />
-        </article>
-        <article className="ri-card">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">⌖</span><h4>Município do Rio · População</h4></div>
-          <MulheresHomens mulheres={53.2} homens={46.8} />
-          <div className="ri-elder"><Pessoa cor="#7131ae" saia tamanho={28}/><strong>~60%</strong><span>da população idosa é composta por mulheres</span></div>
-        </article>
-      </div>
-      <div className="ri-mid-grid">
-        <article className="ri-card ri-violence">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">◇</span><h4>Violência doméstica e familiar</h4></div>
-          <div className="ri-big-number"><strong>23,6 milhões</strong><span>de mulheres já sofreram violência no Brasil</span></div>
-          <MulheresIlustradas /><div className="ri-violence-grid">
-            <Stat valor="27%" legenda="das brasileiras · cerca de 1 em cada 4 mulheres" />
-            <Stat valor="30%" legenda="média mundial (OMS)" />
-          </div>
-          <div className="ri-divider" />
-          <h5>Rio de Janeiro</h5>
-          <div className="ri-inline-stats"><Stat valor="2,5 milhões+" legenda="de mulheres" /><Stat valor="3º" legenda="estado com mais casos no país" /></div>
-          <div className="ri-witness-illustration"><TestemunhasIlustradas /><span>Testemunhas nas situações de violência</span></div><div className="ri-witness">
-            <div><strong>7 em cada 10</strong><span>casos tiveram testemunhas</span></div>
-            <div><strong>71%</strong><span>das agressões com testemunhas foram presenciadas por crianças</span></div>
-          </div>
-        </article>
-        <article className="ri-card ri-femicide">
-          <div className="ri-card-head"><span className="ri-icon" aria-hidden="true">◷</span><h4>Feminicídio</h4></div>
-          <div className="ri-femicide-hero"><strong>1.470</strong><span>vítimas no Brasil</span></div>
-          <RelogiosIlustrados /><div className="ri-femicide-frequency">
-            <div><strong>4</strong><span>mulheres assassinadas por dia, em média</span></div>
-            <div><strong>6h</strong><span>uma mulher assassinada a cada seis horas</span></div>
-          </div>
-          <h5>Evolução em 10 anos</h5>
-          <div className="ri-trend" role="img" aria-label="535 casos em 2015 e 1.470 casos em 2025">
-            <div><span>2015</span><div className="ri-trend-track"><i style={{width:"36.4%"}} /></div><strong>535</strong></div>
-            <div><span>2025</span><div className="ri-trend-track"><i style={{width:"100%"}} /></div><strong>1.470</strong></div>
-          </div>
-          <div className="ri-divider" />
-          <h5>Rio de Janeiro · 2025</h5>
-          <div className="ri-inline-stats"><Stat valor="104" legenda="casos" /><Stat valor="2º" legenda="estado com mais vítimas" /></div>
-          <div className="ri-rate">Taxa por 100 mil habitantes <b>RJ: 1,35</b><b>Brasil: 1,67</b></div>
-        </article>
-      </div>
-      <article className="ri-income">
-        <div className="ri-income-title"><DinheiroIlustrado /><div><span>DESIGUALDADE ECONÔMICA</span><h4>Disparidade de renda</h4></div></div>
-        <div className="ri-income-grid">
-          <div className="ri-income-br">
-            <h5>Brasil · Rendimento médio mensal por gênero</h5>
-            <div className="ri-income-figures"><PessoasIlustradas compacta /></div><div className="ri-salary"><div><span>Homens</span><strong>R$ 3.735</strong><i style={{width:"100%"}} /></div><div><span>Mulheres</span><strong>R$ 2.973</strong><i style={{width:"79.6%"}} /></div></div>
-            <div className="ri-income-facts">
-              <div><strong>R$ 762</strong><span>a menos por mês</span></div>
-              <div><strong>54%</strong><span>de um salário mínimo</span></div>
-              <div><strong>Quase R$ 10 mil</strong><span>a menos por ano no orçamento feminino</span></div>
-            </div>
-          </div>
-          <div className="ri-income-rio">
-            <h5>Município do Rio de Janeiro</h5>
-            <div className="ri-income-rio-value">R$ 1.458 <span>a menos por mês para as mulheres</span></div>
-            <p>Diferença equivalente a <strong>1 salário mínimo por mês</strong>.</p>
-            <p>A cada dois meses trabalhados, o homem recebe <strong>1 salário mínimo a mais</strong> do que a mulher.</p>
-          </div>
-        </div>
-      </article>
-      <p className="ri-footnote">Síntese com os valores fornecidos para o infográfico. Consulte as fontes e notas metodológicas dos indicadores para contextualização.</p>
+ return <div className="rd-painel" aria-label="Infográfico Radar de Dados">
+  <h3 className="rd-title">INFOGRÁFICO <span>|</span> RADAR DE DADOS</h3>
+  <div className="rd-grade">
+   <article className="rd-bloco rd-mundo">
+    <h4>ÍNDICE GLOBAL DE DISPARIDADE DE GÊNERO</h4>
+    <div className="rd-mundo-layout"><div className="rd-mundo-numeros"><h5>BRASIL</h5><strong>70º</strong><p>País no mundo <small>(entre 146 países)</small></p><strong>16º</strong><p>País na América Latina</p></div><BandeiraMundo/></div>
+    <small className="rd-fonte">Fonte: Global Gender Gap Report 2024, World Economic Forum</small>
+   </article>
+   <article className="rd-bloco rd-populacao">
+    <h4>POPULAÇÃO</h4>
+    <div className="rd-local"><span className="rd-pin">●</span> BRASIL</div>
+    <Habitantes mulheres="51,5%" homens="48,5%"/>
+    <div className="rd-local rd-local-rio"><span className="rd-pin">●</span> MUNICÍPIO DO RIO</div>
+    <div className="rd-rio-percent"><span>Mulheres: <b>53,2%</b></span><span>Homens: <b>46,8%</b></span></div>
+    <div className="rd-idosas"><div className="rd-idosas-fig"><Pessoa cor="#17385f" pequena/><Pessoa cor="#17385f" modelo="calca" pequena/></div><div><b>60%</b><span>da população idosa são mulheres</span></div></div>
+    <small className="rd-fonte">Fonte: Instituto Brasileiro de Geografia e Estatística (IBGE)</small>
+   </article>
+   <article className="rd-bloco rd-violencia">
+    <h4>VIOLÊNCIA DOMÉSTICA E FAMILIAR</h4>
+    <p className="rd-intro-violencia"><b>▶ 23,6 milhões</b> de brasileiras relataram sofrer violência em 2025<br/><strong>1 EM CADA 4 MULHERES</strong></p>
+    <div className="rd-quatro-mulheres" aria-hidden="true"><Pessoa cor="#c48ae8"/><Pessoa cor="#be82e9"/><Pessoa cor="#7130b3"/><Pessoa cor="#c48ae8"/></div>
+    <div className="rd-violencia-percent"><p><b>27%</b> das brasileiras sofreram violência de gênero em 2025</p><div><b>30%</b></div><p>Média mundial segundo a OMS</p></div>
+    <div className="rd-faixa-rj">RJ é o 3º estado com<br/> mais casos no país</div>
+    <p className="rd-mais-rj">Mais de <b>2,5 milhões</b> de mulheres no Rio de Janeiro</p>
+    <div className="rd-testemunhas"><div><Lupa/><p><b>7 em cada 10</b> casos tiveram testemunhas</p></div><div><Pessoa cor="#b777df" pequena/><p><b>71%</b> dessas agressões com testemunhas foram presenciadas por crianças</p></div></div>
+    <small className="rd-fonte">Fonte: Observatório da Mulher contra a Violência / Senado Federal</small>
+   </article>
+   <article className="rd-bloco rd-feminicidio">
+    <h4>FEMINICÍDIO</h4>
+    <div className="rd-femi-grid"><div className="rd-femi-esquerda"><div className="rd-losango"><b>1.470</b><span>vítimas<br/>no país</span></div><p>EM MÉDIA <b>4</b><br/><strong>MULHERES ASSASSINADAS POR DIA</strong></p><hr/><h5>104 CASOS<br/>EM 2025</h5><p>Rio de Janeiro: 2º estado com mais vítimas no Brasil</p></div>
+     <div className="rd-femi-direita"><p>uma mulher assassinada</p><div className="rd-relogios">{Array.from({length:6},(_,i)=><Relogio key={i}/>)}</div><p>a cada<br/><b>6 horas</b></p><hr/><div className="rd-subida"><GraficoSubida/><div><b>535 CASOS</b><span>EM 2015</span><b>1.470 CASOS</b><span>EM 2025</span></div></div></div>
     </div>
-  );
+    <p className="rd-taxa">Taxa por 100 mil habitantes: <b>RJ 1,35</b> · <b>Brasil 1,67</b></p>
+    <small className="rd-fonte">Fonte: Sistema Nacional de Informações de Segurança Pública (SINESP/MJSP)</small>
+   </article>
+   <article className="rd-bloco rd-renda">
+    <h4>DISPARIDADE DE RENDA</h4>
+    <div className="rd-renda-grade"><div className="rd-renda-resumo"><span className="rd-renda-setas">↑<br/>↓</span><p>No Brasil, mulheres recebem <b>quase R$ 10 mil a menos por ano</b></p></div>
+    <div className="rd-renda-meio"><RendaPessoas/><p>Rendimento médio mensal<br/><b>Diferença de R$ 762 por mês</b></p></div>
+    <div className="rd-renda-saco"><SacoDinheiro/><p>Diferença equivalente a <b>54% de um salário mínimo</b></p></div>
+    <div className="rd-renda-municipio"><b>MUNICÍPIO DO RIO</b><strong>R$ 1.458</strong><span>a menos por mês para as mulheres</span><small>Equivalente a 1 salário mínimo por mês. A cada dois meses trabalhados, o homem recebe 1 salário mínimo a mais.</small></div></div>
+    <small className="rd-fonte">Fonte: Instituto Brasileiro de Geografia e Estatística (IBGE)</small>
+   </article>
+  </div>
+ </div>;
 }
