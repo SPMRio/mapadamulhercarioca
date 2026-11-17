@@ -1190,6 +1190,11 @@ export default function RadarClient({
   const [alturaMenu, setAlturaMenu] = useState(320);
   const [abrirMenuAcima, setAbrirMenuAcima] = useState(true);
   const [buscaIndicador, setBuscaIndicador] = useState("");
+  const [catalogoAberto, setCatalogoAberto] = useState(false);
+  const [buscaCatalogo, setBuscaCatalogo] = useState("");
+  const [eixoCatalogo, setEixoCatalogo] = useState("todos");
+  const buscaCatalogoRef = useRef<HTMLInputElement>(null);
+  const abrirCatalogoRef = useRef<HTMLButtonElement>(null);
   const seletorRef = useRef<HTMLDivElement>(null);
   const gatilhoRef = useRef<HTMLButtonElement>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
@@ -1200,6 +1205,56 @@ export default function RadarClient({
     ).sort((a, b) => a.indicador_id.localeCompare(b.indicador_id, "pt-BR", { numeric: true, sensitivity: "base" })), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
+
+  const indicadoresCatalogo = useMemo(() => {
+    const normalizar = (valor: string) => valor.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+    const busca = normalizar(buscaCatalogo.trim());
+    return indicadores.filter(item => {
+      const eixo = String(item.tema ?? "");
+      if (eixoCatalogo !== "todos" && normalizar(eixo) !== normalizar(eixoCatalogo)) return false;
+      return !busca || normalizar([tituloPublico(item.titulo), item.indicador_id, eixo, item.descricao ?? ""].join(" ")).includes(busca);
+    }).sort((a, b) => {
+      const porCodigo = a.indicador_id.localeCompare(b.indicador_id, "pt-BR", {numeric:true});
+      return porCodigo || tituloPublico(a.titulo).localeCompare(tituloPublico(b.titulo),"pt-BR");
+    });
+  }, [indicadores, buscaCatalogo, eixoCatalogo]);
+
+  useEffect(() => {
+    if (!catalogoAberto) return;
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    buscaCatalogoRef.current?.focus({preventScroll:true});
+    const fecharEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCatalogoAberto(false);
+    };
+    document.addEventListener("keydown", fecharEscape);
+    return () => {
+      document.body.style.overflow = anterior;
+      document.removeEventListener("keydown", fecharEscape);
+      abrirCatalogoRef.current?.focus({preventScroll:true});
+    };
+  }, [catalogoAberto]);
+
+  function abrirCatalogo() {
+    setBuscaCatalogo("");
+    setEixoCatalogo("todos");
+    setSeletorAberto(false);
+    setCatalogoAberto(true);
+  }
+
+  function escolherNoCatalogo(item: Indicador & {tema?: string}) {
+    const eixo = temas.find(t => t.toLocaleLowerCase("pt-BR") === String(item.tema ?? "").toLocaleLowerCase("pt-BR"));
+    if (!eixo) return;
+    setTema(eixo);
+    setIndicadorId(item.indicador_id);
+    setAbaVisualizacao("grafico");
+    setBuscaIndicador("");
+    setSeletorAberto(false);
+    setCatalogoAberto(false);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => document.getElementById("indicador-conteudo")?.scrollIntoView({behavior:"smooth",block:"start"}));
+    });
+  }
 
   const indicadoresFiltrados = useMemo(() => {
     const busca = buscaIndicador.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
@@ -1290,6 +1345,14 @@ export default function RadarClient({
                 {tituloEixo(item)}
               </button>
             ))}
+          </div>
+          <div className="sidebar-catalogo">
+            <button ref={abrirCatalogoRef} type="button" className="sidebar-catalogo-btn" onClick={abrirCatalogo} aria-haspopup="dialog">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /><path d="M8 10.5h5" />
+              </svg>
+              Todos os indicadores
+            </button>
           </div>
           <div className="source-note"><i>↗</i>
             <p><b>Dados abertos</b><br />Consulte as fontes de cada indicador publicado.</p>
@@ -1453,6 +1516,63 @@ export default function RadarClient({
           </section>
         </div>
       </section>
+      {catalogoAberto && (
+        <div className="catalogo-backdrop" onMouseDown={event => {if(event.target===event.currentTarget)setCatalogoAberto(false);}}>
+          <section className="catalogo-modal" role="dialog" aria-modal="true" aria-labelledby="catalogo-titulo">
+            <div className="catalogo-header">
+              <div>
+                <span>CONSULTA RÁPIDA</span>
+                <h2 id="catalogo-titulo">Todos os indicadores</h2>
+                <p>Encontre um indicador em qualquer eixo e abra diretamente sua visualização.</p>
+              </div>
+              <button type="button" className="catalogo-close" aria-label="Fechar todos os indicadores" onClick={() => setCatalogoAberto(false)}>×</button>
+            </div>
+            <div className="catalogo-controls">
+              <label className="catalogo-search">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+                <input ref={buscaCatalogoRef} type="search" value={buscaCatalogo}
+                  onChange={event => setBuscaCatalogo(event.target.value)}
+                  placeholder="Buscar pelo nome, assunto ou código..." aria-label="Buscar em todos os indicadores" />
+              </label>
+              <label className="catalogo-eixo-label">
+                <span>Eixo temático</span>
+                <select value={eixoCatalogo} onChange={event => setEixoCatalogo(event.target.value)}>
+                  <option value="todos">Todos os eixos</option>
+                  {temas.map(eixo => <option key={eixo} value={eixo}>{tituloEixo(eixo)}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="catalogo-summary" aria-live="polite">
+              {indicadoresCatalogo.length} {indicadoresCatalogo.length === 1 ? "indicador encontrado" : "indicadores encontrados"}
+              {(buscaCatalogo || eixoCatalogo !== "todos") && (
+                <button type="button" onClick={() => {setBuscaCatalogo("");setEixoCatalogo("todos");}}>Limpar filtros</button>
+              )}
+            </div>
+            <div className="catalogo-results">
+              {indicadoresCatalogo.length === 0 ? (
+                <div className="catalogo-empty">Nenhum indicador encontrado. Tente outro termo ou selecione todos os eixos.</div>
+              ) : (
+                temas.map(eixo => {
+                  const itens = indicadoresCatalogo.filter(item => String(item.tema ?? "").toLocaleLowerCase("pt-BR") === eixo.toLocaleLowerCase("pt-BR"));
+                  if (!itens.length) return null;
+                  return <div className="catalogo-group" key={eixo}>
+                    <h3>{tituloEixo(eixo)} <span>{itens.length}</span></h3>
+                    {itens.map(item => (
+                      <button type="button" className="catalogo-item" key={item.indicador_id} onClick={() => escolherNoCatalogo(item)}>
+                        <span className="catalogo-item-info">
+                          <strong>{tituloPublico(item.titulo)}</strong>
+                          <small>{item.periodo ? `Período: ${item.periodo}` : "Abrir visualização do indicador"}</small>
+                        </span>
+                        <span className="catalogo-item-arrow" aria-hidden="true">↗</span>
+                      </button>
+                    ))}
+                  </div>;
+                })
+              )}
+            </div>
+          </section>
+        </div>
+      )}
       <footer id="sobre">
         <div><b>MAPA DA<br />MULHER CARIOCA</b></div>
         <p>Uma iniciativa da Secretaria Especial de Políticas para Mulheres e Cuidados da Prefeitura do Rio.</p>
