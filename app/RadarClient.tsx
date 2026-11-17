@@ -846,7 +846,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
               </div>
             ))}
           </div>
-        )}</>
+        )}</>}
       {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
         <table><thead><tr><th>Período</th><th>Território</th><th>Categoria</th><th>Série</th><th>Métrica</th><th>Valor</th></tr></thead>
           <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.territorio}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{d.metrica}</td><td>{d.texto || fmt(d)}</td></tr>)}</tbody>
