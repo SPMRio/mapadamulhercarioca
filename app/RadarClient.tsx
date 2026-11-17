@@ -902,11 +902,35 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
             ))}
           </div>
         )}</>}
-      {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
-        <table><thead><tr><th>Período</th><th>Território</th><th>Categoria</th><th>Série</th><th>Métrica</th><th>Valor</th></tr></thead>
-          <tbody>{ordered.map((d,i) => <tr key={i}><td>{exibirPeriodo(d.periodo)}</td><td>{d.territorio}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{d.metrica}</td><td>{d.texto || fmt(d)}</td></tr>)}</tbody>
-        </table>
-      </div>}
+      {aba === "tabela" && (() => {
+        // Esconde apenas as colunas inteiramente vazias no indicador selecionado.
+        // Os dados continuam intactos no BigQuery e nas demais visualizações.
+        const mostrarPeriodo = ordered.some(d => Boolean(d.periodo?.trim()));
+        const mostrarTerritorio = ordered.some(d => Boolean(d.territorio?.trim()));
+        const mostrarCategoria = ordered.some(d => Boolean(d.categoria_recorte?.trim()));
+        const mostrarSerie = ordered.some(d => Boolean(d.serie_subrecorte?.trim()));
+        const mostrarMetrica = ordered.some(d => Boolean(d.metrica?.trim()));
+        return <div className="radar-data-table-wrap radar-table-standalone">
+          <table>
+            <thead><tr>
+              {mostrarPeriodo && <th>Período</th>}
+              {mostrarTerritorio && <th>Território</th>}
+              {mostrarCategoria && <th>Categoria</th>}
+              {mostrarSerie && <th>Série</th>}
+              {mostrarMetrica && <th>Métrica</th>}
+              <th>Valor</th>
+            </tr></thead>
+            <tbody>{ordered.map((d,i) => <tr key={i}>
+              {mostrarPeriodo && <td>{exibirPeriodo(d.periodo)}</td>}
+              {mostrarTerritorio && <td>{d.territorio}</td>}
+              {mostrarCategoria && <td>{d.categoria_recorte}</td>}
+              {mostrarSerie && <td>{d.serie_subrecorte}</td>}
+              {mostrarMetrica && <td>{d.metrica}</td>}
+              <td>{d.texto || fmt(d)}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>;
+      })()}
       {avisos.length > 0 && <p className="radar-data-notice">Alguns registros ainda exigem conferência de fonte, escala ou total. Consulte a documentação antes de utilizar esses dados como definitivos.</p>}
     </div>
   );
