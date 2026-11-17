@@ -643,7 +643,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     const n = Number(d.valor);
     if (d.tipo_valor === "moeda" || d.unidade_dado === "R$") return moeda(n);
     if (d.unidade_dado === "%" || /proporção|percentual/i.test(d.metrica ?? "")) return `${(d.escala === "0–1" ? n * 100 : n).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
-    if (/100\s*mil/i.test(d.unidade_dado) || /taxa/i.test(d.metrica ?? "")) return n.toLocaleString("pt-BR", {maximumFractionDigits: 5});
+    if (/100\s*mil/i.test(d.unidade_dado ?? "") || /taxa/i.test(d.metrica ?? "")) return n.toLocaleString("pt-BR", {maximumFractionDigits: 5});
     if (d.unidade_dado === "posição") return `${n}º`;
     return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   };
