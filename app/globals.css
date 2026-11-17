@@ -549,3 +549,110 @@ footer{background:#410d7b}
 .ri-income-figures .ri-people-art{justify-content:flex-start;min-height:55px;margin-bottom:9px}
 @media(max-width:1100px){.ri-world-composition{grid-template-columns:minmax(0,1fr) minmax(90px,25%)}}
 @media(max-width:450px){.ri-world-composition{grid-template-columns:minmax(0,1fr) 112px}.ri-money-art{width:48px}.ri-clocks{gap:4px}}
+
+
+/* Radar de Dados: composição editorial inspirada na referência enviada pelo usuário. */
+.rd-painel{--rd-roxo:#7430ad;--rd-azul:#42bae5;--rd-lilas:#c98be9;--rd-marinho:#17385f;background:#f4f3f4;color:var(--rd-roxo);padding:clamp(17px,2.5vw,35px);border-radius:19px;font-family:Arial,Helvetica,sans-serif}
+.rd-painel *{box-sizing:border-box}
+.rd-title{font-size:clamp(21px,2.5vw,36px);font-weight:900;line-height:1.1;color:var(--rd-roxo);margin:0 0 20px;letter-spacing:-.025em}
+.rd-title span{font-weight:400}
+.rd-grade{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"mundo populacao" "violencia feminicidio" "renda renda";gap:14px}
+.rd-bloco{position:relative;min-width:0;background:#f4f3f4;border:1.7px solid var(--rd-roxo);border-radius:20px;padding:clamp(15px,1.6vw,24px);overflow:hidden}
+.rd-bloco h4{font-size:clamp(16px,1.45vw,22px);font-weight:900;color:var(--rd-roxo);margin:0 0 13px;line-height:1.1}
+.rd-bloco h5{margin:0;font-size:clamp(13px,1.1vw,17px);color:inherit;font-weight:900}
+.rd-fonte{display:block;font-size:9px;line-height:1.4;opacity:.75;margin-top:12px;color:inherit}
+.rd-mundo{grid-area:mundo}
+.rd-mundo-layout{display:grid;grid-template-columns:1fr minmax(110px,46%);align-items:center;gap:8px}
+.rd-mundo-numeros strong{font-size:clamp(48px,6vw,88px);letter-spacing:-.06em;line-height:1;color:var(--rd-azul);display:block;font-weight:900}
+.rd-mundo-numeros p{font-size:clamp(13px,1.2vw,18px);margin:0 0 12px;line-height:1.2;color:var(--rd-roxo)}
+.rd-mundo-numeros small{display:block;font-size:10px}
+.rd-flag-art{width:100%;max-height:260px}
+.rd-populacao{grid-area:populacao}
+.rd-local{display:inline-flex;align-items:center;gap:5px;color:#fff;background:var(--rd-roxo);padding:4px 12px;border-radius:15px;font-size:12px;letter-spacing:.03em;font-weight:900;line-height:1}
+.rd-pin{display:grid;place-items:center;background:var(--rd-azul);border:2px solid white;border-radius:100%;width:19px;height:19px;margin:-4px 0 -4px -11px;color:white;font-size:9px}
+.rd-habitantes{display:flex;align-items:center;gap:16px;padding:12px 0 8px}
+.rd-habitantes-fig{display:flex;gap:8px;align-items:flex-end;justify-content:center;flex:0 0 48%}
+.rd-person{width:min(70px,45%);height:auto;display:block}
+.rd-person-small{width:28px;flex:none}
+.rd-habitantes-numeros{display:flex;gap:8px;min-width:0}
+.rd-habitantes-numeros div{min-width:0;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.rd-habitantes-numeros b{font-size:clamp(20px,2vw,33px);font-weight:900}
+.rd-habitantes-numeros div:nth-child(2) b{color:var(--rd-azul)}
+.rd-habitantes-numeros span{font-size:11px}
+.rd-local-rio{margin-top:5px}
+.rd-rio-percent{display:flex;flex-wrap:wrap;gap:6px 15px;margin:12px 0;font-size:clamp(12px,1.15vw,16px);color:var(--rd-marinho)}
+.rd-rio-percent b{color:var(--rd-roxo)}
+.rd-idosas{display:flex;align-items:center;gap:12px;margin-top:8px}
+.rd-idosas-fig{display:flex;gap:2px;align-items:end}
+.rd-idosas b{font-size:clamp(23px,2.2vw,35px);font-weight:900;color:var(--rd-marinho)}
+.rd-idosas span{font-size:12px;line-height:1.25;color:var(--rd-marinho);display:block}
+.rd-violencia{grid-area:violencia}
+.rd-intro-violencia{color:var(--rd-marinho);font-size:clamp(12px,1.2vw,18px);line-height:1.25;margin:0 0 12px}
+.rd-intro-violencia b,.rd-intro-violencia strong{color:var(--rd-roxo);font-weight:900}
+.rd-quatro-mulheres{display:flex;justify-content:center;align-items:flex-end;gap:5px;padding:6px 0 2px}
+.rd-quatro-mulheres .rd-person{width:min(72px,22%);max-height:105px}
+.rd-violencia-percent{display:grid;grid-template-columns:1.2fr auto .8fr;align-items:center;gap:12px;margin:10px 0}
+.rd-violencia-percent p{font-size:clamp(12px,1.15vw,17px);line-height:1.2;margin:0}
+.rd-violencia-percent p b{font-size:1.18em}
+.rd-violencia-percent>div{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:var(--rd-roxo);color:#fff}
+.rd-violencia-percent>div b{font-size:24px}
+.rd-faixa-rj{background:var(--rd-roxo);color:#fff;border-radius:15px;font-size:clamp(15px,1.5vw,22px);font-weight:900;line-height:1.1;text-align:center;padding:12px;margin:14px 0 9px}
+.rd-mais-rj{font-size:12px;line-height:1.3;margin:0 0 7px;color:var(--rd-marinho)}
+.rd-testemunhas{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:13px}
+.rd-testemunhas>div{display:flex;align-items:center;gap:8px}
+.rd-testemunhas svg{color:var(--rd-lilas);width:44px;min-width:36px;height:auto}
+.rd-testemunhas .rd-person{width:33px;min-width:33px}
+.rd-testemunhas p{font-size:clamp(10px,.96vw,14px);line-height:1.2;margin:0;color:var(--rd-marinho)}
+.rd-testemunhas b{color:var(--rd-roxo);font-weight:900}
+.rd-feminicidio{grid-area:feminicidio;background:var(--rd-roxo);border-color:var(--rd-roxo);color:#fff}
+.rd-feminicidio h4{text-align:center;color:#fff}
+.rd-femi-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.rd-femi-esquerda{padding-right:10px;border-right:5px solid #fff}
+.rd-losango{height:130px;width:180px;max-width:100%;margin:6px auto 20px;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;text-align:center}
+.rd-losango:before{content:"";position:absolute;inset:15px 20px;background:#bf84e5;transform:rotate(45deg);border-radius:17px}
+.rd-losango>*{position:relative;z-index:1}
+.rd-losango b{font-size:clamp(26px,2.4vw,39px);line-height:1.1;color:#fff}
+.rd-losango span{font-size:14px;line-height:1.1;color:#fff}
+.rd-femi-esquerda>p{font-size:clamp(12px,1.2vw,18px);line-height:1.12;margin:10px 0}
+.rd-femi-esquerda>p b{font-size:clamp(25px,2.6vw,44px)}
+.rd-femi-esquerda>p strong{font-size:clamp(17px,1.7vw,26px);font-weight:900}
+.rd-femi-grid hr{height:5px;border:0;background:#fff;margin:12px 0}
+.rd-femi-esquerda h5{font-size:clamp(18px,1.6vw,26px)}
+.rd-femi-direita>p{font-size:clamp(13px,1.2vw,19px);line-height:1.2;margin:5px 0}
+.rd-femi-direita>p b{font-size:24px}
+.rd-relogios{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 10px;max-width:190px;padding:10px 0}
+.rd-relogios svg{width:100%;max-width:46px;color:#e9c6fc;height:auto}
+.rd-subida{display:flex;align-items:center;gap:8px}
+.rd-subida svg{width:49%;max-width:125px}
+.rd-subida>div{display:flex;flex-direction:column;gap:3px}
+.rd-subida b{font-size:12px}
+.rd-subida span{font-size:10px;margin-bottom:8px}
+.rd-taxa{font-size:11px;line-height:1.35;margin:14px 0 5px;color:#f1dff9}
+.rd-feminicidio .rd-fonte{color:#fff}
+.rd-renda{grid-area:renda;background:#ffd64b;border-color:#ffd64b;border-radius:20px;color:#4a176d}
+.rd-renda h4{margin-bottom:15px}
+.rd-renda-grade{display:grid;grid-template-columns:1fr 1.2fr .9fr 1.15fr;align-items:center;gap:16px}
+.rd-renda-resumo{display:flex;align-items:center;gap:10px}
+.rd-renda-setas{font-size:45px;line-height:.55;font-weight:900;color:var(--rd-roxo)}
+.rd-renda-resumo p{font-size:clamp(13px,1.22vw,18px);line-height:1.2;margin:0;color:#432654}
+.rd-renda-meio{text-align:center}
+.rd-renda-pessoas{display:flex;align-items:center;justify-content:center;gap:10px}
+.rd-renda-pessoas>div{display:flex;align-items:center;flex-direction:column;gap:2px}
+.rd-renda-pessoas .rd-person{width:45px}
+.rd-renda-pessoas span{font-weight:900;font-size:12px}
+.rd-renda-pessoas i{height:85px;width:5px;background:var(--rd-roxo)}
+.rd-renda-meio p{font-size:11px;line-height:1.35;margin:6px 0 0}
+.rd-renda-saco{display:flex;align-items:center;gap:6px}
+.rd-renda-saco svg{width:80px;max-width:42%;flex:none}
+.rd-renda-saco p{font-size:clamp(12px,1.15vw,17px);line-height:1.2;margin:0}
+.rd-renda-municipio{border-left:2px solid #bc8d29;padding-left:15px;display:flex;flex-direction:column;gap:5px}
+.rd-renda-municipio>b{font-size:11px}
+.rd-renda-municipio>strong{font-size:clamp(24px,2.3vw,36px);line-height:1}
+.rd-renda-municipio>span{font-size:12px;font-weight:700}
+.rd-renda-municipio small{font-size:10px;line-height:1.3;color:#4c3760}
+.rd-renda .rd-fonte{margin-top:12px;color:#684b44}
+@media(min-width:1400px){.rd-bloco{padding:25px}.rd-grade{gap:18px}.rd-painel{padding:32px}.rd-habitantes-fig .rd-person{width:min(85px,45%)}}
+@media(max-width:1080px){.rd-renda-grade{grid-template-columns:1fr 1fr}.rd-renda-municipio{border-left:0;border-top:2px solid #bc8d29;padding:12px 0 0}.rd-mundo-layout{grid-template-columns:1fr 42%}.rd-femi-grid{gap:9px}.rd-violencia-percent>div{width:56px;height:56px}.rd-violencia-percent>div b{font-size:18px}}
+@media(max-width:800px){.rd-grade{grid-template-columns:1fr;grid-template-areas:"mundo" "populacao" "violencia" "feminicidio" "renda"}.rd-painel{padding:15px}.rd-mundo-layout{grid-template-columns:1fr 46%}.rd-renda-grade{grid-template-columns:1fr 1fr}.rd-habitantes{justify-content:center}.rd-title{font-size:25px}}
+@media(max-width:440px){.rd-bloco{padding:15px}.rd-renda-grade{grid-template-columns:1fr}.rd-femi-grid{gap:8px}.rd-femi-esquerda{padding-right:7px;border-right-width:3px}.rd-losango{height:98px}.rd-losango:before{inset:14px 19px}.rd-violencia-percent{gap:5px}.rd-testemunhas{gap:8px}.rd-renda-municipio{border-top:2px solid #bc8d29;padding-top:12px}.rd-habitantes{gap:4px}.rd-habitantes-numeros b{font-size:22px}}
+@media print{.rd-painel,.rd-bloco{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
