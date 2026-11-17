@@ -822,6 +822,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const [metrica, setMetrica] = useState("");
   const [ordem, setOrdem] = useState<"maior" | "menor">("maior");
   const [pontoAtivo, setPontoAtivo] = useState<null | {periodo:string;serie:string;valor:string;cor:string;x:number;y:number}>(null);
+  const [fatiaAtiva, setFatiaAtiva] = useState<number | null>(null);
   const registros = dados.filter(d => d.id_indicador === indicador.indicador_id);
   const validos = registros.filter(d => String(d.valor).trim() !== "" && Number.isFinite(Number(d.valor)));
   const tipoCadastrado = (indicador.tipo_visualizacao || "").trim().toLowerCase();
@@ -895,22 +896,53 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     const unidades = Array.from(new Set(validos.map(d => d.unidade_dado?.trim()).filter(Boolean)));
     const unidade = unidades.length === 1 ? unidades[0] : "";
     let acumulado = 0;
-    const gradiente = fatias.map((f, i) => {
+    const partes = fatias.map((f, i) => {
       const inicio = acumulado;
-      acumulado += f.valor / total * 100;
-      return `${coresFatia[i]} ${inicio}% ${acumulado}%`;
-    }).join(", ");
-    const partes = fatias.map((f, i) => ({
-      ...f,
-      cor: coresFatia[i],
-      participacao: f.valor / total * 100,
-      valorExibido: percentual ? formatoPercentual(fracao ? f.valor * 100 : f.valor)
-        : f.valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + (unidade ? ` ${unidade}` : ""),
-    }));
+      const participacao = f.valor / total * 100;
+      acumulado += participacao;
+      return {
+        ...f,
+        cor: coresFatia[i],
+        inicio,
+        fim: acumulado,
+        participacao,
+        valorExibido: percentual ? formatoPercentual(fracao ? f.valor * 100 : f.valor)
+          : f.valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + (unidade ? ` ${unidade}` : ""),
+      };
+    });
+    const coordenada = (graus: number) => {
+      const radianos = (graus - 90) * Math.PI / 180;
+      return { x: 100 + 99 * Math.cos(radianos), y: 100 + 99 * Math.sin(radianos) };
+    };
+    const caminho = (inicio: number, fim: number) => {
+      const a = coordenada(inicio * 3.6);
+      const b = coordenada(fim * 3.6);
+      return `M 100 100 L ${a.x} ${a.y} A 99 99 0 ${fim - inicio > 50 ? 1 : 0} 1 ${b.x} ${b.y} Z`;
+    };
+    const ativa = fatiaAtiva !== null ? partes[fatiaAtiva] : null;
     return <div className="radar-pie-layout">
-      <div className="radar-pie-circle" role="img"
-        aria-label={partes.map(f => `${f.nome}: ${f.valorExibido}`).join("; ")}
-        style={{background: `conic-gradient(${gradiente})`}}/>
+      <div className="radar-pie-interactive">
+        <svg viewBox="0 0 200 200" className="radar-pie-circle" role="group"
+          aria-label="Gráfico de pizza interativo. Passe o mouse ou use Tab para consultar cada fatia.">
+          {partes.map((f,i) => <path key={f.nome}
+            d={caminho(f.inicio, f.fim)}
+            fill={f.cor}
+            tabIndex={0}
+            role="img"
+            aria-label={`${f.nome}: ${f.valorExibido}; participação ${formatoPercentual(f.participacao)}`}
+            onMouseEnter={() => setFatiaAtiva(i)}
+            onMouseLeave={() => setFatiaAtiva(null)}
+            onFocus={() => setFatiaAtiva(i)}
+            onBlur={() => setFatiaAtiva(null)}>
+            <title>{`${f.nome}: ${f.valorExibido} · ${formatoPercentual(f.participacao)}`}</title>
+          </path>)}
+        </svg>
+        {ativa && <div className="radar-pie-tooltip" role="status">
+          <strong><i style={{background:ativa.cor}} />{ativa.nome}</strong>
+          <span>{ativa.valorExibido}</span>
+          <small>Participação: {formatoPercentual(ativa.participacao)}</small>
+        </div>}
+      </div>
       <div className="radar-pie-legend">
         <strong>Distribuição por categoria</strong>
         {partes.map(f => <div className="radar-pie-legend-item" key={f.nome}>
