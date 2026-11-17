@@ -63,7 +63,7 @@ export default function RadarInfografico() {
             </section>
             <section className="ri-pop-rj" aria-label="População do município do Rio de Janeiro">
               <span className="ri-pop-local"><span className="material-symbols-rounded" aria-hidden="true">location_on</span> MUNICÍPIO DO RIO</span>
-              <div className="ri-rj-sex"><span>Mulheres: <b>53,2%</b></span><span>Homens: <b>46,8%</b></span></div>
+              <div className="ri-rj-sex" role="group" aria-label="Mulheres 53,2%; homens 46,8%"><div><span>Mulheres</span><b>53,2%</b></div><div><span>Homens</span><b>46,8%</b></div></div>
               <h5>POPULAÇÃO IDOSA</h5>
               <div className="ri-pop-old">
                 <span className="material-symbols-rounded" aria-hidden="true">elderly_woman</span>
