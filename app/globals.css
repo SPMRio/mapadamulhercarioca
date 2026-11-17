@@ -298,3 +298,19 @@ footer{background:#410d7b}
 @media(max-width:900px){.spm-official-logo{width:195px;height:58px}}
 @media(max-width:560px){.spm-official-logo{width:168px;height:51px}.topbar{gap:12px}}
 @media print{.spm-official-logo{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* Barras empilhadas: grade, legenda e segmentos reutilizáveis por indicador. */
+.radar-stacked-root{width:100%;min-width:0}
+.radar-stacked-legend-item{display:inline-flex;align-items:center;gap:7px}
+.radar-stacked-legend-item i{display:inline-block;width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.radar-stacked-scroll{overflow-x:auto;overflow-y:visible;padding:18px 4px 64px;scrollbar-color:#b79ad3 #f4edf8}
+.radar-stacked-chart{padding:0 16px 0 64px;width:100%}
+.radar-stacked-plot{position:relative;height:350px;border-bottom:1px solid #d9cce8}
+.radar-stacked-gridline{position:absolute;left:0;right:0;border-top:1px solid #e9e0f0;pointer-events:none}
+.radar-stacked-gridline span{position:absolute;top:-8px;right:calc(100% + 10px);font-size:11px;color:#5d5375;white-space:nowrap;font-variant-numeric:tabular-nums}
+.radar-stacked-columns{position:absolute;inset:0;display:flex;align-items:flex-end;gap:18px}
+.radar-stacked-item{position:relative;flex:1;min-width:52px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.radar-stacked-stack{width:min(100%,68px);min-height:1px;display:flex;flex-direction:column-reverse;overflow:visible;border-radius:5px 5px 0 0}
+.radar-stacked-segment{width:100%;position:relative;min-height:0;outline-offset:2px;cursor:help}
+.radar-stacked-segment:hover,.radar-stacked-segment:focus-visible{filter:brightness(1.18);outline:2px solid #392153}
+.radar-stacked-label{position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%);max-width:115px;min-width:65px;text-align:center;font-size:11px;font-weight:600;line-height:1.3;color:#21375b;overflow-wrap:anywhere}
