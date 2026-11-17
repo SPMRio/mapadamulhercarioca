@@ -212,10 +212,36 @@ async function valoresEixo01() {
       ordem: Number(row.ordem ?? 0),
     }));
 }
+// Os eixos compartilham o mesmo modelo de dados para visualização.
+async function valoresEixo03(): Promise<DadoEixo01Registro[]> {
+  const rows = await query("eixo_03_cuidados");
+  return rows.filter(row => !("publicar" in row) || String(row.publicar ?? "").trim().toUpperCase() === "SIM")
+    .map(row => ({
+      id_indicador: normalizarId(row.indicador_id ?? row.id_indicador),
+      periodo: String(row.periodo ?? ""),
+      territorio: String(row.territorio ?? ""),
+      categoria_recorte: String(row.categoria ?? row.categoria_recorte ?? ""),
+      serie_subrecorte: String(row.serie ?? row.serie_subrecorte ?? ""),
+      metrica: String(row.metrica ?? ""),
+      valor: row.valor == null ? "" : Number(row.valor),
+      publicar: "SIM",
+      tipo_valor: String(row.tipo_valor ?? ""),
+      escala: String(row.escala ?? ""),
+      texto: String(row.texto ?? ""),
+      unidade_dado: String(row.unidade ?? row.unidade_dado ?? ""),
+      nota_dado: String(row.nota_dado ?? ""),
+      situacao: String(row.situacao ?? ""),
+      ordem: Number(row.ordem ?? 0),
+    }));
+}
 // Os dados permanecem em cache até publicação explícita via /api/revalidate.
 export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v8-descricao"], {
   tags: ["mapa-indicadores"], revalidate: false,
 });
 export const getEixo01 = unstable_cache(valoresEixo01, ["mapa-eixo01-v5-eixo"], {
   tags: ["mapa-eixo-01"], revalidate: false,
+});
+
+export const getEixo03 = unstable_cache(valoresEixo03, ["mapa-eixo03-v1"], {
+  tags: ["mapa-eixo-03"], revalidate: false,
 });
