@@ -648,7 +648,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   // Para este eixo, a apresentação solicitada prevalece sobre metadados ainda não republicados.
   // O catálogo continua disponível para os outros indicadores.
   const tipo = indicador.indicador_id === "1.2.3" ? "pizza"
-    : ["1.2.2", "1.2.5", "1.3.3"].includes(indicador.indicador_id) ? "barras"
+    : ["1.2.2", "1.2.5"].includes(indicador.indicador_id) ? "barras"
     : tipoCadastrado;
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   const fmt = (d: DadoEixo01) => {
