@@ -532,12 +532,24 @@ type DadoEixo01 = {
   ordem?: number;
 };
 function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
+  // O recorte por gênero pode estar na coluna Série ou Categoria da planilha.
+  const genero = (d: DadoEixo01) => {
+    const recortes = [d.serie_subrecorte, d.categoria_recorte]
+      .map(v => (v ?? "").trim().toLocaleLowerCase("pt-BR"));
+    if (recortes.includes("mulheres")) return "Mulheres";
+    if (recortes.includes("homens")) return "Homens";
+    return "";
+  };
   const publicados = dados.filter(d => d.id_indicador === "1.2.1" &&
-    String(d.publicar).toUpperCase() === "SIM" &&
-    ["Mulheres", "Homens"].includes(d.serie_subrecorte) &&
+    String(d.publicar).trim().toUpperCase() === "SIM" &&
+    Boolean(genero(d)) &&
     Number.isFinite(Number(d.valor)));
   const [tooltip, setTooltip] = useState<null | { serie: string; periodo: string; valor: number; cor: string; left: number; top: number }>(null);
-  if (!publicados.length) return null;
+  if (!publicados.length) return (
+    <div className="radar-chart-empty" role="status">
+      <p>Não há dados publicados com os recortes Homens e Mulheres neste indicador. Confira as colunas Série e Categoria do Eixo 01.</p>
+    </div>
+  );
   const periodoOrdem = (p: string) => {
     const m = p.match(/^(?:([1-4])T(\d{4})|(\d{4})-T([1-4]))$/);
     return m ? Number(m[2] ?? m[3]) * 4 + Number(m[1] ?? m[4]) : Number.MAX_SAFE_INTEGER;
@@ -582,7 +594,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
           textAnchor="middle" fontSize="14" fill="#30435f">{periodo}</text>)}
         {series.map(serie => {
           const pontos = periodos.map((periodo, i) => {
-            const dado = publicados.find(d => d.periodo === periodo && d.serie_subrecorte === serie.nome);
+            const dado = publicados.find(d => d.periodo === periodo && genero(d) === serie.nome);
             return dado ? { periodo, indice: i, valor: Number(dado.valor) } : null;
           }).filter((p): p is { periodo: string; indice: number; valor: number } => p !== null);
           return <g key={serie.nome}>
@@ -614,7 +626,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
           <tbody>{periodos.map(periodo => <tr key={periodo}>
             <td>{periodo}</td>
             {series.map(serie => {
-              const dado = publicados.find(d => d.periodo === periodo && d.serie_subrecorte === serie.nome);
+              const dado = publicados.find(d => d.periodo === periodo && genero(d) === serie.nome);
               return <td key={serie.nome}>{dado ? moeda(Number(dado.valor)) : "—"}</td>;
             })}
           </tr>)}</tbody>
