@@ -1079,8 +1079,11 @@ export default function RadarClient({
   const [indicadorId, setIndicadorId] = useState("");
   const [abaVisualizacao, setAbaVisualizacao] = useState<"grafico" | "tabela">("grafico");
   const [seletorAberto, setSeletorAberto] = useState(false);
+  const [alturaMenu, setAlturaMenu] = useState(320);
+  const [abrirMenuAcima, setAbrirMenuAcima] = useState(true);
   const [buscaIndicador, setBuscaIndicador] = useState("");
   const seletorRef = useRef<HTMLDivElement>(null);
+  const gatilhoRef = useRef<HTMLButtonElement>(null);
   const buscaRef = useRef<HTMLInputElement>(null);
 
   const indicadoresDoTema = useMemo(() =>
@@ -1112,7 +1115,26 @@ export default function RadarClient({
     };
   }, [seletorAberto]);
   useEffect(() => {
-    if (seletorAberto) buscaRef.current?.focus();
+    if (!seletorAberto) return;
+    const reposicionar = () => {
+      const retangulo = gatilhoRef.current?.getBoundingClientRect();
+      if (!retangulo) return;
+      const espacoAcima = retangulo.top - 12;
+      const espacoAbaixo = window.innerHeight - retangulo.bottom - 12;
+      const acima = espacoAcima >= 220 || espacoAcima >= espacoAbaixo;
+      setAbrirMenuAcima(acima);
+      setAlturaMenu(Math.max(100, Math.min(390, acima ? espacoAcima : espacoAbaixo)));
+    };
+    reposicionar();
+    window.addEventListener("resize", reposicionar);
+    window.addEventListener("scroll", reposicionar, true);
+    return () => {
+      window.removeEventListener("resize", reposicionar);
+      window.removeEventListener("scroll", reposicionar, true);
+    };
+  }, [seletorAberto]);
+  useEffect(() => {
+    if (seletorAberto) buscaRef.current?.focus({ preventScroll: true });
   }, [seletorAberto]);
   function selecionarTema(novoTema: string) {
     setTema(novoTema);
@@ -1234,7 +1256,7 @@ export default function RadarClient({
               <>
                 <div className="radar-indicator-select" ref={seletorRef}>
                   <span className="radar-select-label">SELECIONE UM INDICADOR</span>
-                  <button type="button" className={`radar-select-trigger${seletorAberto ? " is-open" : ""}`}
+                  <button type="button" ref={gatilhoRef} className={`radar-select-trigger${seletorAberto ? " is-open" : ""}`}
                     aria-haspopup="listbox" aria-expanded={seletorAberto} aria-controls="radar-indicator-options"
                     onClick={() => { setBuscaIndicador(""); setSeletorAberto(aberto => !aberto); }}>
                     <span>{selecionado ? tituloPublico(selecionado.titulo) : "Escolha um indicador"}</span>
@@ -1244,7 +1266,7 @@ export default function RadarClient({
                     </svg>
                   </button>
                   {seletorAberto && (
-                    <div className="radar-select-menu">
+                    <div className={`radar-select-menu${abrirMenuAcima ? " opens-up" : ""}`} style={{ maxHeight: alturaMenu }}>
                       <div className="radar-select-search">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                           strokeWidth="2" strokeLinecap="round" aria-hidden="true">
