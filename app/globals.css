@@ -420,3 +420,102 @@ footer{background:#410d7b}
 .radar-grouped-legend,.radar-stacked-legend-item{white-space:normal;max-width:100%;line-height:1.35}
 .radar-grouped-root .radar-view-legend,.radar-stacked-root .radar-view-legend{position:relative;z-index:1}
 @media(max-width:680px){.radar-view-legend{gap:10px 14px;margin-bottom:18px;padding:0 8px}.radar-grouped-chart,.radar-stacked-chart{padding-top:100px}}
+
+
+/* Infográfico editorial horizontal — Panorama do Radar de Dados */
+.ri-root{--ri-purple:#7131ae;--ri-dark:#410d7b;--ri-blue:#43b9e5;--ri-ink:#24375d;--ri-soft:#f6f0fc;width:100%;color:var(--ri-ink)}
+.ri-root *{box-sizing:border-box}
+.ri-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:4px 0 16px}
+.ri-heading .ri-kicker{display:block;color:var(--ri-purple);font-size:10px;letter-spacing:.15em;font-weight:900}
+.ri-heading h3{font-size:clamp(23px,2.3vw,31px);letter-spacing:-.03em;color:var(--ri-dark);margin:4px 0 0}
+.ri-heading p{font-size:12px;color:#735b88;margin:0 0 5px;text-align:right}
+.ri-top-grid{display:grid;grid-template-columns:1.06fr .92fr 1.08fr;gap:14px}
+.ri-mid-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.ri-card{background:#fff;border:1px solid #decbea;border-radius:18px;padding:22px;min-width:0;box-shadow:0 3px 16px #37175808}
+.ri-card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--ri-dark)}
+.ri-card-head h4{margin:0;font-size:clamp(16px,1.4vw,21px);line-height:1.2;color:var(--ri-dark)}
+.ri-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#efe0fa;color:var(--ri-purple);font-size:23px;font-weight:900;flex:none}
+.ri-subhead{font-size:12px;line-height:1.45;margin:0 0 17px;color:#53436c;font-weight:750;max-width:300px}
+.ri-world{background:#fbf7fe}
+.ri-world-stats{display:flex;align-items:stretch;gap:16px;margin:0 0 14px}
+.ri-stat{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ri-stat strong{font-size:clamp(27px,3vw,46px);font-weight:900;color:var(--ri-purple);line-height:1}
+.ri-stat span{font-size:11px;line-height:1.4;color:#5c5273}
+.ri-world-stats .ri-stat{flex:1}
+.ri-world-stats .ri-stat:first-child{border-right:1px solid #ddc4ee;padding-right:12px}
+.ri-world-stats .ri-stat:first-child strong{color:#40b7e0}
+.ri-source{display:block;color:#746983;line-height:1.4;font-size:9px}
+.ri-population{margin-top:15px}
+.ri-population-figures{display:flex;gap:15px;justify-content:center;line-height:1;color:var(--ri-purple);font-size:49px;font-weight:900}
+.ri-population-figures span+span{color:var(--ri-blue)}
+.ri-population-bars{display:flex;height:13px;overflow:hidden;border-radius:100px;margin:12px 0;background:#ece5f5;gap:2px}
+.ri-population-bars span:first-child{background:var(--ri-purple)}
+.ri-population-bars span:last-child{background:var(--ri-blue)}
+.ri-population-labels{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ri-population-labels div{display:flex;flex-direction:column;align-items:center}
+.ri-population-labels strong{font-size:clamp(20px,2vw,31px);color:var(--ri-purple);line-height:1.2}
+.ri-population-labels div+div strong{color:#259dcc}
+.ri-population-labels small{font-size:11px;color:#5b4b75}
+.ri-elder{display:flex;align-items:center;gap:12px;background:#f4eef9;padding:10px 12px;border-radius:12px;margin-top:14px}
+.ri-elder strong{color:var(--ri-dark);font-size:25px;white-space:nowrap}
+.ri-elder span{font-size:11px;line-height:1.35}
+.ri-big-number{display:flex;flex-direction:column;gap:5px;margin:8px 0 16px}
+.ri-big-number strong{font-size:clamp(32px,3.7vw,59px);color:var(--ri-purple);line-height:1;letter-spacing:-.035em}
+.ri-big-number span{font-size:13px;line-height:1.45;max-width:330px}
+.ri-violence-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;background:#f9f4fd;border-radius:12px;padding:15px}
+.ri-violence-grid .ri-stat strong{font-size:35px}
+.ri-divider{border-top:1px solid #e7d9ed;margin:17px 0}
+.ri-root h5{font-size:13px;margin:12px 0 10px;color:var(--ri-dark);font-weight:850}
+.ri-inline-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ri-inline-stats .ri-stat strong{font-size:33px}
+.ri-witness{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:17px}
+.ri-witness div{background:#efe2fb;border-radius:12px;padding:15px 12px;display:flex;flex-direction:column;gap:5px}
+.ri-witness strong{font-size:clamp(18px,1.8vw,27px);color:#652aa4}
+.ri-witness span{font-size:11px;line-height:1.35}
+.ri-femicide{background:#6e2ead;color:#fff;border-color:#6e2ead}
+.ri-femicide .ri-icon{background:#9459cb;color:#fff}
+.ri-femicide .ri-card-head h4,.ri-femicide h5{color:#fff}
+.ri-femicide-hero{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.ri-femicide-hero strong{font-size:clamp(51px,5vw,79px);font-weight:900;letter-spacing:-.05em;line-height:1;color:#fff}
+.ri-femicide-hero span{font-size:14px;color:#efe0fa}
+.ri-femicide-frequency{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.ri-femicide-frequency div{display:flex;flex-direction:column;gap:3px;background:#ffffff1d;padding:12px;border-radius:12px}
+.ri-femicide-frequency strong{font-size:32px;color:#ffe36d;line-height:1}
+.ri-femicide-frequency span{font-size:11px;line-height:1.35;color:#fff}
+.ri-trend{display:grid;gap:10px;margin:10px 0}
+.ri-trend>div{display:grid;grid-template-columns:40px minmax(0,1fr) 45px;gap:10px;align-items:center}
+.ri-trend span{font-size:11px}.ri-trend strong{font-size:13px;text-align:right}
+.ri-trend-track{background:#ffffff2d;height:13px;border-radius:20px;overflow:hidden}
+.ri-trend-track i{display:block;height:100%;background:#efc7ff;border-radius:20px}
+.ri-trend>div+div .ri-trend-track i{background:#ffe36d}
+.ri-femicide .ri-divider{border-color:#ffffff50}
+.ri-femicide .ri-stat strong{color:#fff}
+.ri-femicide .ri-stat span{color:#efe0fa}
+.ri-rate{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:17px;font-size:11px;line-height:1.35}
+.ri-rate b{background:#ffffff24;border-radius:7px;padding:7px 9px}
+.ri-income{background:#ffdb56;border-radius:18px;margin-top:14px;padding:23px 26px;color:#30274b}
+.ri-income-title{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.ri-income-title .ri-icon{background:#fff3b7;color:#6e2ead}
+.ri-income-title span:not(.ri-icon){font-size:10px;letter-spacing:.13em;font-weight:850;color:#6f4593}
+.ri-income-title h4{margin:4px 0 0;font-size:clamp(22px,2.2vw,29px);color:#4b176f}
+.ri-income-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:26px}
+.ri-income-grid h5{color:#4b176f;margin:0 0 12px;font-size:14px}
+.ri-income-rio{border-left:1px solid #c59d39;padding-left:26px}
+.ri-salary{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.ri-salary>div{display:flex;flex-direction:column;gap:4px}
+.ri-salary span{font-size:11px;font-weight:800}
+.ri-salary strong{font-size:clamp(21px,2vw,30px);color:#52217f}
+.ri-salary i{display:block;height:10px;background:#7131ae;border-radius:10px}
+.ri-salary>div+div i{background:#41b8e1}
+.ri-income-facts{display:grid;grid-template-columns:.8fr .8fr 1.4fr;gap:12px;margin-top:18px}
+.ri-income-facts>div{display:flex;flex-direction:column;gap:3px}
+.ri-income-facts strong{font-size:clamp(17px,1.7vw,24px);color:#542078}
+.ri-income-facts span{font-size:11px;line-height:1.35}
+.ri-income-rio-value{font-size:clamp(29px,3vw,44px);line-height:1;font-weight:900;color:#592183}
+.ri-income-rio-value span{display:block;font-size:12px;line-height:1.4;font-weight:650;margin:7px 0 12px}
+.ri-income-rio p{font-size:12px;line-height:1.5;margin:7px 0}
+.ri-footnote{font-size:10px;color:#726b80;line-height:1.45;margin:12px 2px 0}
+@media(max-width:1100px){.ri-top-grid{grid-template-columns:1fr 1fr}.ri-world{grid-column:1/-1}.ri-mid-grid{grid-template-columns:1fr 1fr}.ri-card{padding:17px}.ri-income-grid{grid-template-columns:1fr 1fr;gap:18px}}
+@media(max-width:760px){.ri-heading{display:block}.ri-heading p{text-align:left;margin-top:7px}.ri-top-grid,.ri-mid-grid,.ri-income-grid{grid-template-columns:1fr}.ri-world{grid-column:auto}.ri-income-rio{border:0;border-top:1px solid #c59d39;padding:20px 0 0}.ri-income-facts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:450px){.ri-card{padding:17px}.ri-world-stats{gap:11px}.ri-witness{grid-template-columns:1fr}.ri-income{padding:18px}.ri-income-facts{grid-template-columns:1fr 1fr}.ri-income-facts>div:last-child{grid-column:1/-1}.ri-rate{gap:6px}}
+@media print{.ri-root{break-inside:avoid}.ri-card,.ri-income{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
