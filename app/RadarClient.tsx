@@ -939,7 +939,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
             fill={f.cor}
             tabIndex={0}
             role="img"
-            aria-label={`${f.nome}: ${f.valorExibido}; participação ${formatoPercentual(f.participacao)}`}
+            aria-label={`${f.nome}: ${f.valorExibido}${percentual ? "" : `; participação ${formatoPercentual(f.participacao)}`}`}
             onMouseEnter={() => setFatiaAtiva(i)}
             onMouseLeave={() => setFatiaAtiva(null)}
             onFocus={() => setFatiaAtiva(i)}
@@ -949,7 +949,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         {ativa && <div className="radar-pie-tooltip" role="status">
           <strong><i style={{background:ativa.cor}} />{ativa.nome}</strong>
           <span>{ativa.valorExibido}</span>
-          <small>Participação: {formatoPercentual(ativa.participacao)}</small>
+          {!percentual && <small>Participação: {formatoPercentual(ativa.participacao)}</small>}
         </div>}
       </div>
       <div className="radar-pie-legend">
