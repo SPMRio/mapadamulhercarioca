@@ -990,7 +990,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         {/* A métrica só é filtrada para a comparação por UF. */}
         {barrasVerticais ? (
           <div className="radar-vertical-scroll" role="region" aria-label={`Comparação em barras verticais: ${indicador.titulo}`} tabIndex={0}>
-            <div className="radar-vertical-chart" style={{minWidth: `${Math.max(800, ordered.length * 150)}px`}}>
+            <div className="radar-vertical-chart" style={{minWidth: `${Math.max(320, ordered.length * 100)}px`}}>
               <div className="radar-vertical-plot">
                 {[0,1,2,3,4].map(tick => (
                   <div className="radar-vertical-gridline" key={tick} style={{bottom:`${tick*25}%`}}>
