@@ -526,3 +526,26 @@ footer{background:#410d7b}
   transform:none!important;opacity:1!important;pointer-events:none!important;
   min-width:150px;max-width:min(280px,calc(100vw - 20px));width:max-content;
 }
+
+
+/* Ilustrações vetoriais editoriais do infográfico: figuras e símbolos integrados ao layout */
+.ri-world-composition{display:grid;grid-template-columns:minmax(0,1fr) minmax(85px,35%);align-items:center;gap:6px}
+.ri-world-composition .ri-world-stats{display:flex;flex-direction:column;gap:12px}
+.ri-world-composition .ri-world-stats .ri-stat:first-child{border:0;border-bottom:1px solid #ddc4ee;padding:0 0 12px}
+.ri-world-art{width:100%;height:auto;max-height:170px;filter:drop-shadow(0 3px 4px #54207812)}
+.ri-people-art{display:flex;align-items:flex-end;justify-content:center;gap:14px;margin:5px auto 8px;min-height:80px}
+.ri-people-art svg{height:auto;max-width:34%;filter:drop-shadow(0 3px 2px #46207512)}
+.ri-people-art.compact{min-height:0;margin:2px 0 0;justify-content:flex-start;gap:6px}
+.ri-people-art.compact svg{max-width:46px}
+.ri-elder svg{flex:none;height:36px;width:auto}
+.ri-women-art{display:flex;align-items:end;justify-content:center;gap:4px;min-height:60px;margin:4px auto 16px;border-bottom:3px solid #dfc0ef;padding-bottom:3px}
+.ri-women-art svg{height:auto;width:min(18%,49px);filter:drop-shadow(1px 2px 0 #f6e6ff)}
+.ri-witness-illustration{display:flex;align-items:center;gap:10px;background:#f9f3ff;border-radius:12px;padding:8px 12px;margin-top:15px}
+.ri-witness-art{width:63px;height:49px;flex:none}
+.ri-witness-illustration span{font-size:11px;line-height:1.35;font-weight:700;color:#66319a}
+.ri-clocks{display:flex;gap:8px;margin:13px 0 8px;justify-content:flex-start}
+.ri-clocks svg{flex:0 1 32px;max-width:32px}
+.ri-money-art{width:64px;height:53px;flex:none}
+.ri-income-figures .ri-people-art{justify-content:flex-start;min-height:55px;margin-bottom:9px}
+@media(max-width:1100px){.ri-world-composition{grid-template-columns:minmax(0,1fr) minmax(90px,25%)}}
+@media(max-width:450px){.ri-world-composition{grid-template-columns:minmax(0,1fr) 112px}.ri-money-art{width:48px}.ri-clocks{gap:4px}}
