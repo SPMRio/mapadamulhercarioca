@@ -513,6 +513,18 @@ function PainelCuidados({
   );
 }
 
+// Formatação apenas visual: o valor original do período continua no BigQuery.
+function exibirPeriodo(periodo: string): string {
+  const valor = periodo.trim();
+  const trimestre = valor.match(/^(\d{4})-T([1-4])$/i) ?? valor.match(/^([1-4])T-(\d{4})$/i);
+  if (trimestre) {
+    const ano = /^\d{4}/.test(valor) ? trimestre[1] : trimestre[2];
+    const numero = /^\d{4}/.test(valor) ? trimestre[2] : trimestre[1];
+    return `${ano} | ${numero}º trimestre`;
+  }
+  return valor;
+}
+
 type DadoEixo01 = {
   id_indicador: string;
   periodo: string;
@@ -591,7 +603,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
           </g>;
         })}
         {periodos.map((periodo, i) => <text key={periodo} x={x(i)} y={H-20}
-          textAnchor="middle" fontSize="14" fill="#30435f">{periodo}</text>)}
+          textAnchor="middle" fontSize="14" fill="#30435f">{exibirPeriodo(periodo)}</text>)}
         {series.map(serie => {
           const pontos = periodos.map((periodo, i) => {
             const dado = publicados.find(d => d.periodo === periodo && genero(d) === serie.nome);
@@ -602,7 +614,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
               fill="none" stroke={serie.cor} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" className="radar-animated-line" pathLength={1} />}
             {pontos.map(p => <circle key={p.periodo} cx={x(p.indice)} cy={y(p.valor)} r="6"
               fill={serie.cor} stroke="#fff" strokeWidth="2" tabIndex={0} role="img"
-              aria-label={`${serie.nome}, ${p.periodo}: ${moeda(p.valor)}`}
+              aria-label={`${serie.nome}, ${exibirPeriodo(p.periodo)}: ${moeda(p.valor)}`}
               onMouseEnter={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
               onMouseMove={e => mostrarTooltip(e, serie.nome, p.periodo, p.valor, serie.cor)}
               onMouseLeave={() => setTooltip(null)}
@@ -615,7 +627,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
       {tooltip && (
         <div className="radar-chart-tooltip" style={{ left: tooltip.left, top: tooltip.top }} role="status">
           <span className="radar-tooltip-series"><i style={{ background: tooltip.cor }} />{tooltip.serie}</span>
-          <strong>{tooltip.periodo}</strong>
+          <strong>{exibirPeriodo(tooltip.periodo)}</strong>
           <b>{moeda(tooltip.valor)}</b>
         </div>
       )}
@@ -624,7 +636,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
         <table>
           <thead><tr><th>Trimestre</th><th>Mulheres</th><th>Homens</th></tr></thead>
           <tbody>{periodos.map(periodo => <tr key={periodo}>
-            <td>{periodo}</td>
+            <td>{exibirPeriodo(periodo)}</td>
             {series.map(serie => {
               const dado = publicados.find(d => d.periodo === periodo && genero(d) === serie.nome);
               return <td key={serie.nome}>{dado ? moeda(Number(dado.valor)) : "—"}</td>;
@@ -817,7 +829,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
           return <g key={v}><line x1="76" x2="776" y1={linhaY(v)} y2={linhaY(v)} stroke="#e8e0ec" />
             <text x="65" y={linhaY(v)+5} fontSize="12" textAnchor="end" fill="#53657c">{Math.round(v).toLocaleString("pt-BR",{maximumFractionDigits:0})}</text></g>;
         })}
-        {periodos.map((p,i) => <text key={p} x={linhaX(i)} y="277" fontSize="12" textAnchor="middle" fill="#53657c">{p}</text>)}
+        {periodos.map((p,i) => <text key={p} x={linhaX(i)} y="277" fontSize="12" textAnchor="middle" fill="#53657c">{exibirPeriodo(p)}</text>)}
         {seriesLinha.map((serie,i) => {
           const cor = ["#7030b5","#42b3df","#e19c29","#21977e"][i%4];
           const coords = periodos.map((p,j) => {
@@ -827,7 +839,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
           }).filter((x): x is {x:number;y:number;label:string;periodo:string} => x !== null);
           return <g key={serie}>{coords.length>1 && <polyline points={coords.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={cor} strokeWidth="3" className="radar-animated-line" pathLength={1} />}
             {coords.map((p,j)=><circle key={j} cx={p.x} cy={p.y} r="7" fill={cor} stroke="white" strokeWidth="2" tabIndex={0}
-              aria-label={`${p.periodo}, ${serie}: ${p.label}`}
+              aria-label={`${exibirPeriodo(p.periodo)}, ${serie}: ${p.label}`}
               onMouseEnter={() => setPontoAtivo({periodo:p.periodo,serie,valor:p.label,cor,x:p.x,y:p.y})}
               onMouseLeave={() => setPontoAtivo(null)}
               onFocus={() => setPontoAtivo({periodo:p.periodo,serie,valor:p.label,cor,x:p.x,y:p.y})}
@@ -839,7 +851,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       </svg>
       {pontoAtivo && <div className="radar-line-point-tooltip" role="status" style={{left:`${pontoAtivo.x/820*100}%`,top:`${pontoAtivo.y/290*100}%`}}>
         <span><i style={{background:pontoAtivo.cor}} />{pontoAtivo.serie}</span>
-        <strong>{pontoAtivo.periodo}</strong>
+        <strong>{exibirPeriodo(pontoAtivo.periodo)}</strong>
         <b>{pontoAtivo.valor}</b>
       </div>}
       </div>}
@@ -886,7 +898,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         )}</>}
       {aba === "tabela" && <div className="radar-data-table-wrap radar-table-standalone">
         <table><thead><tr><th>Período</th><th>Território</th><th>Categoria</th><th>Série</th><th>Métrica</th><th>Valor</th></tr></thead>
-          <tbody>{ordered.map((d,i) => <tr key={i}><td>{d.periodo}</td><td>{d.territorio}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{d.metrica}</td><td>{d.texto || fmt(d)}</td></tr>)}</tbody>
+          <tbody>{ordered.map((d,i) => <tr key={i}><td>{exibirPeriodo(d.periodo)}</td><td>{d.territorio}</td><td>{d.categoria_recorte}</td><td>{d.serie_subrecorte}</td><td>{d.metrica}</td><td>{d.texto || fmt(d)}</td></tr>)}</tbody>
         </table>
       </div>}
       {avisos.length > 0 && <p className="radar-data-notice">Alguns registros ainda exigem conferência de fonte, escala ou total. Consulte a documentação antes de utilizar esses dados como definitivos.</p>}
@@ -921,7 +933,7 @@ export default function RadarClient({
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
       String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR")
-    ), [indicadores, tema],
+    ).sort((a, b) => tituloPublico(a.titulo).localeCompare(tituloPublico(b.titulo), "pt-BR", { sensitivity: "base" })), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
 
