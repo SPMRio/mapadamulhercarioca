@@ -603,3 +603,23 @@ footer{background:#410d7b}
 @media(max-width:1150px){.ri-root .ri-pop-unificada-grid{gap:13px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:85px}.ri-root .ri-pop-icons{height:95px}}
 @media(max-width:760px){.ri-root .ri-top-grid{grid-template-columns:1fr}.ri-root .ri-pop-unificada-grid{grid-template-columns:1fr 1fr;gap:14px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:80px}.ri-root .ri-pop-icons{height:90px}}
 @media(max-width:420px){.ri-root .ri-pop-unificada{padding:16px}.ri-root .ri-pop-local{font-size:9px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:64px}.ri-root .ri-pop-icons{height:75px}.ri-root .ri-pop-numbers strong{font-size:22px}.ri-root .ri-rj-sex{font-size:12px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:45px}.ri-root .ri-pop-old strong{font-size:26px}}
+
+/* População: figuras em escala editorial para ocupar o card sem espaços vazios. */
+.ri-root .ri-pop-unificada{min-height:390px;background:#fff}
+.ri-root .ri-pop-unificada-grid{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:clamp(18px,3vw,44px);align-items:stretch}
+.ri-root .ri-pop-br,.ri-root .ri-pop-rj{display:flex;flex-direction:column;align-items:flex-start}
+.ri-root .ri-pop-icons{width:100%;height:auto;min-height:195px;flex:1;display:flex;justify-content:space-evenly;align-items:center;gap:0;margin:3px 0 0;overflow:hidden}
+.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(145px,11vw,208px);line-height:1;flex:0 1 auto;font-variation-settings:"FILL" 1,"wght" 500,"GRAD" 0,"opsz" 48}
+.ri-root .ri-pop-numbers{width:100%;gap:12px;margin:0 0 7px}
+.ri-root .ri-pop-numbers strong{font-size:clamp(31px,2.8vw,43px)}
+.ri-root .ri-pop-numbers span{font-size:13px}
+.ri-root .ri-pop-rj{justify-content:flex-start}
+.ri-root .ri-rj-sex{margin:22px 0 18px;font-size:clamp(16px,1.35vw,21px);gap:7px}
+.ri-root .ri-pop-rj h5{font-size:clamp(17px,1.4vw,22px);margin:3px 0 13px}
+.ri-root .ri-pop-old{gap:16px;align-items:center;margin:8px 0}
+.ri-root .ri-pop-old>.material-symbols-rounded{font-size:clamp(85px,7vw,125px)}
+.ri-root .ri-pop-old strong{font-size:clamp(39px,3.5vw,57px)}
+.ri-root .ri-pop-old span:not(.material-symbols-rounded){font-size:16px}
+@media(max-width:1150px){.ri-root .ri-pop-icons{min-height:160px;height:auto}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(113px,10vw,165px)}.ri-root .ri-pop-unificada-grid{gap:16px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:90px}}
+@media(max-width:760px){.ri-root .ri-pop-unificada{min-height:0}.ri-root .ri-pop-unificada-grid{grid-template-columns:1fr 1fr;gap:16px}.ri-root .ri-pop-icons{min-height:115px;height:auto}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(80px,17vw,133px)}.ri-root .ri-pop-numbers strong{font-size:clamp(23px,5vw,33px)}.ri-root .ri-rj-sex{font-size:13px;margin:14px 0}.ri-root .ri-pop-rj h5{font-size:15px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:64px}.ri-root .ri-pop-old strong{font-size:30px}.ri-root .ri-pop-old span:not(.material-symbols-rounded){font-size:12px}}
+@media(max-width:420px){.ri-root .ri-pop-icons{min-height:85px}.ri-root .ri-pop-icons .material-symbols-rounded{font-size:clamp(65px,18vw,95px)}.ri-root .ri-pop-unificada-grid{gap:10px}.ri-root .ri-pop-numbers strong{font-size:22px}.ri-root .ri-pop-old{gap:5px}.ri-root .ri-pop-old>.material-symbols-rounded{font-size:45px}.ri-root .ri-pop-old strong{font-size:26px}}
