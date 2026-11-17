@@ -1,9 +1,11 @@
 import RadarClient from "./RadarClient";
 import { getIndicadores, getDadosEixo, NUMEROS_EIXOS } from "../lib/bigquery-static";
 
-// HTML pré-renderizado. O cache só é invalidado por publicação autorizada.
+// Renderização dinâmica: cada visita verifica o cache atualizado dos 12 eixos.
+// A importação invalida imediatamente o cache; uma atualização periódica de
+// segurança evita que uma publicação esquecida mantenha dados antigos.
 export const runtime = "nodejs";
-export const revalidate = false;
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const indicadores = await getIndicadores();
