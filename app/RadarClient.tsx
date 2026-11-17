@@ -765,7 +765,13 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         <button type="button" onClick={() => setOrdem(v => v === "maior" ? "menor" : "maior")}>Ordenar: {ordem === "maior" ? "maiores" : "menores"}</button>
       </div>}
       {serieX && aba === "grafico" && <div className="radar-view-legend">
-        {Array.from(new Set(ordered.map(d => d.serie_subrecorte))).filter(Boolean).map(m => <span key={m}>{m}</span>)}
+        {seriesLinha.map((serie, i) => {
+          const cor = ["#7030b5", "#42b3df", "#e19c29", "#21977e"][i % 4];
+          return <span key={serie} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+            <i aria-hidden="true" style={{ display: "inline-block", width: 10, height: 10, flexShrink: 0, borderRadius: "50%", backgroundColor: cor }} />
+            {serie}
+          </span>;
+        })}
       </div>}
       {aba === "grafico" && graficoTemporal && <div className="radar-line-wrap"><svg viewBox="0 0 820 290" className="radar-eixo-linechart" role="img"
         aria-label={`Evolução de ${indicador.titulo}`}>
