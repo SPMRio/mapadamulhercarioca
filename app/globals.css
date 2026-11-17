@@ -283,6 +283,16 @@ footer{background:#410d7b}
 /* Pizza para a estimativa brasileira por sexo */
 .radar-pie-layout{display:flex;align-items:center;justify-content:center;gap:clamp(28px,6vw,85px);padding:32px 18px;flex-wrap:wrap}
 .radar-pie-circle{width:min(320px,70vw);aspect-ratio:1;border-radius:50%;flex:none;box-shadow:inset 0 0 0 2px #ffffff,0 8px 28px #3a166b1c}
+.radar-pie-interactive{position:relative;width:min(320px,70vw);flex:none}
+.radar-pie-interactive .radar-pie-circle{display:block;width:100%;height:auto;overflow:hidden}
+.radar-pie-circle path{cursor:help;outline:none;transition:filter .15s ease}
+.radar-pie-circle path:hover,.radar-pie-circle path:focus-visible{filter:brightness(1.12);stroke:#fff;stroke-width:1.2}
+.radar-pie-tooltip{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;pointer-events:none;max-width:90%;min-width:170px;padding:12px 14px;text-align:center;background:#fff;border:1px solid #dfd1ea;border-radius:12px;box-shadow:0 8px 26px #26113a33;color:#17385f;display:flex;flex-direction:column;gap:5px;font-size:13px}
+.radar-pie-tooltip strong{display:flex;align-items:center;justify-content:center;gap:7px;line-height:1.3}
+.radar-pie-tooltip strong i{display:inline-block;width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.radar-pie-tooltip span{font-weight:700}
+.radar-pie-tooltip small{font-size:12px;color:#6d2dad}
+
 .radar-pie-legend{width:min(100%,360px);display:flex;flex-direction:column;gap:14px}
 .radar-pie-legend>strong{font-size:18px;color:#410d7b}
 .radar-pie-legend-item{display:grid;grid-template-columns:1fr auto;gap:5px 16px;border-bottom:1px solid #eee4f5;padding-bottom:12px}
