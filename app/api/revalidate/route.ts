@@ -30,12 +30,13 @@ export async function POST(request: Request) {
       eixo = String((body as { eixo?: unknown }).eixo ?? "todos");
     }
   } catch { /* Corpo vazio equivale a revalidar tudo. */ }
-  if (!["01", "todos"].includes(eixo)) {
+  if (!["01", "03", "todos"].includes(eixo)) {
     return NextResponse.json({ ok: false, error: "Eixo inválido." }, { status: 400 });
   }
 
   revalidateTag("mapa-indicadores");
   if (eixo === "01" || eixo === "todos") revalidateTag("mapa-eixo-01");
+  if (eixo === "03" || eixo === "todos") revalidateTag("mapa-eixo-03");
   revalidatePath("/");
   return NextResponse.json({ ok: true, revalidado: eixo, pagina: "/", mensagem: "Cache invalidado. A página será regenerada no próximo acesso." }, {
     headers: { "Cache-Control": "no-store" },
