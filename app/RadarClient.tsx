@@ -1419,11 +1419,6 @@ export default function RadarClient({
           <div className="eyebrow"><span>SECRETARIA DE POLÍTICAS PARA MULHERES E CUIDADOS</span><i>✦</i></div>
           <h1>Mapa da <span>Mulher</span> Carioca</h1>
           <p>Indicadores e informações sobre as mulheres da cidade do Rio de Janeiro, reunidos para compreender desigualdades e fortalecer as políticas públicas.</p>
-          <div className="meta">
-            <span>12 eixos temáticos</span>
-            <span>Indicadores e séries históricas</span>
-            <span>Fontes dos dados disponíveis</span>
-          </div>
           <a className="intro-explore" href="#dados">Explorar os dados <span aria-hidden="true">↓</span></a>
         </div>
       </section>
