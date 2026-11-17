@@ -865,32 +865,60 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       </div>
     </>
   );
-  // O total é um agregador e nunca pode virar uma terceira fatia.
+  // Pizza genérica: usa categorias reais, independentemente de sexo.
+  // Nunca acrescenta linhas de total como uma fatia adicional.
   if (tipo === "pizza" && aba === "grafico") {
-    const fatias = ["Homens", "Mulheres"].map(nome => {
-      const registro = validos.find(d =>
-        (d.serie_subrecorte || d.categoria_recorte).trim().toLocaleLowerCase("pt-BR") === nome.toLocaleLowerCase("pt-BR")
-      );
-      return { nome, registro, valor: registro ? Math.max(0, Number(registro.valor)) : 0 };
-    }).filter(fatia => fatia.registro && fatia.valor > 0);
-    const total = fatias.reduce((soma, fatia) => soma + fatia.valor, 0);
-    if (fatias.length !== 2 || total <= 0) return <div className="radar-chart-empty"><p>Dados de homens e mulheres indisponíveis para esta visualização.</p></div>;
-    const cores = ["#42b9eb", "#7132b2"];
-    const somentePercentuais = indicador.indicador_id === "1.2.3";
-    const formatoPercentual = (valor: number) => `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`;
-    const porcentagem = fatias[0].valor / total * 100;
+    const eTotal = (nome: string) => /^(total|total geral|população total)$/i.test(nome.trim());
+    const etiquetas = validos.map(d => d.categoria_recorte.trim() || d.serie_subrecorte.trim()).filter(Boolean);
+    const usarSerie = new Set(etiquetas).size <= 1 &&
+      new Set(validos.map(d => d.serie_subrecorte.trim()).filter(Boolean)).size > 1;
+    const nomeFatia = (d: DadoEixo01) => usarSerie
+      ? d.serie_subrecorte.trim() || d.categoria_recorte.trim()
+      : d.categoria_recorte.trim() || d.serie_subrecorte.trim();
+    const grupos = new Map<string, number>();
+    for (const d of validos) {
+      const nome = nomeFatia(d);
+      const valor = Number(d.valor);
+      if (!nome || eTotal(nome) || !Number.isFinite(valor) || valor < 0) continue;
+      grupos.set(nome, (grupos.get(nome) ?? 0) + valor);
+    }
+    const fatias = Array.from(grupos, ([nome, valor]) => ({ nome, valor })).filter(f => f.valor > 0);
+    const total = fatias.reduce((soma, f) => soma + f.valor, 0);
+    if (fatias.length < 2 || total <= 0) return <div className="radar-chart-empty"><p>Não há pelo menos duas categorias com valores positivos para este gráfico de pizza.</p></div>;
+    const cores = ["#42b9eb", "#7132b2", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97", "#7654af", "#c35c83"];
+    const coresFatia = fatias.map((f, i) => /^(homens|meninos)$/i.test(f.nome) ? "#42b9eb"
+      : /^(mulheres|meninas)$/i.test(f.nome) ? "#7132b2" : cores[i % cores.length]);
+    const percentual = validos.every(d => d.unidade_dado?.trim() === "%" ||
+      /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
+    const fracao = percentual && fatias.every(f => f.valor <= 1);
+    const formatoPercentual = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + "%";
+    const unidades = Array.from(new Set(validos.map(d => d.unidade_dado?.trim()).filter(Boolean)));
+    const unidade = unidades.length === 1 ? unidades[0] : "";
+    let acumulado = 0;
+    const gradiente = fatias.map((f, i) => {
+      const inicio = acumulado;
+      acumulado += f.valor / total * 100;
+      return `${coresFatia[i]} ${inicio}% ${acumulado}%`;
+    }).join(", ");
+    const partes = fatias.map((f, i) => ({
+      ...f,
+      cor: coresFatia[i],
+      participacao: f.valor / total * 100,
+      valorExibido: percentual ? formatoPercentual(fracao ? f.valor * 100 : f.valor)
+        : f.valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + (unidade ? ` ${unidade}` : ""),
+    }));
     return <div className="radar-pie-layout">
       <div className="radar-pie-circle" role="img"
-        aria-label={fatias.map(f => `${f.nome}: ${formatoPercentual(f.valor / total * 100)}${somentePercentuais ? "" : ` (${f.valor.toLocaleString("pt-BR")} habitantes)`}`).join("; ")}
-        style={{background: `conic-gradient(${cores[0]} 0% ${porcentagem}%, ${cores[1]} ${porcentagem}% 100%)`}}/>
+        aria-label={partes.map(f => `${f.nome}: ${f.valorExibido}`).join("; ")}
+        style={{background: `conic-gradient(${gradiente})`}}/>
       <div className="radar-pie-legend">
-        <strong>Distribuição da população por sexo</strong>
-        {fatias.map((f,i) => <div className="radar-pie-legend-item" key={f.nome}>
-          <span className="radar-pie-legend-name"><i style={{background:cores[i]}}/>{f.nome}</span>
-          {!somentePercentuais && <b>{f.valor.toLocaleString("pt-BR")} habitantes</b>}
-          <span>{formatoPercentual(f.valor / total * 100)}</span>
+        <strong>Distribuição por categoria</strong>
+        {partes.map(f => <div className="radar-pie-legend-item" key={f.nome}>
+          <span className="radar-pie-legend-name"><i style={{background:f.cor}}/>{f.nome}</span>
+          {!percentual && <b>{f.valorExibido}</b>}
+          <span>{percentual ? f.valorExibido : formatoPercentual(f.participacao)}</span>
         </div>)}
-        {!somentePercentuais && <small>Total: {total.toLocaleString("pt-BR")} habitantes</small>}
+        {!percentual && <small>Total: {total.toLocaleString("pt-BR", {maximumFractionDigits:2})}{unidade ? ` ${unidade}` : ""}</small>}
       </div>
     </div>;
   }
