@@ -1,5 +1,7 @@
 "use client";
 
+import RadarInfografico from "./RadarInfografico";
+
 import {
   useEffect,
   useMemo,
@@ -1413,18 +1415,22 @@ export default function RadarClient({
               <h3>{tema === "Visão geral" ? "Panorama do Radar de Dados" : `Panorama de ${tema}`}</h3>
               <p>Explore os indicadores, acompanhe os recortes disponíveis e consulte as fontes utilizadas.</p>
             </div>
-            <div className="radar-infographic-grid">
-              {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
-                <article className="radar-infographic-card" key={nome}>
-                  <span className="radar-infographic-top">INFOGRÁFICO {String(index + 1).padStart(2, "0")}</span>
-                  <div className="radar-infographic-placeholder" aria-hidden="true">
-                    <div className="radar-infographic-symbol">{index === 0 ? "✦" : index === 1 ? "↗" : "◫"}</div>
-                  </div>
-                  <h4>{nome}</h4>
-                  <p>Indicador a definir</p>
-                </article>
-              ))}
-            </div>
+            {tema === "Visão geral" ? (
+              <RadarInfografico />
+            ) : (
+              <div className="radar-infographic-grid">
+                {["Destaque do eixo", "Evolução dos dados", "Comparativo"].map((nome, index) => (
+                  <article className="radar-infographic-card" key={nome}>
+                    <span className="radar-infographic-top">INFOGRÁFICO {String(index + 1).padStart(2, "0")}</span>
+                    <div className="radar-infographic-placeholder" aria-hidden="true">
+                      <div className="radar-infographic-symbol">{index === 0 ? "✦" : index === 1 ? "↗" : "◫"}</div>
+                    </div>
+                    <h4>{nome}</h4>
+                    <p>Indicador a definir</p>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="radar-explorer" aria-label="Explorar indicadores do eixo">
