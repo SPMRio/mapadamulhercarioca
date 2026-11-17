@@ -1086,7 +1086,7 @@ export default function RadarClient({
   const indicadoresDoTema = useMemo(() =>
     indicadores.filter(item =>
       String(item.tema ?? "").toLocaleLowerCase("pt-BR") === tema.toLocaleLowerCase("pt-BR")
-    ).sort((a, b) => tituloPublico(a.titulo).localeCompare(tituloPublico(b.titulo), "pt-BR", { sensitivity: "base" })), [indicadores, tema],
+    ).sort((a, b) => a.indicador_id.localeCompare(b.indicador_id, "pt-BR", { numeric: true, sensitivity: "base" })), [indicadores, tema],
   );
   const selecionado = indicadoresDoTema.find(item => item.indicador_id === indicadorId);
 
