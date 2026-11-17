@@ -290,3 +290,11 @@ footer{background:#410d7b}
 .radar-pie-legend-name{display:flex;align-items:center;gap:9px}
 .radar-pie-legend-name i{width:13px;height:13px;display:inline-block;border-radius:3px;flex:none}
 .radar-pie-legend small{font-size:12px;color:#655a75}
+
+
+/* Marca institucional oficial no cabeçalho — acompanha a paleta do portal */
+.topbar .brand{display:flex;align-items:center;flex:none;line-height:normal}
+.spm-official-logo{display:block;width:clamp(195px,24vw,300px);height:76px;background-color:var(--purple);-webkit-mask-image:url("/logo-spm-rio.png");mask-image:url("/logo-spm-rio.png");-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:left center;mask-position:left center}
+@media(max-width:900px){.spm-official-logo{width:195px;height:58px}}
+@media(max-width:560px){.spm-official-logo{width:168px;height:51px}.topbar{gap:12px}}
+@media print{.spm-official-logo{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
