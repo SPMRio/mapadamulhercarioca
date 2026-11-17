@@ -1170,30 +1170,6 @@ export default function RadarClient({
           </div>
           <a className="intro-explore" href="#dados">Explorar os dados <span aria-hidden="true">↓</span></a>
         </div>
-        <div className="intro-art" aria-hidden="true">
-          <svg viewBox="0 0 500 480" focusable="false" role="presentation">
-            <defs>
-              <clipPath id="perfil-a"><path d="M104 83 Q158 20 221 72 Q244 103 234 151 Q226 172 215 181 L239 212 L208 222 L203 273 Q220 317 267 326 L291 430 L21 430 L49 300 Q82 262 99 206 Q86 171 87 137 Q76 115 104 83Z"/></clipPath>
-              <clipPath id="perfil-b"><path d="M272 120 Q319 38 395 83 Q446 120 423 191 L444 217 L411 232 L404 271 Q423 322 465 341 L495 460 L229 460 L247 325 Q276 296 286 255 Q250 202 272 120Z"/></clipPath>
-            </defs>
-            <circle cx="315" cy="230" r="209" fill="#d19fff"/>
-            <circle cx="315" cy="230" r="162" fill="#a86be0"/>
-            <path d="M104 83 Q158 20 221 72 Q244 103 234 151 Q226 172 215 181 L239 212 L208 222 L203 273 Q220 317 267 326 L291 430 L21 430 L49 300 Q82 262 99 206 Q86 171 87 137 Q76 115 104 83Z" fill="#410d7b"/>
-            <g clipPath="url(#perfil-a)">
-              <path d="M82 136 Q151 45 228 125 L239 190 Q186 188 147 145Z" fill="#7841bc"/>
-              <path d="M66 290 Q178 250 266 321 L283 450 L17 453Z" fill="#8750c1"/>
-            </g>
-            <path d="M272 120 Q319 38 395 83 Q446 120 423 191 L444 217 L411 232 L404 271 Q423 322 465 341 L495 460 L229 460 L247 325 Q276 296 286 255 Q250 202 272 120Z" fill="#7135ad"/>
-            <g clipPath="url(#perfil-b)">
-              <path d="M256 184 Q300 58 429 132 L431 196 Q350 184 318 122Z" fill="#410d7b"/>
-              <path d="M225 328 Q361 284 490 347 L501 468 L201 465Z" fill="#c488f4"/>
-            </g>
-            <path d="M355 210 q15 -9 27 0" fill="none" stroke="#410d7b" strokeWidth="5" strokeLinecap="round"/>
-            <path d="M146 177 q14 -9 26 0" fill="none" stroke="#c488f4" strokeWidth="5" strokeLinecap="round"/>
-            <path d="M73 51 l8 23 24 8 -24 8 -8 24 -8 -24 -24 -8 24 -8Z" fill="#42b9eb"/>
-            <path d="M434 17 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6Z" fill="#fad049"/>
-          </svg>
-        </div>
       </section>
       <section className="dashboard" id="dados">
         <aside className="sidebar">
