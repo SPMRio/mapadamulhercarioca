@@ -823,7 +823,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
                     const nome = d.territorio && d.territorio !== "Brasil" ? d.territorio :
                       (d.serie_subrecorte || d.categoria_recorte || d.territorio || d.periodo);
                     const valor = Math.abs(Number(d.valor));
-                    return <div className="radar-vertical-item" key={`${d.indicador_id}-${i}`}>
+                    return <div className="radar-vertical-item" key={`${d.id_indicador}-${i}`}>
                       <div className="radar-vertical-bar" style={{
                         height:`${valor/maxVertical*100}%`,
                         background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]
