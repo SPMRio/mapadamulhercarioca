@@ -919,11 +919,7 @@ export default function RadarClient({
       <div className="color-band" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
       <header className="topbar">
         <a className="brand" href="#inicio" aria-label="Mapa da Mulher Carioca - início">
-          <span className="spm-mark" aria-label="SPM-Rio, Políticas para Mulheres e Cuidados">
-            <strong className="spm-mark-prefeitura">PREFEITURA RIO</strong>
-            <span className="spm-mark-divider" aria-hidden="true" />
-            <span className="spm-mark-org">Políticas para<br />Mulheres e Cuidados</span>
-          </span>
+          <span className="spm-official-logo" role="img" aria-label="Prefeitura Rio — Políticas para Mulheres e Cuidados" />
         </a>
         <nav aria-label="Navegação principal">
           <a href="#dados">Dados</a><a href="#sobre">Sobre</a>
