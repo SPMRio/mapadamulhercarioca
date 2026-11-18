@@ -1023,7 +1023,7 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
 // Barras empilhadas: uma barra por combinação de dimensões, uma cor por série.
 // Valores são agregados somente dentro da mesma combinação de período, território,
 // categoria, série e métrica; nunca mistura métricas distintas.
-function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
+function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { dados: DadoEixo01[]; titulo: string; porRacaPeriodo?: boolean }) {
   const [metricaSelecionada, setMetricaSelecionada] = useState("");
   const validos = dados.filter(d => d.tipo_valor !== "texto" && String(d.valor).trim() !== "" && Number.isFinite(Number(d.valor)));
   const metricas = Array.from(new Set(validos.map(d => (d.metrica ?? "").trim()).filter(Boolean)));
@@ -1066,7 +1066,11 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
     const partes = registros.get(nome)!.partes;
     partes.set(nomeSerie, (partes.get(nomeSerie) ?? 0) + valor);
   }
-  const barras = Array.from(registros.values());
+  const barras = Array.from(registros.values()).sort((a,b) => porRacaPeriodo ? ordenarPeriodo(a.nome)-ordenarPeriodo(b.nome) : 0);
+  if (porRacaPeriodo) nomesSeries.sort((a,b) => {
+    const ordem = (nome:string) => /branc/i.test(nome)?0:/pret/i.test(nome)?1:/pard/i.test(nome)?2:/amarel/i.test(nome)?3:4;
+    return ordem(a)-ordem(b)||a.localeCompare(b,"pt-BR");
+  });
   const maior = Math.max(0, ...barras.map(b => Array.from(b.partes.values()).reduce((a, v) => a + v, 0)));
   const passoBruto = Math.max(0.01, maior / 4);
   const potencia = 10 ** Math.floor(Math.log10(passoBruto));
@@ -1076,9 +1080,9 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
   const casas = percentual ? 2 : Number.isInteger(passo) ? 0 : 2;
   const numero = (valor: number) => valor.toLocaleString("pt-BR", { maximumFractionDigits: casas });
   const formato = (valor: number) => numero(valor) + (percentual ? "%" : "");
-  const cores = ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
+  const cores = porRacaPeriodo ? ["#4285f4","#ea4335","#f4b400","#34a853","#7132b2","#42b9eb"] : ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
   if (!barras.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis para barras empilhadas.</p></div>;
-  return <div className="radar-stacked-root">
+  return <div className={`radar-stacked-root${porRacaPeriodo ? " radar-stacked-raca" : ""}`}>
     {metricas.length > 1 && <div className="radar-view-controls" aria-label="Selecionar métrica">
       {metricas.map(m => <button type="button" key={m} className={metrica === m ? "active" : ""} onClick={() => setMetricaSelecionada(m)}>{m}</button>)}
     </div>}
@@ -1088,7 +1092,7 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
       </span>)}
     </div>
     <div className="radar-stacked-scroll" role="region" tabIndex={0} aria-label={`Gráfico de barras empilhadas: ${titulo}`}>
-      <div className="radar-stacked-chart" style={{ minWidth: `${Math.max(560, barras.length * 100)}px` }}>
+      <div className="radar-stacked-chart" style={{ minWidth: `${porRacaPeriodo ? 0 : Math.max(560, barras.length * 100)}px` }}>
         <div className="radar-stacked-plot">
           {[0,1,2,3,4].map(i => <div className="radar-stacked-gridline" key={i} style={{ bottom: `${i * 25}%` }}>
             <span>{formato(teto * i / 4)}</span>
@@ -1206,7 +1210,8 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const tipoCadastrado = (indicador.tipo_visualizacao || "").trim().toLowerCase();
   // Para este eixo, a apresentação solicitada prevalece sobre metadados ainda não republicados.
   // O catálogo continua disponível para os outros indicadores.
-  const tipo = indicador.indicador_id === "1.2.3" ? "pizza"
+  const tipo = indicador.indicador_id === "6.3.1" ? "barras_empilhadas"
+    : indicador.indicador_id === "1.2.3" ? "pizza"
     : ["1.2.2", "1.2.5"].includes(indicador.indicador_id) ? "barras"
     : tipoCadastrado;
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -1375,7 +1380,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     return <GraficoComparativo dados={validos} titulo={indicador.titulo} />;
   }
   if (tipo === "barras_empilhadas" && aba === "grafico") {
-    return <GraficoBarrasEmpilhadas dados={validos} titulo={indicador.titulo} />;
+    return <GraficoBarrasEmpilhadas dados={validos} titulo={indicador.titulo} porRacaPeriodo={indicador.indicador_id === "6.3.1"} />;
   }
   const metricas = Array.from(new Set(validos.map(d => d.serie_subrecorte).filter(Boolean)));
   const uf = tipo === "barras_uf";
