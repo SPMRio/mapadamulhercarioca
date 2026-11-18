@@ -789,26 +789,7 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
         <i style={{background:cor(serie,i)}} aria-hidden="true" />{serie}
       </span>)}
     </div>
-    {false ? <div className="radar-horizontal-chart radar-grouped-horizontal" role="region" aria-label={`Barras agrupadas: ${titulo}`}>
-      {linhas.map((grupo,i) => <div key={i} className="radar-horizontal-group">
-        <h5>{grupo.rotulo}</h5>
-        {series.map((serie,j) => {
-          const dado = grupo.valores.get(serie);
-          if (!dado) return null;
-          const n = Math.max(0,valor(dado));
-          return <div className="radar-horizontal-row" key={serie}>
-            <div className="radar-horizontal-meta"><span>{serie}</span><strong>{formato(n)}</strong></div>
-            <div className="radar-horizontal-track">
-              {[0,1,2,3,4].map(t=><i key={t} className="radar-horizontal-gridline" style={{left:`${t*25}%`}}/>)}
-              <BarraComTooltip className="radar-horizontal-bar"
-                style={{width:`${n/teto*100}%`,backgroundColor:cor(serie,j)}}
-                cor={cor(serie,j)} serie={serie} categoria={`${grupo.rotulo} · ${exibirPeriodo(dado.periodo)}`}
-                valor={formato(n)} ariaLabel={`${grupo.rotulo}, ${serie}, ${exibirPeriodo(dado.periodo)}: ${formato(n)}`} />
-            </div>
-          </div>;
-        })}
-      </div>)}
-    </div> : <div className="radar-grouped-scroll" role="region" tabIndex={0} aria-label={`Barras agrupadas: ${titulo}`}>
+    {<div className="radar-grouped-scroll" role="region" tabIndex={0} aria-label={`Barras agrupadas: ${titulo}`}>
       <div className="radar-grouped-chart">
         <div className="radar-grouped-plot">
           {[0,1,2,3,4].map(i => <div key={i} className="radar-grouped-gridline" style={{bottom:`${i*25}%`}}>
