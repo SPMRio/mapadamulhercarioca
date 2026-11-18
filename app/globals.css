@@ -799,3 +799,21 @@ footer{background:#410d7b}
 .radar-history-values strong{font-size:17px;font-weight:800;color:#7030b5}
 .radar-history-values span{font-size:10px;color:#53647b;line-height:1.4}
 @media(max-width:650px){.radar-period-mode{width:100%}.radar-period-mode button{flex:1;padding:10px 6px;font-size:12px}.radar-history-view{padding:12px}.radar-history-figure{overflow-x:visible}.radar-history-figure svg{width:100%;min-width:0}.radar-history-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Comparativo: dois gráficos independentes, separados pela dimensão categoria. */
+.radar-comparativo-root{width:100%;min-width:0}
+.radar-comparativo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.radar-comparativo-panel{min-width:0;background:#fff;border:1px solid #e8dfed;border-radius:16px;padding:18px 16px 65px}
+.radar-comparativo-panel h4{margin:0 0 28px;font-size:15px;font-weight:700;color:#243456;line-height:1.4}
+.radar-comparativo-plot{height:265px;position:relative;margin:0 9px 0 50px;border-bottom:1px solid #d9cce8}
+.radar-comparativo-gridline{position:absolute;left:0;right:0;border-top:1px solid #e9e0f0;pointer-events:none}
+.radar-comparativo-gridline span{position:absolute;left:-51px;top:-8px;width:43px;text-align:right;font-size:10px;color:#5d5375;white-space:nowrap}
+.radar-comparativo-columns{position:absolute;inset:0;display:flex;align-items:flex-end;gap:clamp(4px,1vw,16px)}
+.radar-comparativo-item{position:relative;flex:1 1 0;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.radar-comparativo-item>.radar-vertical-bar{width:clamp(10px,75%,90px);max-width:100%;flex-shrink:0}
+.radar-comparativo-label{position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);width:100%;font-size:11px;font-weight:600;text-align:center;color:#21375b;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}
+.radar-comparativo-pages{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:15px;font-size:12px;color:#53657c}
+.radar-comparativo-pages button{border:1px solid #d9cce8;background:#fff;color:#7132b2;border-radius:10px;padding:7px 11px;cursor:pointer}
+.radar-comparativo-pages button:disabled{opacity:.4;cursor:default}
+@media(max-width:760px){.radar-comparativo-grid{grid-template-columns:1fr}.radar-comparativo-panel{padding:15px 12px 65px}.radar-comparativo-plot{height:245px}}
