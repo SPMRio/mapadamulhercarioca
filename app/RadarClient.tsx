@@ -522,9 +522,9 @@ function PainelCuidados({
 function exibirPeriodo(periodo: string): string {
   const valor = periodo.trim();
   const anoPrimeiro = valor.match(/^((?:19|20)\d{2})-(?:T([1-4])|([1-4])T)$/i);
-  if (anoPrimeiro) return anoPrimeiro[1] + "-" + (anoPrimeiro[2] || anoPrimeiro[3]) + "T";
+  if (anoPrimeiro) return anoPrimeiro[1] + " | " + (anoPrimeiro[2] || anoPrimeiro[3]) + "º trimestre";
   const triPrimeiro = valor.match(/^([1-4])T-?((?:19|20)\d{2})$/i);
-  if (triPrimeiro) return triPrimeiro[2] + "-" + triPrimeiro[1] + "T";
+  if (triPrimeiro) return triPrimeiro[2] + " | " + triPrimeiro[1] + "º trimestre";
   return valor;
 }
 
@@ -715,9 +715,11 @@ function BarraComTooltip({
  * combinação de território/categoria/série/métrica. Não altera o histórico
  * usado pelas tabelas e pelas evoluções temporais. */
 function ordenarPeriodo(periodo: string): number {
-  const valor = exibirPeriodo(String(periodo ?? ""));
-  const trimestre = valor.match(/^((?:19|20)\d{2})-([1-4])T$/i);
-  if (trimestre) return Number(trimestre[1]) * 100 + Number(trimestre[2]) * 3;
+  // A ordenação usa o valor normalizado, não o rótulo visual por extenso.
+  const valor = String(periodo ?? "").trim();
+  const trimestre = valor.match(/^((?:19|20)\d{2})-(?:T([1-4])|([1-4])T)$/i)
+    ?? valor.match(/^([1-4])T-?((?:19|20)\d{2})$/i);
+  if (trimestre) return Number(trimestre[1].length === 4 ? trimestre[1] : trimestre[4]) * 100 + Number(trimestre[2] || trimestre[3] || trimestre[1]) * 3;
   const anos = [...valor.matchAll(/(?:19|20)\d{2}/g)].map(m => Number(m[0]));
   if (!anos.length) return -1;
   const ano = Math.max(...anos);
