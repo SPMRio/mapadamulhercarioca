@@ -808,12 +808,42 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
           territorios.size>1?d.territorio.trim():"",
           d.categoria_recorte.trim()
         ].filter(Boolean).join(" · ")||"Total";
-        const inicioFaixa=(nome:string)=>{
-          const idade=nome.match(/^\s*(\d+)\s*(?:a|até|–|-)\s*\d+/i);
-          return idade?Number(idade[1]):/^\s*\d+\s*anos?\s*e\s*mais/i.test(nome)?Number(nome.match(/\d+/)?.[0]??0):Number.POSITIVE_INFINITY;
+        // Faixas etárias: menor idade primeiro. Outras categorias: maior valor primeiro.
+        // Para preservar a comparação, usa o mesmo critério nos dois painéis.
+        const idadeInicial=(nome:string):number|null=>{
+          const texto=nome.toLowerCase().trim();
+          if (!/(?:anos?|idades?|faixa etária)/i.test(texto)) return null;
+          const menores=texto.match(/(?:menos de|abaixo de|até)\s*(\d{1,3})\s*anos?/);
+          if (menores) return 0;
+          const intervalo=texto.match(/(\d{1,3})\s*(?:a|até|[-–])\s*\d{1,3}\s*anos?/);
+          if (intervalo) return Number(intervalo[1]);
+          const aberto=texto.match(/(?:acima de|mais de)\s*(\d{1,3})\s*anos?/);
+          if (aberto) return Number(aberto[1]);
+          const idade=texto.match(/(\d{1,3})\s*anos?(?:\s*(?:e mais|ou mais|\+))?/);
+          return idade?Number(idade[1]):null;
         };
+        const todasCategorias=Array.from(new Set(linhas.map(d=>d.categoria_recorte.trim()).filter(Boolean)));
+        const saoFaixasEtarias=todasCategorias.length>0 && todasCategorias.every(c=>idadeInicial(c)!==null);
+        const maiorPorCategoria=new Map<string,number>();
+        for(const d of linhas){
+          const categoria=d.categoria_recorte.trim();
+          maiorPorCategoria.set(categoria,Math.max(maiorPorCategoria.get(categoria)??-Infinity,valor(d)));
+        }
         const categorias=Array.from(new Set(grupo.map(nomeCategoria)))
-          .sort((a,b)=>inicioFaixa(a)-inicioFaixa(b)||a.localeCompare(b,"pt-BR",{numeric:true}));
+          .sort((a,b)=>{
+            const dadoA=grupo.find(d=>nomeCategoria(d)===a);
+            const dadoB=grupo.find(d=>nomeCategoria(d)===b);
+            const chaveA=dadoA?.categoria_recorte.trim()??a;
+            const chaveB=dadoB?.categoria_recorte.trim()??b;
+            if(saoFaixasEtarias){
+              const diferenca=(idadeInicial(chaveA)??Infinity)-(idadeInicial(chaveB)??Infinity);
+              if(diferenca!==0)return diferenca;
+            }else{
+              const diferenca=(maiorPorCategoria.get(chaveB)??0)-(maiorPorCategoria.get(chaveA)??0);
+              if(diferenca!==0)return diferenca;
+            }
+            return a.localeCompare(b,"pt-BR",{numeric:true});
+          });
         const x=(i:number)=>categorias.length===1?260:65+i/(categorias.length-1)*390;
         return <section className="radar-comparativo-panel" key={serie} aria-label={serie}>
           <h4>{serie}</h4>
