@@ -1023,7 +1023,7 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
 // Barras empilhadas: uma barra por combinação de dimensões, uma cor por série.
 // Valores são agregados somente dentro da mesma combinação de período, território,
 // categoria, série e métrica; nunca mistura métricas distintas.
-function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { dados: DadoEixo01[]; titulo: string; porRacaPeriodo?: boolean }) {
+function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const [metricaSelecionada, setMetricaSelecionada] = useState("");
   const validos = dados.filter(d => d.tipo_valor !== "texto" && String(d.valor).trim() !== "" && Number.isFinite(Number(d.valor)));
   const metricas = Array.from(new Set(validos.map(d => (d.metrica ?? "").trim()).filter(Boolean)));
@@ -1035,22 +1035,22 @@ function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { da
   const multiCategoria = distintos(d => d.categoria_recorte) > 1;
   const multiPeriodo = distintos(d => d.periodo) > 1;
   const multiSerie = distintos(d => d.serie_subrecorte) > 1;
-  // Se não há série, categorias são segmentos quando o eixo distingue territórios/períodos.
-  const categoriaComoSerie = !multiSerie && !linhas.some(d => d.serie_subrecorte.trim()) &&
-    multiCategoria && (multiTerritorio || multiPeriodo);
+  // O gráfico empilhado é definido pelas dimensões dos dados, não pelo ID do indicador.
+  // Períodos representam colunas; categorias ou séries distintas representam segmentos.
+  const categoriaSegmento = multiCategoria && (multiPeriodo || multiTerritorio || !multiSerie);
   const grupo = (d: DadoEixo01) => {
-    // No indicador 6.3.1, cada período é uma única coluna e cada raça/cor um segmento.
-    if (porRacaPeriodo) return exibirPeriodo(d.periodo) || "Sem período";
     const partes = [
-      multiTerritorio ? d.territorio : "",
-      multiCategoria && !categoriaComoSerie ? d.categoria_recorte : "",
+      multiTerritorio ? d.territorio.trim() : "",
       multiPeriodo ? exibirPeriodo(d.periodo) : "",
+      !categoriaSegmento && multiCategoria ? d.categoria_recorte.trim() : "",
     ].filter(Boolean);
-    return partes.join(" · ") || d.categoria_recorte || d.territorio || exibirPeriodo(d.periodo) || "Total";
+    return partes.join(" · ") ||
+      (categoriaSegmento ? exibirPeriodo(d.periodo) || d.territorio || "Total" :
+        d.categoria_recorte || d.territorio || exibirPeriodo(d.periodo) || "Total");
   };
-  const serie = (d: DadoEixo01) => porRacaPeriodo ? (d.categoria_recorte.trim() || "Não informada")
-    : categoriaComoSerie ? d.categoria_recorte :
-    d.serie_subrecorte || (multiCategoria ? "Total" : d.categoria_recorte || "Valor");
+  const serie = (d: DadoEixo01) => categoriaSegmento
+    ? d.categoria_recorte.trim() || "Não informada"
+    : d.serie_subrecorte.trim() || d.categoria_recorte.trim() || "Valor";
   const registros = new Map<string, { nome: string; partes: Map<string, number> }>();
   const nomesSeries: string[] = [];
   const percentual = linhas.length > 0 && linhas.every(d =>
@@ -1069,11 +1069,13 @@ function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { da
     const partes = registros.get(nome)!.partes;
     partes.set(nomeSerie, (partes.get(nomeSerie) ?? 0) + valor);
   }
-  const barras = Array.from(registros.values()).sort((a,b) => porRacaPeriodo ? ordenarPeriodo(a.nome)-ordenarPeriodo(b.nome) : 0);
-  if (porRacaPeriodo) nomesSeries.sort((a,b) => {
-    const ordem = (nome:string) => /branc/i.test(nome)?0:/pret/i.test(nome)?1:/pard/i.test(nome)?2:/amarel/i.test(nome)?3:4;
-    return ordem(a)-ordem(b)||a.localeCompare(b,"pt-BR");
-  });
+  const barras = Array.from(registros.values()).sort((a,b) =>
+    multiPeriodo ? ordenarPeriodo(a.nome)-ordenarPeriodo(b.nome) ||
+      a.nome.localeCompare(b.nome,"pt-BR",{numeric:true}) : a.nome.localeCompare(b.nome,"pt-BR",{numeric:true})
+  );
+  const ordemRaca = (nome:string) => /branc/i.test(nome)?0:/pret/i.test(nome)?1:/pard/i.test(nome)?2:/amarel/i.test(nome)?3:4;
+  const categoriasRaca = categoriaSegmento && nomesSeries.every(nome => ordemRaca(nome)<4);
+  if (categoriasRaca) nomesSeries.sort((a,b)=>ordemRaca(a)-ordemRaca(b)||a.localeCompare(b,"pt-BR"));
   const maior = Math.max(0, ...barras.map(b => Array.from(b.partes.values()).reduce((a, v) => a + v, 0)));
   const passoBruto = Math.max(0.01, maior / 4);
   const potencia = 10 ** Math.floor(Math.log10(passoBruto));
@@ -1083,9 +1085,9 @@ function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { da
   const casas = percentual ? 2 : Number.isInteger(passo) ? 0 : 2;
   const numero = (valor: number) => valor.toLocaleString("pt-BR", { maximumFractionDigits: casas });
   const formato = (valor: number) => numero(valor) + (percentual ? "%" : "");
-  const cores = porRacaPeriodo ? ["#4285f4","#ea4335","#f4b400","#34a853","#7132b2","#42b9eb"] : ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
+  const cores = categoriasRaca ? ["#4285f4","#ea4335","#f4b400","#34a853"] : ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
   if (!barras.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis para barras empilhadas.</p></div>;
-  return <div className={`radar-stacked-root${porRacaPeriodo ? " radar-stacked-raca" : ""}`}>
+  return <div className="radar-stacked-root radar-stacked-responsive">
     {metricas.length > 1 && <div className="radar-view-controls" aria-label="Selecionar métrica">
       {metricas.map(m => <button type="button" key={m} className={metrica === m ? "active" : ""} onClick={() => setMetricaSelecionada(m)}>{m}</button>)}
     </div>}
@@ -1095,7 +1097,7 @@ function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { da
       </span>)}
     </div>
     <div className="radar-stacked-scroll" role="region" tabIndex={0} aria-label={`Gráfico de barras empilhadas: ${titulo}`}>
-      <div className="radar-stacked-chart" style={{ minWidth: `${porRacaPeriodo ? 0 : Math.max(560, barras.length * 100)}px` }}>
+      <div className="radar-stacked-chart" style={{ minWidth: 0 }}>
         <div className="radar-stacked-plot">
           {[0,1,2,3,4].map(i => <div className="radar-stacked-gridline" key={i} style={{ bottom: `${i * 25}%` }}>
             <span>{formato(teto * i / 4)}</span>
@@ -1213,8 +1215,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const tipoCadastrado = (indicador.tipo_visualizacao || "").trim().toLowerCase();
   // Para este eixo, a apresentação solicitada prevalece sobre metadados ainda não republicados.
   // O catálogo continua disponível para os outros indicadores.
-  const tipo = indicador.indicador_id === "6.3.1" ? "barras_empilhadas"
-    : indicador.indicador_id === "1.2.3" ? "pizza"
+  const tipo = indicador.indicador_id === "1.2.3" ? "pizza"
     : ["1.2.2", "1.2.5"].includes(indicador.indicador_id) ? "barras"
     : tipoCadastrado;
   const moeda = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -1383,7 +1384,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     return <GraficoComparativo dados={validos} titulo={indicador.titulo} />;
   }
   if (tipo === "barras_empilhadas" && aba === "grafico") {
-    return <GraficoBarrasEmpilhadas dados={validos} titulo={indicador.titulo} porRacaPeriodo={indicador.indicador_id === "6.3.1"} />;
+    return <GraficoBarrasEmpilhadas dados={validos} titulo={indicador.titulo} />;
   }
   const metricas = Array.from(new Set(validos.map(d => d.serie_subrecorte).filter(Boolean)));
   const uf = tipo === "barras_uf";
