@@ -841,3 +841,18 @@ footer{background:#410d7b}
 .radar-stacked-segment-label{display:flex;flex-direction:column;align-items:center;gap:2px;color:#fff;font-size:clamp(10px,.85vw,13px);font-weight:750;line-height:1.1;text-align:center;text-shadow:0 1px 2px #0007;pointer-events:none;max-width:100%;padding:2px}
 .radar-stacked-segment-label small{color:inherit;font-size:10px;font-weight:600;white-space:nowrap}
 .radar-stacked-responsive .radar-stacked-total{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;white-space:nowrap;color:#243456}
+
+
+/* Barras divididas por série, inclusive quando as categorias são diferentes. */
+.radar-series-separated{width:100%;max-width:100%;padding:34px 20px 85px 62px;background:#fff;box-sizing:border-box}
+.radar-series-separated-plot{height:340px;position:relative;border-bottom:1px solid #d9cce8}
+.radar-series-separated-grid{position:absolute;left:0;right:0;border-top:1px solid #e9e0f0;pointer-events:none}
+.radar-series-separated-grid span{position:absolute;right:calc(100% + 10px);top:-8px;font-size:11px;color:#5d5375;white-space:nowrap}
+.radar-series-separated-groups{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:space-around;gap:clamp(18px,5vw,70px)}
+.radar-series-separated-group{position:relative;flex:1 1 0;min-width:0;height:100%;display:flex;align-items:flex-end;justify-content:center}
+.radar-series-separated-bars{height:100%;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:clamp(7px,2vw,30px)}
+.radar-series-separated-item{position:relative;flex:1 1 0;max-width:170px;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.radar-series-separated-bar{width:clamp(18px,75%,125px);max-width:100%;border-radius:6px 6px 0 0;cursor:help}
+.radar-series-separated-category{position:absolute;top:calc(100% + 10px);width:100%;text-align:center;font-size:11px;line-height:1.25;color:#25385c;overflow-wrap:anywhere}
+.radar-series-separated-title{position:absolute;top:calc(100% + 51px);left:0;right:0;text-align:center;font-size:13px;font-weight:750;color:#17385f}
+@media(max-width:680px){.radar-series-separated{padding:24px 8px 90px 48px}.radar-series-separated-plot{height:280px}.radar-series-separated-groups{gap:12px}.radar-series-separated-bars{gap:5px}.radar-series-separated-category{font-size:9px}.radar-series-separated-title{font-size:11px}}
