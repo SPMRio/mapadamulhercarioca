@@ -242,7 +242,11 @@ async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
   // Une somente os dados efetivamente existentes. A tabela indicadores permanece independente.
   const rows = resultados.flat();
   return rows
-    .filter(row => !("publicar" in row) || String(row.publicar ?? "").trim().toUpperCase() === "SIM")
+    .filter(row => {
+      const publicar = String(row.publicar ?? "").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();
+      // A importação é pública por padrão. Só omite bloqueios explícitos.
+      return !["NAO","N","FALSE","0","RASCUNHO"].includes(publicar);
+    })
     .map(row => ({
       id_indicador: normalizarId(row.indicador_id ?? row.id_indicador),
       periodo: String(row.periodo ?? ""),
