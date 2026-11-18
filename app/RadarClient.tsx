@@ -936,10 +936,86 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
   </div>;
 }
 
+
+/** Série histórica por recorte: só liga pontos de observações do mesmo
+ * território, categoria, série, métrica e unidade. Não mistura períodos distintos. */
+function chaveSerieHistorica(d: DadoEixo01): string {
+  return JSON.stringify([d.territorio?.trim(),d.categoria_recorte?.trim(),d.serie_subrecorte?.trim(),
+    d.metrica?.trim(),d.unidade_dado?.trim(),d.tipo_valor?.trim()]);
+}
+function HistoricoIndicador({dados,formatar}:{dados:DadoEixo01[];formatar:(d:DadoEixo01)=>string}) {
+  const [chaveAtiva,setChaveAtiva] = useState("");
+  const series = Array.from(dados.reduce((grupos,d) => {
+    const key=chaveSerieHistorica(d);
+    if (!grupos.has(key)) grupos.set(key,[]);
+    grupos.get(key)!.push(d);
+    return grupos;
+  },new Map<string,DadoEixo01[]>()).entries())
+    .map(([chave,registros]) => {
+      const porPeriodo=new Map<string,DadoEixo01>();
+      for (const d of registros) {
+        const periodo=d.periodo.trim();
+        if (!periodo) continue;
+        const anterior=porPeriodo.get(periodo);
+        if (!anterior || String(d.atualizado_em??"")>String(anterior.atualizado_em??"")) porPeriodo.set(periodo,d);
+      }
+      const valores=Array.from(porPeriodo.values()).sort((a,b)=>
+        ordenarPeriodo(a.periodo)-ordenarPeriodo(b.periodo) || a.periodo.localeCompare(b.periodo,"pt-BR",{numeric:true}));
+      const exemplo=registros[0];
+      const nome=[exemplo.territorio,exemplo.categoria_recorte,exemplo.serie_subrecorte,exemplo.metrica]
+        .map(x=>String(x??"").trim()).filter(Boolean).join(" · ") || "Total";
+      return {chave,nome,valores};
+    }).filter(item=>item.valores.length>=2)
+    .sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR",{numeric:true}));
+  const escolhida=series.find(s=>s.chave===chaveAtiva)??series[0];
+  if (!escolhida) return <p className="radar-history-empty">Não há dois períodos comparáveis para construir uma evolução histórica deste recorte.</p>;
+  const valores=escolhida.valores;
+  const numeros=valores.map(d=>d.escala==="0–1"&&(d.unidade_dado==="%"||/percentual|proporção/i.test(d.metrica??""))
+    ? Number(d.valor)*100:Number(d.valor));
+  const minimo=Math.min(0,...numeros),maximo=Math.max(0,...numeros);
+  const alcance=Math.max(1,maximo-minimo);
+  const x=(i:number)=>78+(valores.length===1?.5:i/(valores.length-1))*748;
+  const y=(valor:number)=>272-(valor-minimo)/alcance*220;
+  const pontos=numeros.map((valor,i)=>`${x(i)},${y(valor)}`).join(" ");
+  const unidadePercentual=valores.every(d=>d.unidade_dado==="%" || /percentual|proporção/i.test(d.metrica??""));
+  const numeroEixo=(n:number)=>n.toLocaleString("pt-BR",{maximumFractionDigits:unidadePercentual?2:Math.abs(n)<10?2:0});
+  return <div className="radar-history-view">
+    <div className="radar-history-filter">
+      <label htmlFor="radar-history-series">Recorte da série histórica</label>
+      <select id="radar-history-series" value={escolhida.chave} onChange={e=>setChaveAtiva(e.target.value)}>
+        {series.map(serie=><option key={serie.chave} value={serie.chave}>{serie.nome}</option>)}
+      </select>
+    </div>
+    <p className="radar-history-note">Evolução de {valores.length} períodos disponíveis. Cada ponto representa um dado registrado para o mesmo recorte.</p>
+    <div className="radar-history-figure">
+      <svg viewBox="0 0 900 335" role="img" aria-label={`Evolução histórica: ${escolhida.nome}`} preserveAspectRatio="xMidYMid meet">
+        {[0,1,2,3,4].map(t=>{
+          const valor=minimo+alcance*t/4;
+          return <g key={t}><line x1="78" x2="826" y1={y(valor)} y2={y(valor)} stroke="#e8dfee" strokeWidth="1.5"/>
+            <text x="68" y={y(valor)+4} textAnchor="end" fontSize="12" fill="#52627b">{numeroEixo(valor)}</text></g>;
+        })}
+        {valores.length>1&&<polyline points={pontos} fill="none" stroke="#7132b2" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>}
+        {valores.map((d,i)=><g key={d.periodo}>
+          <circle cx={x(i)} cy={y(numeros[i])} r="7" fill="#7132b2" stroke="#fff" strokeWidth="3"/>
+          <title>{`${exibirPeriodo(d.periodo)}: ${formatar(d)}`}</title>
+          <text x={x(i)} y="307" textAnchor="middle" fontSize="12" fill="#293b60">{exibirPeriodo(d.periodo)}</text>
+        </g>)}
+      </svg>
+    </div>
+    <div className="radar-history-values" aria-label="Valores da série histórica">
+      {valores.map((d,i)=><div key={d.periodo}>
+        <small>{exibirPeriodo(d.periodo)}</small><strong>{formatar(d)}</strong>
+        {i>0&&numeros[i-1]!==0&&<span>{((numeros[i]/numeros[i-1]-1)*100)>=0?"+":""}{((numeros[i]/numeros[i-1]-1)*100).toLocaleString("pt-BR",{maximumFractionDigits:1})}% em relação ao período anterior</span>}
+      </div>)}
+    </div>
+  </div>;
+}
+
 // As visualizações são geradas pelos registros da tabela de dados do eixo, não por constantes no front-end.
 function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   const [metrica, setMetrica] = useState("");
   const [ordem, setOrdem] = useState<"maior" | "menor">("maior");
+  const [visaoPeriodo,setVisaoPeriodo] = useState<"atual"|"historico">("atual");
   const [pontoAtivo, setPontoAtivo] = useState<null | {periodo:string;serie:string;valor:string;cor:string;x:number;y:number}>(null);
   const [fatiaAtiva, setFatiaAtiva] = useState<number | null>(null);
   const registros = dados.filter(d => d.id_indicador === indicador.indicador_id);
@@ -1154,6 +1230,14 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     ? comparacaoCompleta
     : registrosMaisRecentes(comparacaoCompleta);
   const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
+  const temHistoricoComparavel = new Map<string,Set<string>>();
+  for (const d of comparacaoCompleta) {
+    const chave=chaveSerieHistorica(d);
+    if (!temHistoricoComparavel.has(chave)) temHistoricoComparavel.set(chave,new Set());
+    if (d.periodo.trim()) temHistoricoComparavel.get(chave)!.add(d.periodo.trim());
+  }
+  const existeEvolucao=Array.from(temHistoricoComparavel.values()).some(periodos=>periodos.size>=2);
+  const permiteAlternar = ["barras","barras_uf","barras_populacao"].includes(tipo) && existeEvolucao;
   // A aba Tabela preserva todos os períodos e dados históricos, sem o recorte do gráfico.
   const registrosTabela = [...comparacaoCompleta].sort((a,b) =>
     ordenarPeriodo(b.periodo) - ordenarPeriodo(a.periodo) ||
@@ -1248,7 +1332,13 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         <b>{pontoAtivo.valor}</b>
       </div>}
       </div>}
-      {aba === "grafico" && !graficoTemporal && <>
+
+      {aba==="grafico" && permiteAlternar && <div className="radar-period-mode" role="group" aria-label="Visualização temporal">
+        <button type="button" className={visaoPeriodo==="atual"?"active":""} aria-pressed={visaoPeriodo==="atual"} onClick={()=>setVisaoPeriodo("atual")}>Comparação atual</button>
+        <button type="button" className={visaoPeriodo==="historico"?"active":""} aria-pressed={visaoPeriodo==="historico"} onClick={()=>setVisaoPeriodo("historico")}>Evolução histórica</button>
+      </div>}
+      {aba==="grafico" && permiteAlternar && visaoPeriodo==="historico" && <HistoricoIndicador dados={comparacaoCompleta} formatar={fmt} />}
+      {aba === "grafico" && !graficoTemporal && (!permiteAlternar || visaoPeriodo==="atual") && <>
         {tipo === "linhas" && <p style={{marginBottom:12}}>Comparação dos valores disponíveis.</p>}
         {/* A métrica só é filtrada para a comparação por UF. */}
         {agrupadas ? (
