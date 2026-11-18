@@ -565,10 +565,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
       <p>Não há dados publicados com os recortes Homens e Mulheres neste indicador. Confira as colunas Série e Categoria do Eixo 01.</p>
     </div>
   );
-  const periodoOrdem = (p: string) => {
-    const m = p.match(/^(?:([1-4])T(\d{4})|(\d{4})-T([1-4]))$/);
-    return m ? Number(m[2] ?? m[3]) * 4 + Number(m[1] ?? m[4]) : Number.MAX_SAFE_INTEGER;
-  };
+  const periodoOrdem = (p: string) => ordenarPeriodo(p);
   const periodos = Array.from(new Set(publicados.map(d => d.periodo)))
     .sort((a, b) => periodoOrdem(a) - periodoOrdem(b));
   const series = [
