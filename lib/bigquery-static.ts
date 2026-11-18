@@ -120,13 +120,13 @@ async function accessToken(): Promise<string> {
   if (!result.access_token) throw new Error("Google não retornou acesso.");
   return result.access_token;
 }
-async function query(table: string): Promise<Record<string, unknown>[]> {
+async function query(table: string, isSql = false): Promise<Record<string, unknown>[]> {
   const auth = await accessToken();
   const response = await jsonRequest<QueryResult & {error?: {message?: string}}>(
     "https://bigquery.googleapis.com/bigquery/v2/projects/rj-spm-rio/queries",
     "POST",
     {
-      query: `SELECT TO_JSON_STRING(t) AS linha_json FROM \`rj-spm-rio.projeto_mapa_mulher.${table}\` t`,
+      query: isSql ? table : `SELECT TO_JSON_STRING(t) AS linha_json FROM \`rj-spm-rio.projeto_mapa_mulher.${table}\` t`,
       useLegacySql: false, location: "southamerica-east1",
       maximumBytesBilled: "1000000000", timeoutMs: 10000, maxResults: 1000,
     },
@@ -213,29 +213,34 @@ async function catalogo() {
     atualizado_em: datas.get(indicador_id) || String(row.atualizado_em ?? ""),
   })).filter(item => Boolean(item.indicador_id) && Boolean(item.titulo));
 }
-// Todas as tabelas dos eixos seguem a mesma estrutura de dados.
-export const TABELAS_EIXOS = [
-  "eixo_01_visao_geral",
-  "eixo_02_violencia",
-  "eixo_03_cuidados",
-  "eixo_04_seguranca_publica",
-  "eixo_05_meninas",
-  "eixo_06_saude",
-  "eixo_07_educacao",
-  "eixo_08_emprego_renda",
-  "eixo_09_cultura",
-  "eixo_10_assistencia_social",
-  "eixo_11_mulheres",
-  "eixo_12_codim"
-] as const;
-export const NUMEROS_EIXOS = TABELAS_EIXOS.map((_, i) => String(i + 1).padStart(2, "0"));
+// Descobre automaticamente as tabelas dos 12 eixos pelo prefixo, sem fixar
+// o sufixo no código (ex.: eixo_08_emprego_renda ou eixo_08_emprego_e_renda).
+export const NUMEROS_EIXOS = Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0"));
+async function descobrirTabelasEixos(): Promise<string[]> {
+  const sql = `SELECT TO_JSON_STRING(t) AS linha_json FROM (
+    SELECT table_name FROM \`rj-spm-rio.projeto_mapa_mulher.INFORMATION_SCHEMA.TABLES\`
+    WHERE table_type = 'BASE TABLE' AND STARTS_WITH(table_name, 'eixo_')
+  ) t`;
+  const rows = await query(sql,true);
+  return rows.map(r=>String(r.table_name??"")).filter(nome=>/^eixo_(0[1-9]|1[0-2])(?:_|$)/.test(nome));
+}
+const tabelasEixosDisponiveis = unstable_cache(descobrirTabelasEixos,["mapa-tabelas-eixos-auto-v1"],{
+  tags:["mapa-eixos"],revalidate:120,
+});
 
 async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
-  const indice = Number(numero) - 1;
-  if (!/^(0[1-9]|1[0-2])$/.test(numero) || indice < 0 || indice >= TABELAS_EIXOS.length) {
-    throw new Error("Eixo inválido.");
-  }
-  const rows = await query(TABELAS_EIXOS[indice]);
+  if (!/^(0[1-9]|1[0-2])$/.test(numero)) throw new Error("Eixo inválido.");
+  const tabelas = await tabelasEixosDisponiveis();
+  const prefixo = `eixo_${numero}_`;
+  // Cada eixo é encontrado pelo prefixo, independentemente do sufixo escolhido na importação.
+  const nomes = tabelas.filter(nome=>nome === `eixo_${numero}` || nome.startsWith(prefixo));
+  if (!nomes.length) return [];
+  const resultados = await Promise.all(nomes.map(async nome=>{
+    try{return await query(nome);}
+    catch(erro){if(erro instanceof Error && erro.message==="table_not_found") return [];throw erro;}
+  }));
+  // Une somente os dados efetivamente existentes. A tabela indicadores permanece independente.
+  const rows = resultados.flat();
   return rows
     .filter(row => !("publicar" in row) || String(row.publicar ?? "").trim().toUpperCase() === "SIM")
     .map(row => ({
