@@ -764,7 +764,6 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
   const paginaAtual = Math.min(pagina, Math.max(0, totalPaginas - 1));
   const visiveis = categorias.slice(paginaAtual * 2, paginaAtual * 2 + 2);
   const percentual = recentes.length > 0 && recentes.every(d => d.unidade_dado?.trim() === "%" || /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
-  const numero = (d: DadoEixo01) => Number(d.valor) * (percentual && d.escala === "0–1" ? 100 : 1);
   const todosFracionarios = percentual && recentes.every(d => Math.abs(Number(d.valor)) <= 1);
   const valor = (d: DadoEixo01) => Number(d.valor) * (percentual && (d.escala === "0–1" || (todosFracionarios && !d.escala)) ? 100 : 1);
   const maior = Math.max(0, ...recentes.map(d => Math.max(0, valor(d))));
