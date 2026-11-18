@@ -521,12 +521,10 @@ function PainelCuidados({
 // Formatação apenas visual: o valor original do período continua no BigQuery.
 function exibirPeriodo(periodo: string): string {
   const valor = periodo.trim();
-  const trimestre = valor.match(/^(\d{4})-T([1-4])$/i) ?? valor.match(/^([1-4])T-(\d{4})$/i);
-  if (trimestre) {
-    const ano = /^\d{4}/.test(valor) ? trimestre[1] : trimestre[2];
-    const numero = /^\d{4}/.test(valor) ? trimestre[2] : trimestre[1];
-    return `${ano} | ${numero}º trimestre`;
-  }
+  const anoPrimeiro = valor.match(/^((?:19|20)\d{2})-(?:T([1-4])|([1-4])T)$/i);
+  if (anoPrimeiro) return anoPrimeiro[1] + "-" + (anoPrimeiro[2] || anoPrimeiro[3]) + "T";
+  const triPrimeiro = valor.match(/^([1-4])T-?((?:19|20)\d{2})$/i);
+  if (triPrimeiro) return triPrimeiro[2] + "-" + triPrimeiro[1] + "T";
   return valor;
 }
 
@@ -720,18 +718,15 @@ function BarraComTooltip({
  * combinação de território/categoria/série/métrica. Não altera o histórico
  * usado pelas tabelas e pelas evoluções temporais. */
 function ordenarPeriodo(periodo: string): number {
-  const valor = String(periodo ?? "").trim();
+  const valor = exibirPeriodo(String(periodo ?? ""));
+  const trimestre = valor.match(/^((?:19|20)\d{2})-([1-4])T$/i);
+  if (trimestre) return Number(trimestre[1]) * 100 + Number(trimestre[2]) * 3;
   const anos = [...valor.matchAll(/(?:19|20)\d{2}/g)].map(m => Number(m[0]));
   if (!anos.length) return -1;
   const ano = Math.max(...anos);
-  const anoNoInicio = valor.match(/^((?:19|20)\d{2})[\-\/.](\d{1,2})(?:\D|$)/);
-  const trimestre = valor.match(/(?:T|TRI(?:MESTRE)?)[\s.-]*([1-4])/i)
-    ?? valor.match(/^([1-4])\s*T[\s.-]*(?:19|20)\d{2}/i);
+  const mes = valor.match(/^((?:19|20)\d{2})[-/.](0?[1-9]|1[0-2])(?:\D|$)/);
   const semestre = valor.match(/(?:S|SEM(?:ESTRE)?)[\s.-]*([12])/i);
-  const mes = anoNoInicio && Number(anoNoInicio[1]) === ano && Number(anoNoInicio[2]) <= 12
-    ? Number(anoNoInicio[2]) : trimestre ? Number(trimestre[1]) * 3
-    : semestre ? Number(semestre[1]) * 6 : 0;
-  return ano * 100 + mes;
+  return ano * 100 + (mes ? Number(mes[2]) : semestre ? Number(semestre[1]) * 6 : 0);
 }
 function registrosMaisRecentes<T extends DadoEixo01>(registros: T[]): T[] {
   const grupos = new Map<string, T>();
@@ -1445,7 +1440,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const grupoTaxa = (m: string) => /taxa/i.test(m);
   const metricaAtual = metricas.includes(metrica) ? metrica : (metricas.find(m => !grupoTaxa(m)) || metricas[0]);
   const linhas = validos.filter(d => d.tipo_valor !== "texto");
-  const periodos = Array.from(new Set(linhas.map(d => d.periodo))).sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const periodos = Array.from(new Set(linhas.map(d => exibirPeriodo(d.periodo)))).sort((a,b) => ordenarPeriodo(a)-ordenarPeriodo(b) || a.localeCompare(b,"pt-BR",{numeric:true}));
   const nomeSerie = (d: DadoEixo01) => d.serie_subrecorte || d.categoria_recorte || (d.territorio && periodos.length > 1 ? d.territorio : "") || "Total";
   const seriesLinha = Array.from(new Set(linhas.map(nomeSerie))).filter(Boolean);
   const graficoTemporal = tipo === "linhas" && periodos.length > 1;
@@ -1575,7 +1570,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         {seriesLinha.map((serie,i) => {
           const cor = ["#7030b5","#42b3df","#e19c29","#21977e"][i%4];
           const coords = periodos.map((p,j) => {
-            const d = linhas.find(x => x.periodo === p && nomeSerie(x) === serie);
+            const d = linhas.find(x => exibirPeriodo(x.periodo) === p && nomeSerie(x) === serie);
             if (!d) return null;
             return { x: linhaX(j), y: linhaY(d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor)), label: fmt(d), periodo: p };
           }).filter((x): x is {x:number;y:number;label:string;periodo:string} => x !== null);
