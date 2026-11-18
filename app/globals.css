@@ -816,3 +816,19 @@ footer{background:#410d7b}
 .radar-comparativo-pages button{border:1px solid #d9cce8;background:#fff;color:#7132b2;border-radius:10px;padding:7px 11px;cursor:pointer}
 .radar-comparativo-pages button:disabled{opacity:.4;cursor:default}
 @media(max-width:760px){.radar-comparativo-grid{grid-template-columns:1fr}.radar-comparativo-panel{padding:15px 12px 18px}}
+
+/* Indicador 6.3.1: duas colunas verticais empilhadas por ano, com segmentos de raça/cor. */
+.radar-stacked-raca .radar-stacked-scroll{width:100%;max-width:100%;overflow-x:visible;padding:8px 4px 55px}
+.radar-stacked-raca .radar-stacked-chart{width:100%;min-width:0!important;max-width:100%;padding:28px 18px 0 62px}
+.radar-stacked-raca .radar-stacked-plot{height:340px}
+.radar-stacked-raca .radar-stacked-columns{gap:clamp(12px,3vw,50px)}
+.radar-stacked-raca .radar-stacked-item{min-width:0}
+.radar-stacked-raca .radar-stacked-stack{width:clamp(80px,40%,180px);max-width:100%;overflow:visible}
+.radar-stacked-raca .radar-stacked-stack .radar-stacked-segment:first-child{border-radius:0 0 5px 5px}
+.radar-stacked-raca .radar-stacked-stack .radar-stacked-segment:last-child{border-radius:5px 5px 0 0}
+.radar-stacked-raca .radar-stacked-label{font-size:12px}
+@media(max-width:680px){
+ .radar-stacked-raca .radar-stacked-chart{padding:22px 8px 0 48px}
+ .radar-stacked-raca .radar-stacked-plot{height:280px}
+ .radar-stacked-raca .radar-stacked-stack{width:clamp(45px,48%,120px)}
+}
