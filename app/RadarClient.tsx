@@ -1022,6 +1022,53 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
   </div>;
 }
 
+// Quando as categorias diferem por série (Brancos/Negros vs Brancas/Negras),
+// mantém as colunas juntas em dois grupos, sem inventar correspondência entre rótulos.
+function GraficoBarrasSeparadasPorSerie({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
+  const series=Array.from(new Set(dados.map(d=>d.serie_subrecorte.trim()).filter(Boolean)))
+    .sort((a,b)=>/homens?/i.test(a)?-1:/homens?/i.test(b)?1:a.localeCompare(b,"pt-BR"));
+  const percentual=dados.length>0 && dados.every(d=>d.unidade_dado?.trim()==="%"||/percentual|proporção/i.test(d.metrica??"")||d.escala==="0–1");
+  const fator=percentual && dados.every(d=>Math.abs(Number(d.valor))<=1)?100:1;
+  const valor=(d:DadoEixo01)=>Number(d.valor)*fator;
+  const maior=Math.max(0,...dados.map(d=>valor(d)));
+  const bruto=Math.max(0.01,maior/4);
+  const potencia=10**Math.floor(Math.log10(bruto));
+  const n=bruto/potencia;
+  const passo=(n<=1?1:n<=2?2:n<=5?5:10)*potencia;
+  const teto=Math.max(passo,Math.ceil(maior/passo)*passo);
+  const formato=(n:number)=>n.toLocaleString("pt-BR",{maximumFractionDigits:2})+(percentual?"%":"");
+  const cores=["#7132b2","#42b9eb","#a66ddd","#269c85"];
+  return <div className="radar-series-separated" role="region" aria-label={`Barras agrupadas por série: ${titulo}`}>
+    <div className="radar-series-separated-plot">
+      {[0,1,2,3,4].map(i=><div key={i} className="radar-series-separated-grid" style={{bottom:`${i*25}%`}}>
+        <span>{formato(teto*i/4)}</span>
+      </div>)}
+      <div className="radar-series-separated-groups">
+        {series.map((serie,si)=>{
+          const valores=dados.filter(d=>d.serie_subrecorte.trim()===serie)
+            .sort((a,b)=>compararCategoriasGrafico(a.categoria_recorte,b.categoria_recorte,valor(a),valor(b),
+              dados.every(d=>inicioFaixaEtaria(d.categoria_recorte)!==null)));
+          return <div className="radar-series-separated-group" key={serie}>
+            <div className="radar-series-separated-bars">
+              {valores.map((d,i)=>{
+                const v=Math.max(0,valor(d));
+                const cor=cores[si%cores.length];
+                return <div className="radar-series-separated-item" key={`${d.categoria_recorte}-${i}`}>
+                  <BarraComTooltip className="radar-series-separated-bar" style={{height:`${v/teto*100}%`,background:cor}}
+                    cor={cor} serie={serie} categoria={`${d.categoria_recorte} · ${exibirPeriodo(d.periodo)}`}
+                    valor={formato(v)} ariaLabel={`${serie}, ${d.categoria_recorte}: ${formato(v)}`}/>
+                  <span className="radar-series-separated-category">{d.categoria_recorte||"Total"}</span>
+                </div>;
+              })}
+            </div>
+            <strong className="radar-series-separated-title">{serie}</strong>
+          </div>;
+        })}
+      </div>
+    </div>
+  </div>;
+}
+
 // Barras empilhadas: uma barra por combinação de dimensões, uma cor por série.
 // Valores são agregados somente dentro da mesma combinação de período, território,
 // categoria, série e métrica; nunca mistura métricas distintas.
@@ -1462,6 +1509,13 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       d.categoria_recorte.trim() !== "" && d.categoria_recorte === outro.categoria_recorte &&
       d.serie_subrecorte.trim() !== "" && outro.serie_subrecorte.trim() !== "" &&
       d.serie_subrecorte !== outro.serie_subrecorte));
+  // Séries distintas também devem ser agrupadas quando as categorias não coincidem,
+  // como "Brancos/Negros" (Homens) e "Brancas/Negras" (Mulheres).
+  const seriesDistintas = new Set(comparacao.map(d=>d.serie_subrecorte.trim()).filter(Boolean));
+  const categoriasPreenchidas = comparacao.every(d=>d.categoria_recorte.trim()!=="");
+  const agruparSeriesSeparadas = tipo === "barras" && !metricasComparacao && !agrupadas &&
+    seriesDistintas.size > 1 && categoriasPreenchidas &&
+    new Set(comparacao.map(d=>d.categoria_recorte.trim())).size > 1;
   // Detecta a dimensão que realmente varia: UFs, categorias, séries ou períodos.
   // Território fixo (ex.: Rio de Janeiro) não deve substituir nomes das categorias.
   const distintos = (campo: (d: DadoEixo01) => string) =>
@@ -1554,6 +1608,8 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         {/* A métrica só é filtrada para a comparação por UF. */}
         {agrupadas ? (
           <GraficoBarrasAgrupadas dados={comparacao} titulo={indicador.titulo} />
+        ) : agruparSeriesSeparadas ? (
+          <GraficoBarrasSeparadasPorSerie dados={comparacao} titulo={indicador.titulo} />
         ) : barrasVerticais ? (
           <div className="radar-vertical-scroll" role="region" aria-label={`Comparação em barras verticais: ${indicador.titulo}`} tabIndex={0}>
             <div className="radar-vertical-chart" >
