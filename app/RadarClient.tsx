@@ -750,60 +750,105 @@ function registrosMaisRecentes<T extends DadoEixo01>(registros: T[]): T[] {
 }
 
 
-// Comparativo: cada categoria gera seu próprio gráfico; séries ficam dentro dele.
-// A mesma escala permite comparar os dois painéis sem distorcer os valores.
+// Comparativo: a série divide os painéis; categoria identifica cada linha.
+// Os dois painéis usam os mesmos períodos e a mesma escala vertical.
 function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const [pagina, setPagina] = useState(0);
   const [metricaSelecionada, setMetricaSelecionada] = useState("");
   const metricas = Array.from(new Set(dados.map(d => (d.metrica ?? "").trim()).filter(Boolean)));
   const metrica = metricas.includes(metricaSelecionada) ? metricaSelecionada : metricas[0] || "";
   const filtrados = metricas.length > 1 ? dados.filter(d => (d.metrica ?? "").trim() === metrica) : dados;
-  const recentes = registrosMaisRecentes(filtrados.filter(d => d.tipo_valor !== "texto" && Number.isFinite(Number(d.valor))));
-  const categorias = Array.from(new Set(recentes.map(d => d.categoria_recorte.trim()).filter(Boolean)));
-  const totalPaginas = Math.ceil(categorias.length / 2);
-  const paginaAtual = Math.min(pagina, Math.max(0, totalPaginas - 1));
-  const visiveis = categorias.slice(paginaAtual * 2, paginaAtual * 2 + 2);
-  const percentual = recentes.length > 0 && recentes.every(d => d.unidade_dado?.trim() === "%" || /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
-  const todosFracionarios = percentual && recentes.every(d => Math.abs(Number(d.valor)) <= 1);
-  const valor = (d: DadoEixo01) => Number(d.valor) * (percentual && (d.escala === "0–1" || (todosFracionarios && !d.escala)) ? 100 : 1);
-  const maior = Math.max(0, ...recentes.map(d => Math.max(0, valor(d))));
-  const passoBruto = Math.max(0.01, maior / 4);
+  // Preserva todos os períodos históricos e evita duplicatas da mesma observação.
+  const registros = new Map<string, DadoEixo01>();
+  for (const d of filtrados) {
+    if (d.tipo_valor === "texto" || !Number.isFinite(Number(d.valor)) || String(d.valor).trim() === "") continue;
+    const chave = JSON.stringify([d.serie_subrecorte.trim(), d.categoria_recorte.trim(), d.territorio.trim(), d.periodo.trim()]);
+    const anterior = registros.get(chave);
+    if (!anterior || String(d.atualizado_em ?? "") > String(anterior.atualizado_em ?? "")) registros.set(chave, d);
+  }
+  const linhas = Array.from(registros.values());
+  const series = Array.from(new Set(linhas.map(d => d.serie_subrecorte.trim()).filter(Boolean)));
+  const periodos = Array.from(new Set(linhas.map(d => d.periodo.trim()).filter(Boolean)))
+    .sort((a,b) => ordenarPeriodo(a) - ordenarPeriodo(b) || a.localeCompare(b,"pt-BR",{numeric:true}));
+  const percentual = linhas.length > 0 && linhas.every(d =>
+    d.unidade_dado?.trim() === "%" || /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
+  const todosFracionarios = percentual && linhas.every(d => Math.abs(Number(d.valor)) <= 1);
+  const valor = (d: DadoEixo01) => Number(d.valor) *
+    (percentual && (d.escala === "0–1" || (todosFracionarios && !d.escala)) ? 100 : 1);
+  const valores = linhas.map(valor);
+  const minimo = Math.min(0,...valores);
+  const maximo = Math.max(0,...valores);
+  const amplitude = Math.max(0.01,maximo-minimo);
+  const passoBruto = amplitude / 4;
   const potencia = 10 ** Math.floor(Math.log10(passoBruto));
   const normalizado = passoBruto / potencia;
   const passo = (normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 5 ? 5 : 10) * potencia;
-  const teto = Math.max(passo, Math.ceil(maior / passo) * passo);
-  const formato = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + (percentual ? "%" : "");
-  const cores = ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#4066ad"];
-  if (categorias.length < 2) return <div className="radar-chart-empty"><p>O comparativo precisa de pelo menos duas categorias preenchidas.</p></div>;
-  return <div className="radar-comparativo-root" aria-label={`Comparativo: ${titulo}`}>
+  const piso = Math.floor(minimo / passo) * passo;
+  const teto = Math.max(piso + passo,Math.ceil(maximo / passo) * passo);
+  const formato = (n: number) => n.toLocaleString("pt-BR",{maximumFractionDigits:2})+(percentual?"%":"");
+  const cores = ["#7132b2","#42b9eb","#a66ddd","#269c85","#dc9c32","#4066ad","#dc6d97"];
+  const totalPaginas = Math.ceil(series.length / 2);
+  const paginaAtual = Math.min(pagina,Math.max(0,totalPaginas-1));
+  const visiveis = series.slice(paginaAtual*2,paginaAtual*2+2);
+  const x = (indice: number) => 50+(periodos.length === 1 ? 180 : indice/(periodos.length-1)*360);
+  const y = (n: number) => 245-(n-piso)/(teto-piso)*205;
+  if (!series.length) return <div className="radar-chart-empty"><p>O comparativo precisa de registros com a coluna Série preenchida.</p></div>;
+  return <div className="radar-comparativo-root" aria-label={`Comparativo de linhas: ${titulo}`}>
     {metricas.length > 1 && <div className="radar-view-controls" aria-label="Métrica do comparativo">
-      {metricas.map(m => <button key={m} type="button" className={metrica === m ? "active" : ""} onClick={() => {setMetricaSelecionada(m);setPagina(0);}}>{m}</button>)}
+      {metricas.map(m => <button key={m} type="button" className={metrica===m?"active":""} onClick={()=>{setMetricaSelecionada(m);setPagina(0);}}>{m}</button>)}
     </div>}
     {totalPaginas > 1 && <div className="radar-comparativo-pages">
-      <span>Categorias {paginaAtual * 2 + 1}–{Math.min(categorias.length, paginaAtual * 2 + 2)} de {categorias.length}</span>
-      <button type="button" disabled={paginaAtual === 0} onClick={() => setPagina(p => Math.max(0, p - 1))}>Anteriores</button>
-      <button type="button" disabled={paginaAtual === totalPaginas - 1} onClick={() => setPagina(p => Math.min(totalPaginas - 1, p + 1))}>Próximas</button>
+      <span>Séries {paginaAtual*2+1}–{Math.min(series.length,paginaAtual*2+2)} de {series.length}</span>
+      <button type="button" disabled={paginaAtual===0} onClick={()=>setPagina(p=>Math.max(0,p-1))}>Anteriores</button>
+      <button type="button" disabled={paginaAtual===totalPaginas-1} onClick={()=>setPagina(p=>Math.min(totalPaginas-1,p+1))}>Próximas</button>
     </div>}
     <div className="radar-comparativo-grid">
-      {visiveis.map(categoria => {
-        const linhas = recentes.filter(d => d.categoria_recorte.trim() === categoria);
-        return <section className="radar-comparativo-panel" key={categoria} aria-label={categoria}>
-          <h4>{categoria}</h4>
-          <div className="radar-comparativo-plot">
-            {[0,1,2,3,4].map(i => <div key={i} className="radar-comparativo-gridline" style={{bottom:`${i*25}%`}}><span>{formato(teto*i/4)}</span></div>)}
-            <div className="radar-comparativo-columns">
-              {linhas.map((d,i) => {
-                const nome = d.serie_subrecorte.trim() || (linhas.length > 1 ? d.territorio.trim() : "") || "Total";
-                const n = Math.max(0, valor(d));
-                const cor = /mulher|menina/i.test(nome) ? "#7132b2" : /homem|menino/i.test(nome) ? "#42b9eb" : cores[i % cores.length];
-                return <div className="radar-comparativo-item" key={`${nome}-${d.periodo}-${i}`}>
-                  <BarraComTooltip className="radar-vertical-bar" style={{height:`${n/teto*100}%`,background:cor}}
-                    cor={cor} serie={nome} categoria={`${categoria} · ${exibirPeriodo(d.periodo)}`}
-                    valor={formato(n)} ariaLabel={`${categoria}, ${nome}: ${formato(n)}`} />
-                  <span className="radar-comparativo-label" title={nome}>{nome}</span>
-                </div>;
-              })}
-            </div>
+      {visiveis.map(serie=>{
+        const grupo = linhas.filter(d=>d.serie_subrecorte.trim()===serie);
+        const territorios = new Set(grupo.map(d=>d.territorio.trim()).filter(Boolean));
+        const nomeCategoria = (d:DadoEixo01) => [
+          territorios.size>1 ? d.territorio.trim() : "",
+          d.categoria_recorte.trim()
+        ].filter(Boolean).join(" · ") || "Total";
+        const categorias = Array.from(new Set(grupo.map(nomeCategoria)));
+        return <section className="radar-comparativo-panel" key={serie} aria-label={serie}>
+          <h4>{serie}</h4>
+          <svg className="radar-comparativo-linechart" viewBox="0 0 440 292" role="img"
+            aria-label={`Evolução por categoria da série ${serie}`}>
+            {[0,1,2,3,4].map(i=>{
+              const n=piso+(teto-piso)*i/4;
+              return <g key={i}>
+                <line x1="50" x2="410" y1={y(n)} y2={y(n)} stroke="#e9e0f0" strokeWidth="1"/>
+                <text x="44" y={y(n)+4} fontSize="10" textAnchor="end" fill="#5d5375">{formato(n)}</text>
+              </g>;
+            })}
+            {periodos.map((periodo,i)=><text key={periodo} x={x(i)} y="267" fontSize="10"
+              textAnchor="middle" fill="#53657c">{exibirPeriodo(periodo)}</text>)}
+            {categorias.map((categoria,i)=>{
+              const cor=cores[i%cores.length];
+              const pontos=periodos.map((periodo,j)=>{
+                const d=grupo.find(d=>nomeCategoria(d)===categoria&&d.periodo.trim()===periodo);
+                return d?{x:x(j),y:y(valor(d)),v:valor(d),periodo}:null;
+              });
+              // Não une lacunas de períodos como se houvesse observações nelas.
+              const trechos: {x:number;y:number;v:number;periodo:string}[][]=[];
+              let atual: {x:number;y:number;v:number;periodo:string}[]=[];
+              for(const p of pontos){if(p){atual.push(p);}else if(atual.length){trechos.push(atual);atual=[];}}
+              if(atual.length) trechos.push(atual);
+              return <g key={categoria}>
+                {trechos.filter(t=>t.length>1).map((trecho,j)=><polyline key={j}
+                  points={trecho.map(p=>`${p.x},${p.y}`).join(" ")} stroke={cor}
+                  fill="none" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>)}
+                {pontos.filter((p):p is {x:number;y:number;v:number;periodo:string}=>p!==null)
+                  .map((p,j)=><circle key={j} cx={p.x} cy={p.y} r="5" stroke="#fff" strokeWidth="1.5"
+                    fill={cor} tabIndex={0} aria-label={`${categoria}, ${exibirPeriodo(p.periodo)}: ${formato(p.v)}`}>
+                    <title>{`${categoria} · ${exibirPeriodo(p.periodo)}: ${formato(p.v)}`}</title>
+                  </circle>)}
+              </g>;
+            })}
+          </svg>
+          <div className="radar-comparativo-legend">
+            {categorias.map((categoria,i)=><span key={categoria}><i style={{background:cores[i%cores.length]}}/>{categoria}</span>)}
           </div>
         </section>;
       })}
