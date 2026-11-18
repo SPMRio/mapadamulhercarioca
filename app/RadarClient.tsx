@@ -755,6 +755,7 @@ function registrosMaisRecentes<T extends DadoEixo01>(registros: T[]): T[] {
 function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const [pagina, setPagina] = useState(0);
   const [metricaSelecionada, setMetricaSelecionada] = useState("");
+  const [pontoAtivoComparativo, setPontoAtivoComparativo] = useState<null | {serie:string;categoria:string;periodo:string;valor:string;cor:string;x:number;y:number}>(null);
   const metricas = Array.from(new Set(dados.map(d => (d.metrica ?? "").trim()).filter(Boolean)));
   const metrica = metricas.includes(metricaSelecionada) ? metricaSelecionada : metricas[0] || "";
   const filtrados = metricas.length > 1 ? dados.filter(d => (d.metrica ?? "").trim() === metrica) : dados;
@@ -792,12 +793,12 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
   return <div className="radar-comparativo-root" aria-label={`Comparativo: ${titulo}`}>
     {metricas.length>1 && <div className="radar-view-controls" aria-label="Métrica do comparativo">
       {metricas.map(m=><button key={m} type="button" className={metrica===m?"active":""}
-        onClick={()=>{setMetricaSelecionada(m);setPagina(0);}}>{m}</button>)}
+        onClick={()=>{setMetricaSelecionada(m);setPagina(0);setPontoAtivoComparativo(null);}}>{m}</button>)}
     </div>}
     {paginas>1 && <div className="radar-comparativo-pages">
       <span>Séries {paginaAtual*2+1}–{Math.min(series.length,paginaAtual*2+2)} de {series.length}</span>
-      <button type="button" disabled={paginaAtual===0} onClick={()=>setPagina(p=>Math.max(0,p-1))}>Anteriores</button>
-      <button type="button" disabled={paginaAtual===paginas-1} onClick={()=>setPagina(p=>Math.min(paginas-1,p+1))}>Próximas</button>
+      <button type="button" disabled={paginaAtual===0} onClick={()=>{setPagina(p=>Math.max(0,p-1));setPontoAtivoComparativo(null);}}>Anteriores</button>
+      <button type="button" disabled={paginaAtual===paginas-1} onClick={()=>{setPagina(p=>Math.min(paginas-1,p+1));setPontoAtivoComparativo(null);}}>Próximas</button>
     </div>}
     <div className="radar-comparativo-grid">
       {visiveis.map(serie=>{
@@ -859,15 +860,30 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
                 {pontos.filter((p):p is {x:number;y:number;valor:number;categoria:string}=>p!==null)
                   .map((p,j)=><g key={j}>
                     <circle cx={p.x} cy={p.y} r="4.5" fill={cor} stroke="#fff" strokeWidth="1.5"
-                      tabIndex={0} aria-label={`${serie}, ${p.categoria}, ${exibirPeriodo(periodo)}: ${formatar(p.valor)}`}>
-                      <title>{`${p.categoria} · ${exibirPeriodo(periodo)}: ${formatar(p.valor)}`}</title>
-                    </circle>
+                      tabIndex={0} aria-label={`${serie}, ${p.categoria}, ${exibirPeriodo(periodo)}: ${formatar(p.valor)}`}
+                      onMouseEnter={()=>setPontoAtivoComparativo({serie,categoria:p.categoria,periodo:exibirPeriodo(periodo),valor:formatar(p.valor),cor,x:p.x,y:p.y})}
+                      onMouseLeave={()=>setPontoAtivoComparativo(null)}
+                      onFocus={()=>setPontoAtivoComparativo({serie,categoria:p.categoria,periodo:exibirPeriodo(periodo),valor:formatar(p.valor),cor,x:p.x,y:p.y})}
+                      onBlur={()=>setPontoAtivoComparativo(null)}
+                    />
                     <text x={p.x} y={p.y+(i%2===0?-11:17)} fontSize="10" textAnchor="middle" fill="#34415c">
                       {formatar(p.valor)}
                     </text>
                   </g>)}
               </g>;
             })}
+            {pontoAtivoComparativo?.serie===serie && (()=>{
+              const p=pontoAtivoComparativo;
+              const tx=Math.max(7,Math.min(333,p.x-90));
+              const ty=p.y<105?p.y+16:p.y-84;
+              return <g className="radar-comparativo-tooltip-svg" transform={`translate(${tx} ${ty})`} pointerEvents="none" role="presentation">
+                <rect x="0" y="0" width="180" height="72" rx="10" fill="#fff" stroke="#d9cce8" strokeWidth="1.1" />
+                <circle cx="12" cy="15" r="4" fill={p.cor}/>
+                <text x="23" y="19" fontSize="12" fontWeight="700" fill="#243456">{p.periodo}</text>
+                <text x="12" y="38" fontSize="11" fill="#53657c">{p.categoria.length>27?p.categoria.slice(0,26)+"…":p.categoria}</text>
+                <text x="12" y="59" fontSize="15" fontWeight="700" fill="#243456">{p.valor}</text>
+              </g>;
+            })()}
           </svg>
         </section>;
       })}
