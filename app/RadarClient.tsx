@@ -767,7 +767,7 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
     grupos.get(chave)!.valores.set(d.serie_subrecorte.trim(), d);
   }
   const linhas = Array.from(grupos.values());
-  const muitasCategorias = linhas.length > 9;
+  // A orientação é determinada pelo tipo cadastrado, nunca pela quantidade de categorias.
   const porcentagem = dados.every(d => d.unidade_dado?.trim() === "%" ||
     /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
   const fator = porcentagem && dados.every(d => Math.abs(Number(d.valor)) <= 1) ? 100 : 1;
@@ -789,7 +789,7 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
         <i style={{background:cor(serie,i)}} aria-hidden="true" />{serie}
       </span>)}
     </div>
-    {muitasCategorias ? <div className="radar-horizontal-chart radar-grouped-horizontal" role="region" aria-label={`Barras agrupadas: ${titulo}`}>
+    {false ? <div className="radar-horizontal-chart radar-grouped-horizontal" role="region" aria-label={`Barras agrupadas: ${titulo}`}>
       {linhas.map((grupo,i) => <div key={i} className="radar-horizontal-group">
         <h5>{grupo.rotulo}</h5>
         {series.map((serie,j) => {
@@ -1344,7 +1344,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         {/* A métrica só é filtrada para a comparação por UF. */}
         {agrupadas ? (
           <GraficoBarrasAgrupadas dados={comparacao} titulo={indicador.titulo} />
-        ) : barrasVerticais && ordered.length <= 12 ? (
+        ) : barrasVerticais ? (
           <div className="radar-vertical-scroll" role="region" aria-label={`Comparação em barras verticais: ${indicador.titulo}`} tabIndex={0}>
             <div className="radar-vertical-chart" >
               <div className="radar-vertical-plot">
