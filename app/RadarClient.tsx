@@ -921,6 +921,28 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
   </div>;
 }
 
+// Ordenação compartilhada entre os gráficos: faixa etária crescente, demais valores decrescentes.
+function inicioFaixaEtaria(rotulo: string): number | null {
+  const texto = rotulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  if (!/\b(an(?:o|os)|idade|idades)\b/.test(texto)) return null;
+  if (/\b(menos de|abaixo de|ate)\s*\d+/.test(texto)) return 0;
+  const entre = texto.match(/(?:entre\s+)?(\d{1,3})\s*(?:a|ate|[-–])\s*\d{1,3}\s*anos?/);
+  if (entre) return Number(entre[1]);
+  const acima = texto.match(/(?:acima de|mais de)\s*(\d{1,3})/);
+  if (acima) return Number(acima[1]) + 1;
+  const simples = texto.match(/\b(\d{1,3})\s*anos?\b/);
+  return simples ? Number(simples[1]) : null;
+}
+function compararCategoriasGrafico(a: string, b: string, valorA: number, valorB: number, etarias: boolean): number {
+  if (etarias) {
+    const diferenca = (inicioFaixaEtaria(a) ?? Infinity) - (inicioFaixaEtaria(b) ?? Infinity);
+    if (diferenca !== 0) return diferenca;
+  } else if (valorA !== valorB) {
+    return valorB - valorA;
+  }
+  return a.localeCompare(b, "pt-BR", {numeric:true});
+}
+
 // Barras agrupadas: as séries ficam lado a lado dentro da mesma categoria.
 function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const series = Array.from(new Set(dados.map(d => d.serie_subrecorte.trim()).filter(Boolean)))
@@ -939,6 +961,13 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
     grupos.get(chave)!.valores.set(d.serie_subrecorte.trim(), d);
   }
   const linhas = Array.from(grupos.values());
+  const faixasEtarias = linhas.length > 0 && linhas.every(g => inicioFaixaEtaria(g.rotulo) !== null);
+  linhas.sort((a,b) => compararCategoriasGrafico(
+    a.rotulo,b.rotulo,
+    Math.max(0,...Array.from(a.valores.values()).map(d=>Number(d.valor))),
+    Math.max(0,...Array.from(b.valores.values()).map(d=>Number(d.valor))),
+    faixasEtarias
+  ));
   // A orientação é determinada pelo tipo cadastrado, nunca pela quantidade de categorias.
   const porcentagem = dados.every(d => d.unidade_dado?.trim() === "%" ||
     /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
@@ -1386,7 +1415,16 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const comparacao = tipo === "linhas" && graficoTemporal
     ? comparacaoCompleta
     : registrosMaisRecentes(comparacaoCompleta);
-  const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
+  const categoriasParaOrdenar = comparacao.map(d =>
+    d.categoria_recorte.trim() || d.serie_subrecorte.trim() || d.territorio.trim()
+  );
+  const faixasEtariasBarras = categoriasParaOrdenar.length > 0 &&
+    categoriasParaOrdenar.every(nome => inicioFaixaEtaria(nome) !== null);
+  const ordered = [...comparacao].sort((a,b) => {
+    const categoriaA = a.categoria_recorte.trim() || a.serie_subrecorte.trim() || a.territorio.trim();
+    const categoriaB = b.categoria_recorte.trim() || b.serie_subrecorte.trim() || b.territorio.trim();
+    return compararCategoriasGrafico(categoriaA,categoriaB,Number(a.valor),Number(b.valor),faixasEtariasBarras);
+  });
   const temHistoricoComparavel = new Map<string,Set<string>>();
   for (const d of comparacaoCompleta) {
     const chave=chaveSerieHistorica(d);
