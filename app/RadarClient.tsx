@@ -713,6 +713,42 @@ function BarraComTooltip({
   </>;
 }
 
+
+/** Para comparar categorias em barras, exibe o registro mais recente de cada
+ * combinação de território/categoria/série/métrica. Não altera o histórico
+ * usado pelas tabelas e pelas evoluções temporais. */
+function ordenarPeriodo(periodo: string): number {
+  const valor = String(periodo ?? "").trim();
+  const anos = [...valor.matchAll(/(?:19|20)\d{2}/g)].map(m => Number(m[0]));
+  if (!anos.length) return -1;
+  const ano = Math.max(...anos);
+  const anoNoInicio = valor.match(/^((?:19|20)\d{2})[\-\/.](\d{1,2})(?:\D|$)/);
+  const trimestre = valor.match(/(?:T|TRI(?:MESTRE)?)[\s.-]*([1-4])/i)
+    ?? valor.match(/^([1-4])\s*T[\s.-]*(?:19|20)\d{2}/i);
+  const semestre = valor.match(/(?:S|SEM(?:ESTRE)?)[\s.-]*([12])/i);
+  const mes = anoNoInicio && Number(anoNoInicio[1]) === ano && Number(anoNoInicio[2]) <= 12
+    ? Number(anoNoInicio[2]) : trimestre ? Number(trimestre[1]) * 3
+    : semestre ? Number(semestre[1]) * 6 : 0;
+  return ano * 100 + mes;
+}
+function registrosMaisRecentes<T extends DadoEixo01>(registros: T[]): T[] {
+  const grupos = new Map<string, T>();
+  for (const registro of registros) {
+    const chave = JSON.stringify([
+      registro.territorio?.trim().toLowerCase(), registro.categoria_recorte?.trim().toLowerCase(),
+      registro.serie_subrecorte?.trim().toLowerCase(), registro.metrica?.trim().toLowerCase(),
+      registro.unidade_dado?.trim().toLowerCase(), registro.tipo_valor?.trim().toLowerCase()
+    ]);
+    const anterior = grupos.get(chave);
+    if (!anterior || ordenarPeriodo(registro.periodo) > ordenarPeriodo(anterior.periodo) ||
+      (ordenarPeriodo(registro.periodo) === ordenarPeriodo(anterior.periodo) &&
+       String(registro.atualizado_em ?? "") > String(anterior.atualizado_em ?? ""))) {
+      grupos.set(chave, registro);
+    }
+  }
+  return Array.from(grupos.values());
+}
+
 // Barras agrupadas: as séries ficam lado a lado dentro da mesma categoria.
 function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const categorias = Array.from(new Set(dados.map(d => d.categoria_recorte.trim()).filter(Boolean)));
@@ -1094,7 +1130,10 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const linhaX = (i: number) => 76 + (periodos.length > 1 ? i/(periodos.length-1) : .5)*700;
   const linhaY = (v: number) => 250-(v-minLinha)/(maxLinha-minLinha)*210;
   const metricasComparacao = ["1.2.2", "1.2.5"].includes(indicador.indicador_id);
-  const comparacao = linhas.filter(d => !metricasComparacao || !metricaUFAtual || d.metrica === metricaUFAtual);
+  const comparacaoCompleta = linhas.filter(d => !metricasComparacao || !metricaUFAtual || d.metrica === metricaUFAtual);
+  const comparacao = tipo === "linhas" && graficoTemporal
+    ? comparacaoCompleta
+    : registrosMaisRecentes(comparacaoCompleta);
   const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
   // Ativa agrupamento apenas quando existem diferentes categorias e séries
   // repetidas nas mesmas categorias. Gráficos por UF sem essa estrutura ficam iguais.
@@ -1191,9 +1230,9 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         {/* A métrica só é filtrada para a comparação por UF. */}
         {agrupadas ? (
           <GraficoBarrasAgrupadas dados={comparacao} titulo={indicador.titulo} />
-        ) : barrasVerticais ? (
+        ) : barrasVerticais && ordered.length <= 12 ? (
           <div className="radar-vertical-scroll" role="region" aria-label={`Comparação em barras verticais: ${indicador.titulo}`} tabIndex={0}>
-            <div className="radar-vertical-chart" style={{minWidth: `${Math.max(320, ordered.length * 100)}px`}}>
+            <div className="radar-vertical-chart" >
               <div className="radar-vertical-plot">
                 {[0,1,2,3,4].map(tick => (
                   <div className="radar-vertical-gridline" key={tick} style={{bottom:`${tick*25}%`}}>
@@ -1217,13 +1256,30 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
             </div>
           </div>
         ) : (
-          <div className="radar-dynamic-bars">
-            {ordered.map((d,i) => (
-              <div className={`radar-dynamic-line${d.categoria_recorte === "RJ" ? " highlight" : ""}`} key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
-                <div className="radar-dynamic-meta"><span>{[d.territorio,d.categoria_recorte,d.serie_subrecorte].filter(Boolean).join(" · ") || d.metrica || d.periodo}</span><strong>{fmt(d)}</strong></div>
-                <div className="radar-dynamic-track"><div style={{width:`${Math.max(1,Math.abs(Number(d.valor))/max*100)}%`}} /></div>
-              </div>
-            ))}
+          <div className="radar-horizontal-chart" role="region" aria-label={`Comparação em barras horizontais: ${indicador.titulo}`}>
+            <div className="radar-horizontal-axis" aria-hidden="true">
+              {[0,1,2,3,4].map(t => <span key={t}>{(maxVertical*t/4).toLocaleString("pt-BR", {maximumFractionDigits:maxVertical<=10?2:0})}</span>)}
+            </div>
+            <div className="radar-horizontal-list">
+              {ordered.map((d,i) => {
+                const nome = rotuloBarra(d);
+                const valor = Math.abs(Number(d.valor));
+                const cor = coresBarras[metricasComparacao ? 0 : i % coresBarras.length];
+                return <div className="radar-horizontal-row" key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
+                  <div className="radar-horizontal-meta">
+                    <span title={nome}>{nome}</span>
+                    <strong>{fmt(d)}</strong>
+                  </div>
+                  <div className="radar-horizontal-track">
+                    {[0,1,2,3,4].map(t => <i key={t} className="radar-horizontal-gridline" style={{left:`${t*25}%`}} />)}
+                    <BarraComTooltip className="radar-horizontal-bar"
+                      style={{width:`${Math.max(0,valor/maxVertical*100)}%`,backgroundColor:cor}}
+                      cor={cor} serie={nome} categoria={d.periodo ? `Período: ${exibirPeriodo(d.periodo)}` : undefined}
+                      valor={fmt(d)} ariaLabel={`${nome}, ${exibirPeriodo(d.periodo)}: ${fmt(d)}`} />
+                  </div>
+                </div>;
+              })}
+            </div>
           </div>
         )}</>}
       {aba === "tabela" && (() => {
