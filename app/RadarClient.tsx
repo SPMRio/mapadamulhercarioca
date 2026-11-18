@@ -974,7 +974,7 @@ function HistoricoIndicador({dados,formatar}:{dados:DadoEixo01[];formatar:(d:Dad
     ? Number(d.valor)*100:Number(d.valor));
   const minimo=Math.min(0,...numeros),maximo=Math.max(0,...numeros);
   const alcance=Math.max(1,maximo-minimo);
-  const x=(i:number)=>78+(valores.length===1?.5:i/(valores.length-1))*748;
+  const x=(i:number)=>78+(valores.length === 1 ? 0.5 : i / (valores.length - 1))*748;
   const y=(valor:number)=>272-(valor-minimo)/alcance*220;
   const pontos=numeros.map((valor,i)=>`${x(i)},${y(valor)}`).join(" ");
   const unidadePercentual=valores.every(d=>d.unidade_dado==="%" || /percentual|proporção/i.test(d.metrica??""));
