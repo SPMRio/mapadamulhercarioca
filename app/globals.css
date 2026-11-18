@@ -779,3 +779,23 @@ footer{background:#410d7b}
  .radar-horizontal-chart{padding:14px 12px 20px}
  .radar-horizontal-track{height:24px}
 }
+
+/* Alternância entre comparação atual e evolução histórica de cada indicador. */
+.radar-period-mode{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;margin:12px 0 20px;border:1px solid #e1d5ed;border-radius:13px;background:#f7f3fa}
+.radar-period-mode button{border:0;background:transparent;color:#593477;cursor:pointer;padding:10px 15px;border-radius:9px;font:inherit;font-size:13px;font-weight:750}
+.radar-period-mode button.active{background:#fff;color:#7030b5;box-shadow:0 2px 8px #3416521c}
+.radar-period-mode button:focus-visible{outline:2px solid #7132b2;outline-offset:2px}
+.radar-history-view{width:100%;min-width:0;max-width:100%;background:#fff;border:1px solid #e1d5ed;border-radius:16px;padding:22px}
+.radar-history-filter{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+.radar-history-filter label{font-size:12px;font-weight:800;color:#3c2357}
+.radar-history-filter select{max-width:100%;min-width:0;flex:1 1 280px;padding:11px 13px;background:#fff;border:1px solid #dac9e7;border-radius:10px;color:#263a61;font:inherit;font-size:13px}
+.radar-history-filter select:focus-visible{outline:2px solid #7132b2;outline-offset:2px}
+.radar-history-note,.radar-history-empty{font-size:12px;color:#67718b;line-height:1.45;margin:6px 0 13px}
+.radar-history-figure{width:100%;min-width:0}
+.radar-history-figure svg{display:block;width:100%;height:auto;max-height:420px}
+.radar-history-values{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-top:12px}
+.radar-history-values>div{border:1px solid #eee4f3;background:#fff;border-radius:11px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.radar-history-values small{font-size:11px;color:#5f6880}
+.radar-history-values strong{font-size:17px;font-weight:800;color:#7030b5}
+.radar-history-values span{font-size:10px;color:#53647b;line-height:1.4}
+@media(max-width:650px){.radar-period-mode{width:100%}.radar-period-mode button{flex:1;padding:10px 6px;font-size:12px}.radar-history-view{padding:12px}.radar-history-figure{overflow-x:auto}.radar-history-figure svg{min-width:520px}.radar-history-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
