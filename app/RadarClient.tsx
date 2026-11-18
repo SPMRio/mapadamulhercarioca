@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 
@@ -656,7 +657,7 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
 // Tooltip centralizado e posicionado fora das áreas com rolagem dos gráficos.
 // Mede o tamanho real da caixa e escolhe automaticamente acima ou abaixo da barra.
 function BarraComTooltip({
-  className, style, cor, serie, categoria, valor, ariaLabel,
+  className, style, cor, serie, categoria, valor, ariaLabel, children,
 }: {
   className: string;
   style?: CSSProperties;
@@ -665,6 +666,7 @@ function BarraComTooltip({
   categoria?: string;
   valor: string;
   ariaLabel: string;
+  children?: ReactNode;
 }) {
   const barra = useRef<HTMLDivElement>(null);
   const caixa = useRef<HTMLDivElement>(null);
@@ -701,7 +703,7 @@ function BarraComTooltip({
       onMouseEnter={() => {setPosicao(null);setAtivo(true);}}
       onMouseLeave={() => setAtivo(false)}
       onFocus={() => {setPosicao(null);setAtivo(true);}}
-      onBlur={() => setAtivo(false)} />
+      onBlur={() => setAtivo(false)}>{children}</div>
     {ativo && createPortal(
       <div ref={caixa} className="radar-unified-tooltip radar-tooltip-floating" role="status"
         style={{left:posicao?.x ?? -9999,top:posicao?.y ?? -9999,visibility:posicao ? "visible" : "hidden"}}>
@@ -1076,15 +1078,13 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
   const ordemRaca = (nome:string) => /branc/i.test(nome)?0:/pret/i.test(nome)?1:/pard/i.test(nome)?2:/amarel/i.test(nome)?3:4;
   const categoriasRaca = categoriaSegmento && nomesSeries.every(nome => ordemRaca(nome)<4);
   if (categoriasRaca) nomesSeries.sort((a,b)=>ordemRaca(a)-ordemRaca(b)||a.localeCompare(b,"pt-BR"));
-  const maior = Math.max(0, ...barras.map(b => Array.from(b.partes.values()).reduce((a, v) => a + v, 0)));
-  const passoBruto = Math.max(0.01, maior / 4);
-  const potencia = 10 ** Math.floor(Math.log10(passoBruto));
-  const n = passoBruto / potencia;
-  const passo = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * potencia;
-  const teto = Math.max(passo, Math.ceil(maior / passo) * passo);
-  const casas = percentual ? 2 : Number.isInteger(passo) ? 0 : 2;
-  const numero = (valor: number) => valor.toLocaleString("pt-BR", { maximumFractionDigits: casas });
-  const formato = (valor: number) => numero(valor) + (percentual ? "%" : "");
+  // Cada coluna representa 100% do total daquele grupo.
+  const numero = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: Number.isInteger(v) ? 0 : 2 });
+  const porcentagem = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  const descricaoSegmento = (quantidade: number, total: number) => {
+    const participacao = total > 0 ? quantidade / total * 100 : 0;
+    return percentual ? porcentagem(participacao) : `${numero(quantidade)} · ${porcentagem(participacao)}`;
+  };
   const cores = categoriasRaca ? ["#4285f4","#ea4335","#f4b400","#34a853"] : ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
   if (!barras.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis para barras empilhadas.</p></div>;
   return <div className="radar-stacked-root radar-stacked-responsive">
@@ -1100,22 +1100,29 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
       <div className="radar-stacked-chart" style={{ minWidth: 0 }}>
         <div className="radar-stacked-plot">
           {[0,1,2,3,4].map(i => <div className="radar-stacked-gridline" key={i} style={{ bottom: `${i * 25}%` }}>
-            <span>{formato(teto * i / 4)}</span>
+            <span>{i * 25}%</span>
           </div>)}
           <div className="radar-stacked-columns">
             {barras.map(barra => {
               const total = Array.from(barra.partes.values()).reduce((a, v) => a + v, 0);
               return <div className="radar-stacked-item" key={barra.nome}>
-                <div className="radar-stacked-stack" style={{ height: `${total / teto * 100}%` }} aria-label={`${barra.nome}: ${formato(total)}`}>
+                <div className="radar-stacked-stack" style={{ height: total > 0 ? "100%" : "0%" }} aria-label={`${barra.nome}: ${percentual ? "100%" : numero(total)}`}>
                   {nomesSeries.map((nome, i) => {
                     const valor = barra.partes.get(nome) ?? 0;
                     if (valor <= 0) return null;
+                    const participacao = valor / total * 100;
+                    const rotulo = descricaoSegmento(valor, total);
                     return <BarraComTooltip key={nome} className="radar-stacked-segment"
-                      style={{ height: `${valor / total * 100}%`, background: cores[i % cores.length] }}
-                      cor={cores[i % cores.length]} serie={nome} categoria={barra.nome} valor={formato(valor)}
-                      ariaLabel={`${barra.nome}, ${nome}: ${formato(valor)}`} />;
+                      style={{ height: `${participacao}%`, background: cores[i % cores.length] }}
+                      cor={cores[i % cores.length]} serie={nome} categoria={barra.nome} valor={rotulo}
+                      ariaLabel={`${barra.nome}, ${nome}: ${rotulo}`}>
+                      {participacao >= 9 && <span className="radar-stacked-segment-label">
+                        {percentual ? porcentagem(participacao) : <>{numero(valor)}<small>{porcentagem(participacao)}</small></>}
+                      </span>}
+                    </BarraComTooltip>;
                   })}
                 </div>
+                {!percentual && total > 0 && <span className="radar-stacked-total">Total: {numero(total)}</span>}
                 <span className="radar-stacked-label" title={barra.nome}>{barra.nome}</span>
               </div>;
             })}
