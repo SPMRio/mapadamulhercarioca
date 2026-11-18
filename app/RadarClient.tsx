@@ -717,9 +717,12 @@ function BarraComTooltip({
 function ordenarPeriodo(periodo: string): number {
   // A ordenação usa o valor normalizado, não o rótulo visual por extenso.
   const valor = String(periodo ?? "").trim();
-  const trimestre = valor.match(/^((?:19|20)\d{2})-(?:T([1-4])|([1-4])T)$/i)
-    ?? valor.match(/^([1-4])T-?((?:19|20)\d{2})$/i);
-  if (trimestre) return Number(trimestre[1].length === 4 ? trimestre[1] : trimestre[4]) * 100 + Number(trimestre[2] || trimestre[3] || trimestre[1]) * 3;
+  const trimestre = valor.match(/^((?:19|20)\d{2})-(?:T([1-4])|([1-4])T)$/i);
+  if (trimestre) return Number(trimestre[1]) * 100 + Number(trimestre[2] || trimestre[3]) * 3;
+  const invertido = valor.match(/^([1-4])T-?((?:19|20)\d{2})$/i);
+  if (invertido) return Number(invertido[2]) * 100 + Number(invertido[1]) * 3;
+  const porExtenso = valor.match(/^((?:19|20)\d{2})\s*\|\s*([1-4])º?\s*trimestre$/i);
+  if (porExtenso) return Number(porExtenso[1]) * 100 + Number(porExtenso[2]) * 3;
   const anos = [...valor.matchAll(/(?:19|20)\d{2}/g)].map(m => Number(m[0]));
   if (!anos.length) return -1;
   const ano = Math.max(...anos);
