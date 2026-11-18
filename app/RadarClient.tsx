@@ -1154,6 +1154,10 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     ? comparacaoCompleta
     : registrosMaisRecentes(comparacaoCompleta);
   const ordered = [...comparacao].sort((a,b) => ordem === "maior" ? Number(b.valor)-Number(a.valor) : Number(a.valor)-Number(b.valor));
+  // A aba Tabela preserva todos os períodos e dados históricos, sem o recorte do gráfico.
+  const registrosTabela = [...comparacaoCompleta].sort((a,b) =>
+    ordenarPeriodo(b.periodo) - ordenarPeriodo(a.periodo) ||
+    a.categoria_recorte.localeCompare(b.categoria_recorte,"pt-BR",{numeric:true}));
   // Ativa agrupamento apenas quando existem diferentes categorias e séries
   // repetidas nas mesmas categorias. Gráficos por UF sem essa estrutura ficam iguais.
   const agrupadas = tipo === "barras" && !metricasComparacao &&
@@ -1266,7 +1270,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
                       <BarraComTooltip className="radar-vertical-bar"
                         style={{height:`${valor/maxVertical*100}%`,background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]}}
                         cor={coresBarras[metricasComparacao ? 0 : i%coresBarras.length]}
-                        serie={nome} valor={fmt(d)} ariaLabel={`${nome}: ${fmt(d)}`} />
+                        serie={nome} categoria={d.periodo ? `Período: ${exibirPeriodo(d.periodo)}` : undefined} valor={fmt(d)} ariaLabel={`${nome}, ${exibirPeriodo(d.periodo)}: ${fmt(d)}`} />
                       <span className="radar-vertical-label" title={nome}>{nome}</span>
                     </div>;
                   })}
@@ -1304,11 +1308,11 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       {aba === "tabela" && (() => {
         // Esconde apenas as colunas inteiramente vazias no indicador selecionado.
         // Os dados continuam intactos no BigQuery e nas demais visualizações.
-        const mostrarPeriodo = ordered.some(d => Boolean(d.periodo?.trim()));
-        const mostrarTerritorio = ordered.some(d => Boolean(d.territorio?.trim()));
-        const mostrarCategoria = ordered.some(d => Boolean(d.categoria_recorte?.trim()));
-        const mostrarSerie = ordered.some(d => Boolean(d.serie_subrecorte?.trim()));
-        const mostrarMetrica = ordered.some(d => Boolean(d.metrica?.trim()));
+        const mostrarPeriodo = registrosTabela.some(d => Boolean(d.periodo?.trim()));
+        const mostrarTerritorio = registrosTabela.some(d => Boolean(d.territorio?.trim()));
+        const mostrarCategoria = registrosTabela.some(d => Boolean(d.categoria_recorte?.trim()));
+        const mostrarSerie = registrosTabela.some(d => Boolean(d.serie_subrecorte?.trim()));
+        const mostrarMetrica = registrosTabela.some(d => Boolean(d.metrica?.trim()));
         return <div className="radar-data-table-wrap radar-table-standalone">
           <table>
             <thead><tr>
@@ -1319,7 +1323,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
               {mostrarMetrica && <th>Métrica</th>}
               <th>Valor</th>
             </tr></thead>
-            <tbody>{ordered.map((d,i) => <tr key={i}>
+            <tbody>{registrosTabela.map((d,i) => <tr key={i}>
               {mostrarPeriodo && <td>{exibirPeriodo(d.periodo)}</td>}
               {mostrarTerritorio && <td>{d.territorio}</td>}
               {mostrarCategoria && <td>{d.categoria_recorte}</td>}
