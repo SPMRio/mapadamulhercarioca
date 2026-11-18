@@ -756,16 +756,16 @@ footer{background:#410d7b}
 .radar-grouped-bars{gap:clamp(2px,.3vw,7px)}
 .radar-grouped-bar-slot{min-width:0;max-width:none}
 .radar-grouped-bar,.radar-vertical-bar{border-radius:6px 6px 0 0;transition:filter .15s ease}
-.radar-horizontal-chart{width:100%;max-width:100%;padding:20px 18px 24px 62px;background:#fff;border:1px solid #e1d7eb;border-radius:15px}
+.radar-horizontal-chart{width:100%;max-width:100%;padding:20px 12px 24px 58px;background:#fff;border:0;border-radius:0}
 .radar-horizontal-axis{display:flex;justify-content:space-between;font-size:11px;font-weight:650;color:#607089;border-bottom:1px solid #ded4e8;margin-bottom:15px;padding:0 0 9px;gap:3px}
 .radar-horizontal-list{display:grid;gap:15px}
 .radar-horizontal-row{display:grid;gap:6px;min-width:0}
 .radar-horizontal-meta{display:flex;align-items:baseline;justify-content:space-between;gap:12px;color:#21375b;font-size:12px;line-height:1.4}
 .radar-horizontal-meta span{min-width:0;overflow-wrap:anywhere;font-weight:600}
 .radar-horizontal-meta strong{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;color:#17385f}
-.radar-horizontal-track{height:28px;position:relative;background:#f8f5fb;border-bottom:1px solid #d9cce8;border-radius:6px 6px 0 0;overflow:visible}
+.radar-horizontal-track{height:28px;position:relative;background:transparent;border-bottom:1px solid #d9cce8;border-radius:0;overflow:visible}
 .radar-horizontal-gridline{position:absolute;top:0;bottom:0;width:1px;background:#e8dfed;z-index:0;pointer-events:none}
-.radar-horizontal-bar{position:relative;z-index:1;display:block;height:100%;min-width:2px;max-width:100%;border-radius:6px 6px 0 0;cursor:help;transition:filter .15s ease}
+.radar-horizontal-bar{position:relative;z-index:1;display:block;height:100%;min-width:2px;max-width:100%;border-radius:0 6px 6px 0;cursor:help;transition:filter .15s ease}
 .radar-horizontal-bar:hover,.radar-horizontal-bar:focus-visible{filter:brightness(1.17);outline:2px solid #392153;outline-offset:2px}
 .radar-horizontal-group{display:grid;gap:11px;padding:10px 0 17px;border-bottom:1px solid #e9e0f0}
 .radar-horizontal-group:last-child{border-bottom:0}
