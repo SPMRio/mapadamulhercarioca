@@ -243,7 +243,7 @@ async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
   const rows = resultados.flat();
   return rows
     .filter(row => {
-      const publicar = String(row.publicar ?? "").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();
+      const publicar = String(row.publicar ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
       // A importação é pública por padrão. Só omite bloqueios explícitos.
       return !["NAO","N","FALSE","0","RASCUNHO"].includes(publicar);
     })
