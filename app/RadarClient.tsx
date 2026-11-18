@@ -749,6 +749,69 @@ function registrosMaisRecentes<T extends DadoEixo01>(registros: T[]): T[] {
   return Array.from(grupos.values());
 }
 
+
+// Comparativo: cada categoria gera seu próprio gráfico; séries ficam dentro dele.
+// A mesma escala permite comparar os dois painéis sem distorcer os valores.
+function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
+  const [pagina, setPagina] = useState(0);
+  const [metricaSelecionada, setMetricaSelecionada] = useState("");
+  const metricas = Array.from(new Set(dados.map(d => (d.metrica ?? "").trim()).filter(Boolean)));
+  const metrica = metricas.includes(metricaSelecionada) ? metricaSelecionada : metricas[0] || "";
+  const filtrados = metricas.length > 1 ? dados.filter(d => (d.metrica ?? "").trim() === metrica) : dados;
+  const recentes = registrosMaisRecentes(filtrados.filter(d => d.tipo_valor !== "texto" && Number.isFinite(Number(d.valor))));
+  const categorias = Array.from(new Set(recentes.map(d => d.categoria_recorte.trim()).filter(Boolean)));
+  const totalPaginas = Math.ceil(categorias.length / 2);
+  const paginaAtual = Math.min(pagina, Math.max(0, totalPaginas - 1));
+  const visiveis = categorias.slice(paginaAtual * 2, paginaAtual * 2 + 2);
+  const percentual = recentes.length > 0 && recentes.every(d => d.unidade_dado?.trim() === "%" || /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
+  const numero = (d: DadoEixo01) => Number(d.valor) * (percentual && d.escala === "0–1" ? 100 : 1);
+  const todosFracionarios = percentual && recentes.every(d => Math.abs(Number(d.valor)) <= 1);
+  const valor = (d: DadoEixo01) => Number(d.valor) * (percentual && (d.escala === "0–1" || (todosFracionarios && !d.escala)) ? 100 : 1);
+  const maior = Math.max(0, ...recentes.map(d => Math.max(0, valor(d))));
+  const passoBruto = Math.max(0.01, maior / 4);
+  const potencia = 10 ** Math.floor(Math.log10(passoBruto));
+  const normalizado = passoBruto / potencia;
+  const passo = (normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 5 ? 5 : 10) * potencia;
+  const teto = Math.max(passo, Math.ceil(maior / passo) * passo);
+  const formato = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + (percentual ? "%" : "");
+  const cores = ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#4066ad"];
+  if (categorias.length < 2) return <div className="radar-chart-empty"><p>O comparativo precisa de pelo menos duas categorias preenchidas.</p></div>;
+  return <div className="radar-comparativo-root" aria-label={`Comparativo: ${titulo}`}>
+    {metricas.length > 1 && <div className="radar-view-controls" aria-label="Métrica do comparativo">
+      {metricas.map(m => <button key={m} type="button" className={metrica === m ? "active" : ""} onClick={() => {setMetricaSelecionada(m);setPagina(0);}}>{m}</button>)}
+    </div>}
+    {totalPaginas > 1 && <div className="radar-comparativo-pages">
+      <span>Categorias {paginaAtual * 2 + 1}–{Math.min(categorias.length, paginaAtual * 2 + 2)} de {categorias.length}</span>
+      <button type="button" disabled={paginaAtual === 0} onClick={() => setPagina(p => Math.max(0, p - 1))}>Anteriores</button>
+      <button type="button" disabled={paginaAtual === totalPaginas - 1} onClick={() => setPagina(p => Math.min(totalPaginas - 1, p + 1))}>Próximas</button>
+    </div>}
+    <div className="radar-comparativo-grid">
+      {visiveis.map(categoria => {
+        const linhas = recentes.filter(d => d.categoria_recorte.trim() === categoria);
+        return <section className="radar-comparativo-panel" key={categoria} aria-label={categoria}>
+          <h4>{categoria}</h4>
+          <div className="radar-comparativo-plot">
+            {[0,1,2,3,4].map(i => <div key={i} className="radar-comparativo-gridline" style={{bottom:`${i*25}%`}}><span>{formato(teto*i/4)}</span></div>)}
+            <div className="radar-comparativo-columns">
+              {linhas.map((d,i) => {
+                const nome = d.serie_subrecorte.trim() || (linhas.length > 1 ? d.territorio.trim() : "") || "Total";
+                const n = Math.max(0, valor(d));
+                const cor = /mulher|menina/i.test(nome) ? "#7132b2" : /homem|menino/i.test(nome) ? "#42b9eb" : cores[i % cores.length];
+                return <div className="radar-comparativo-item" key={`${nome}-${d.periodo}-${i}`}>
+                  <BarraComTooltip className="radar-vertical-bar" style={{height:`${n/teto*100}%`,background:cor}}
+                    cor={cor} serie={nome} categoria={`${categoria} · ${exibirPeriodo(d.periodo)}`}
+                    valor={formato(n)} ariaLabel={`${categoria}, ${nome}: ${formato(n)}`} />
+                  <span className="radar-comparativo-label" title={nome}>{nome}</span>
+                </div>;
+              })}
+            </div>
+          </div>
+        </section>;
+      })}
+    </div>
+  </div>;
+}
+
 // Barras agrupadas: as séries ficam lado a lado dentro da mesma categoria.
 function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const series = Array.from(new Set(dados.map(d => d.serie_subrecorte.trim()).filter(Boolean)))
@@ -1169,6 +1232,9 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         })}
       </div>
     );
+  }
+  if (tipo === "comparativo" && aba === "grafico") {
+    return <GraficoComparativo dados={validos} titulo={indicador.titulo} />;
   }
   if (tipo === "barras_empilhadas" && aba === "grafico") {
     return <GraficoBarrasEmpilhadas dados={validos} titulo={indicador.titulo} />;
