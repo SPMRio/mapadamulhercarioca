@@ -1039,6 +1039,8 @@ function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { da
   const categoriaComoSerie = !multiSerie && !linhas.some(d => d.serie_subrecorte.trim()) &&
     multiCategoria && (multiTerritorio || multiPeriodo);
   const grupo = (d: DadoEixo01) => {
+    // No indicador 6.3.1, cada período é uma única coluna e cada raça/cor um segmento.
+    if (porRacaPeriodo) return exibirPeriodo(d.periodo) || "Sem período";
     const partes = [
       multiTerritorio ? d.territorio : "",
       multiCategoria && !categoriaComoSerie ? d.categoria_recorte : "",
@@ -1046,7 +1048,8 @@ function GraficoBarrasEmpilhadas({ dados, titulo, porRacaPeriodo = false }: { da
     ].filter(Boolean);
     return partes.join(" · ") || d.categoria_recorte || d.territorio || exibirPeriodo(d.periodo) || "Total";
   };
-  const serie = (d: DadoEixo01) => categoriaComoSerie ? d.categoria_recorte :
+  const serie = (d: DadoEixo01) => porRacaPeriodo ? (d.categoria_recorte.trim() || "Não informada")
+    : categoriaComoSerie ? d.categoria_recorte :
     d.serie_subrecorte || (multiCategoria ? "Total" : d.categoria_recorte || "Valor");
   const registros = new Map<string, { nome: string; partes: Map<string, number> }>();
   const nomesSeries: string[] = [];
