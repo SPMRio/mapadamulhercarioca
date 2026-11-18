@@ -751,23 +751,23 @@ function registrosMaisRecentes<T extends DadoEixo01>(registros: T[]): T[] {
 
 // Barras agrupadas: as séries ficam lado a lado dentro da mesma categoria.
 function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
-  const categorias = Array.from(new Set(dados.map(d => d.categoria_recorte.trim()).filter(Boolean)));
   const series = Array.from(new Set(dados.map(d => d.serie_subrecorte.trim()).filter(Boolean)))
     .sort((a, b) => {
       const ordemSerie = (nome: string) => /mulher/i.test(nome) ? 0 : /homem/i.test(nome) ? 1 : 2;
       return ordemSerie(a) - ordemSerie(b) || a.localeCompare(b, "pt-BR");
     });
   const territorios = new Set(dados.map(d => d.territorio.trim()).filter(Boolean));
-  const periodos = new Set(dados.map(d => d.periodo.trim()).filter(Boolean));
   const grupos = new Map<string, { rotulo: string; valores: Map<string, DadoEixo01> }>();
   for (const d of dados) {
-    const rotulo = [territorios.size > 1 ? d.territorio : "", d.categoria_recorte,
-      periodos.size > 1 ? exibirPeriodo(d.periodo) : ""].filter(Boolean).join(" · ");
-    const chave = JSON.stringify([d.territorio, d.categoria_recorte, d.periodo, d.metrica ?? ""]);
+    // Séries de uma mesma categoria podem ter períodos de referência diferentes.
+    // Isso não cria uma segunda categoria; o período fica no tooltip de cada barra.
+    const rotulo = [territorios.size > 1 ? d.territorio : "", d.categoria_recorte].filter(Boolean).join(" · ");
+    const chave = JSON.stringify([d.territorio, d.categoria_recorte, d.metrica ?? ""]);
     if (!grupos.has(chave)) grupos.set(chave, { rotulo, valores: new Map() });
     grupos.get(chave)!.valores.set(d.serie_subrecorte.trim(), d);
   }
   const linhas = Array.from(grupos.values());
+  const muitasCategorias = linhas.length > 9;
   const porcentagem = dados.every(d => d.unidade_dado?.trim() === "%" ||
     /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
   const fator = porcentagem && dados.every(d => Math.abs(Number(d.valor)) <= 1) ? 100 : 1;
@@ -789,8 +789,27 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
         <i style={{background:cor(serie,i)}} aria-hidden="true" />{serie}
       </span>)}
     </div>
-    <div className="radar-grouped-scroll" role="region" tabIndex={0} aria-label={`Barras agrupadas: ${titulo}`}>
-      <div className="radar-grouped-chart" style={{minWidth: `${Math.max(580,linhas.length*180)}px`}}>
+    {muitasCategorias ? <div className="radar-horizontal-chart radar-grouped-horizontal" role="region" aria-label={`Barras agrupadas: ${titulo}`}>
+      {linhas.map((grupo,i) => <div key={i} className="radar-horizontal-group">
+        <h5>{grupo.rotulo}</h5>
+        {series.map((serie,j) => {
+          const dado = grupo.valores.get(serie);
+          if (!dado) return null;
+          const n = Math.max(0,valor(dado));
+          return <div className="radar-horizontal-row" key={serie}>
+            <div className="radar-horizontal-meta"><span>{serie}</span><strong>{formato(n)}</strong></div>
+            <div className="radar-horizontal-track">
+              {[0,1,2,3,4].map(t=><i key={t} className="radar-horizontal-gridline" style={{left:`${t*25}%`}}/>)}
+              <BarraComTooltip className="radar-horizontal-bar"
+                style={{width:`${n/teto*100}%`,backgroundColor:cor(serie,j)}}
+                cor={cor(serie,j)} serie={serie} categoria={`${grupo.rotulo} · ${exibirPeriodo(dado.periodo)}`}
+                valor={formato(n)} ariaLabel={`${grupo.rotulo}, ${serie}, ${exibirPeriodo(dado.periodo)}: ${formato(n)}`} />
+            </div>
+          </div>;
+        })}
+      </div>)}
+    </div> : <div className="radar-grouped-scroll" role="region" tabIndex={0} aria-label={`Barras agrupadas: ${titulo}`}>
+      <div className="radar-grouped-chart">
         <div className="radar-grouped-plot">
           {[0,1,2,3,4].map(i => <div key={i} className="radar-grouped-gridline" style={{bottom:`${i*25}%`}}>
             <span>{formato(teto*i/4)}</span>
@@ -805,8 +824,8 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
                   return <div className="radar-grouped-bar-slot" key={serie}>
                     <BarraComTooltip className="radar-grouped-bar"
                       style={{height:`${n/teto*100}%`,backgroundColor:cor(serie,j)}}
-                      cor={cor(serie,j)} serie={serie} categoria={grupo.rotulo} valor={formato(n)}
-                      ariaLabel={`${grupo.rotulo}, ${serie}: ${formato(n)}`} />
+                      cor={cor(serie,j)} serie={serie} categoria={`${grupo.rotulo} · ${exibirPeriodo(dado.periodo)}`} valor={formato(n)}
+                      ariaLabel={`${grupo.rotulo}, ${serie}, ${exibirPeriodo(dado.periodo)}: ${formato(n)}`} />
                   </div>;
                 })}
               </div>
@@ -815,7 +834,7 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
           </div>
         </div>
       </div>
-    </div>
+    </div>}
   </div>;
 }
 
