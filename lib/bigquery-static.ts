@@ -163,6 +163,16 @@ async function query(table: string, isSql = false): Promise<Record<string, unkno
   return resultado;
 }
 const normalizarId = (id: unknown) => String(id ?? "").replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2");
+/** Normaliza trimestres, mantendo outros períodos inalterados. */
+function normalizarPeriodo(periodo: unknown): string {
+  const texto = String(periodo ?? "").trim();
+  const anoPrimeiro = texto.match(/^((?:19|20)\d{2})[\s./-]*(?:T|TRI(?:MESTRE)?)[\s.-]*([1-4])$/i)
+    ?? texto.match(/^((?:19|20)\d{2})[\s./-]*([1-4])\s*(?:T|TRI(?:MESTRE)?)$/i);
+  if (anoPrimeiro) return anoPrimeiro[1] + "-" + anoPrimeiro[2] + "T";
+  const trimestrePrimeiro = texto.match(/^([1-4])\s*º?\s*(?:T|TRI(?:MESTRE)?)[\s./-]*((?:19|20)\d{2})$/i);
+  if (trimestrePrimeiro) return trimestrePrimeiro[2] + "-" + trimestrePrimeiro[1] + "T";
+  return texto;
+}
 function normalizarEixo(valor: unknown): string {
   const nome = String(valor ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const eixos: Record<string,string> = {
@@ -249,7 +259,7 @@ async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
     })
     .map(row => ({
       id_indicador: normalizarId(row.indicador_id ?? row.id_indicador),
-      periodo: String(row.periodo ?? ""),
+      periodo: normalizarPeriodo(row.periodo),
       territorio: String(row.territorio ?? ""),
       categoria_recorte: String(row.categoria ?? row.categoria_recorte ?? ""),
       serie_subrecorte: String(row.serie ?? row.serie_subrecorte ?? ""),
