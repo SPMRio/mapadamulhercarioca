@@ -798,4 +798,4 @@ footer{background:#410d7b}
 .radar-history-values small{font-size:11px;color:#5f6880}
 .radar-history-values strong{font-size:17px;font-weight:800;color:#7030b5}
 .radar-history-values span{font-size:10px;color:#53647b;line-height:1.4}
-@media(max-width:650px){.radar-period-mode{width:100%}.radar-period-mode button{flex:1;padding:10px 6px;font-size:12px}.radar-history-view{padding:12px}.radar-history-figure{overflow-x:auto}.radar-history-figure svg{min-width:520px}.radar-history-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.radar-period-mode{width:100%}.radar-period-mode button{flex:1;padding:10px 6px;font-size:12px}.radar-history-view{padding:12px}.radar-history-figure{overflow-x:visible}.radar-history-figure svg{width:100%;min-width:0}.radar-history-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
