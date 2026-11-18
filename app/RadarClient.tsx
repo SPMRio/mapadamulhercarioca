@@ -977,6 +977,7 @@ function HistoricoIndicador({dados,formatar}:{dados:DadoEixo01[];formatar:(d:Dad
   const x=(i:number)=>78+(valores.length === 1 ? 0.5 : i / (valores.length - 1))*748;
   const y=(valor:number)=>272-(valor-minimo)/alcance*220;
   const pontos=numeros.map((valor,i)=>`${x(i)},${y(valor)}`).join(" ");
+  const intervaloRotulos=Math.max(1,Math.ceil(valores.length/8));
   const unidadePercentual=valores.every(d=>d.unidade_dado==="%" || /percentual|proporção/i.test(d.metrica??""));
   const numeroEixo=(n:number)=>n.toLocaleString("pt-BR",{maximumFractionDigits:unidadePercentual?2:Math.abs(n)<10?2:0});
   return <div className="radar-history-view">
@@ -998,7 +999,7 @@ function HistoricoIndicador({dados,formatar}:{dados:DadoEixo01[];formatar:(d:Dad
         {valores.map((d,i)=><g key={d.periodo}>
           <circle cx={x(i)} cy={y(numeros[i])} r="7" fill="#7132b2" stroke="#fff" strokeWidth="3"/>
           <title>{`${exibirPeriodo(d.periodo)}: ${formatar(d)}`}</title>
-          <text x={x(i)} y="307" textAnchor="middle" fontSize="12" fill="#293b60">{exibirPeriodo(d.periodo)}</text>
+          {(i%intervaloRotulos===0 || i===valores.length-1) && <text x={x(i)} y="307" textAnchor="middle" fontSize="12" fill="#293b60">{exibirPeriodo(d.periodo)}</text>}
         </g>)}
       </svg>
     </div>
