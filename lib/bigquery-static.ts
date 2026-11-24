@@ -42,6 +42,8 @@ export type DadoEixo01Registro = {
   nota_dado?: string;
   situacao?: string;
   ordem?: number;
+  linha_tabela?: number;
+  coluna_tabela?: number;
 };
 function jsonRequest<T>(url: string, method: "GET" | "POST", body?: unknown, authorization?: string): Promise<{status: number; data: T}> {
   return new Promise((resolve, reject) => {
@@ -273,6 +275,8 @@ async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
       nota_dado: String(row.nota_dado ?? ""),
       situacao: String(row.situacao ?? ""),
       ordem: Number(row.ordem ?? 0),
+      linha_tabela: row.linha_tabela == null ? undefined : Number(row.linha_tabela),
+      coluna_tabela: row.coluna_tabela == null ? undefined : Number(row.coluna_tabela),
     }));
 }
 // A importação pode invalidar imediatamente o cache via /api/revalidate.
@@ -282,6 +286,6 @@ export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v9-auto"]
   tags: ["mapa-indicadores"], revalidate: 120,
 });
 // O argumento numero faz parte da chave de cache, isolando cada um dos 12 eixos.
-export const getDadosEixo = unstable_cache(valoresEixo, ["mapa-eixos-v3-auto"], {
+export const getDadosEixo = unstable_cache(valoresEixo, ["mapa-eixos-v4-tabela"], {
   tags: ["mapa-eixos"], revalidate: 120,
 });
