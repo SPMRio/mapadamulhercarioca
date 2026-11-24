@@ -1964,7 +1964,7 @@ export default function RadarClient({
       <section className="intro" id="inicio">
         <div className="intro-content">
           <div className="eyebrow"><span>SECRETARIA DE POLÍTICAS PARA MULHERES E CUIDADOS</span><i>✦</i></div>
-          <h1>Mapa da <span>Mulher</span> Carioca</h1>
+          <h1>MAPA DA <span>MULHER</span> CARIOCA</h1>
           <p>Indicadores e informações sobre as mulheres da cidade do Rio de Janeiro, reunidos para compreender desigualdades e fortalecer as políticas públicas.</p>
           <a className="intro-explore" href="#dados">Explorar os dados <span aria-hidden="true">↓</span></a>
         </div>
