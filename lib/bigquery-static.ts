@@ -35,6 +35,7 @@ export type DadoEixo01Registro = {
   metrica?: string;
   valor: string | number;
   publicar: string;
+  atualizado_em?: string;
   tipo_valor?: string;
   escala?: string;
   texto?: string;
@@ -164,7 +165,7 @@ async function query(table: string, isSql = false): Promise<Record<string, unkno
   }
   return resultado;
 }
-const normalizarId = (id: unknown) => String(id ?? "").replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2");
+const normalizarId = (id: unknown) => String(id ?? "").trim().replace(/^(\d+(?:\.\d+)*)-(\d+)$/, "$1.$2");
 /** Normaliza trimestres, mantendo outros períodos inalterados. */
 function normalizarPeriodo(periodo: unknown): string {
   const texto = String(periodo ?? "").trim();
@@ -186,34 +187,43 @@ function normalizarEixo(valor: unknown): string {
   };
   return eixos[nome] || String(valor ?? "").trim();
 }
+const TEMAS_EIXOS = ["Visão geral","Violência","Cuidados","Segurança pública","Meninas","Saúde","Educação","Emprego e renda","Cultura","Assistência social","Mulheres","CODIM"];
+const temaPorId = (id: string) => {
+  const eixo = Number(id.match(/^(\d+)[.\-]/)?.[1]);
+  return TEMAS_EIXOS[eixo-1] || "";
+};
+function publico(row: Record<string, unknown>): boolean {
+  const publicar = String(row.publicar ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+  return !["NAO","N","FALSE","0","RASCUNHO"].includes(publicar);
+}
 async function catalogo() {
   const originais = await query("indicadores");
-  const eixo1 = await query("eixo_01_visao_geral");
+  const grupos = await Promise.all(NUMEROS_EIXOS.map(numero => registrosBrutosEixo(numero)));
   const datas = new Map<string, string>();
-  for (const row of eixo1) {
-    const id = normalizarId(row.indicador_id ?? row.id_indicador);
-    const data = String(row.atualizado_em ?? "");
-    if (id && data && (!datas.has(id) || data > datas.get(id)!)) datas.set(id, data);
-  }
   const porId = new Map<string, Record<string, unknown>>();
-  // Metadados oficiais vêm da tabela indicadores, conforme o modelo novo.
   for (const row of originais) {
     const id = normalizarId(row.indicador_id ?? row.id_indicador);
     if (id) porId.set(id, row);
   }
-  // Durante a migração, os dados existentes também podem identificar um indicador
-  // ainda não cadastrado no catálogo (desde que possua título).
-  for (const row of eixo1) {
-    const id = normalizarId(row.indicador_id ?? row.id_indicador);
-    if (id && !porId.has(id) && String(row.titulo ?? "").trim()) {
-      porId.set(id, { ...row, eixo: "Visão geral" });
+  for (let i=0;i<grupos.length;i++) {
+    for (const row of grupos[i]) {
+      if (!publico(row)) continue;
+      const id = normalizarId(row.indicador_id ?? row.id_indicador);
+      if (!id) continue;
+      const data = String(row.atualizado_em ?? "");
+      if (data && (!datas.has(id) || data > datas.get(id)!)) datas.set(id,data);
+      // O catálogo oficial continua prioritário. Registros sem metadados não
+      // ganham automaticamente um tipo de visualização inventado.
+      if (!porId.has(id) && String(row.titulo ?? "").trim()) {
+        porId.set(id,{...row,eixo:TEMAS_EIXOS[i]});
+      }
     }
   }
   return Array.from(porId.entries()).map(([indicador_id,row]) => ({
     indicador_id,
     titulo: String(row.titulo ?? ""),
     descricao: String(row.descricao ?? ""),
-    tema: normalizarEixo(row.eixo ?? row.tema),
+    tema: temaPorId(indicador_id) || normalizarEixo(row.eixo ?? row.tema),
     periodo: String(row.periodo ?? ""),
     unidade: String(row.unidade ?? ""),
     territorialidade: String(row.territorialidade ?? ""),
@@ -236,29 +246,29 @@ async function descobrirTabelasEixos(): Promise<string[]> {
   const rows = await query(sql,true);
   return rows.map(r=>String(r.table_name??"")).filter(nome=>/^eixo_(0[1-9]|1[0-2])(?:_|$)/.test(nome));
 }
-const tabelasEixosDisponiveis = unstable_cache(descobrirTabelasEixos,["mapa-tabelas-eixos-auto-v1"],{
+const tabelasEixosDisponiveis = unstable_cache(descobrirTabelasEixos,["mapa-tabelas-eixos-auto-v2"],{
   tags:["mapa-eixos"],revalidate:120,
 });
 
-async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
+async function carregarRegistrosEixo(numero: string): Promise<Record<string, unknown>[]> {
   if (!/^(0[1-9]|1[0-2])$/.test(numero)) throw new Error("Eixo inválido.");
   const tabelas = await tabelasEixosDisponiveis();
-  const prefixo = `eixo_${numero}_`;
-  // Cada eixo é encontrado pelo prefixo, independentemente do sufixo escolhido na importação.
-  const nomes = tabelas.filter(nome=>nome === `eixo_${numero}` || nome.startsWith(prefixo));
-  if (!nomes.length) return [];
-  const resultados = await Promise.all(nomes.map(async nome=>{
-    try{return await query(nome);}
-    catch(erro){if(erro instanceof Error && erro.message==="table_not_found") return [];throw erro;}
-  }));
-  // Une somente os dados efetivamente existentes. A tabela indicadores permanece independente.
+  const nomes = tabelas.filter(nome=>nome === `eixo_${numero}` || nome.startsWith(`eixo_${numero}_`));
+  if (!nomes.length) {
+    console.warn("Mapa: nenhuma tabela encontrada para o eixo", numero);
+    return [];
+  }
+  const resultados = await Promise.all(nomes.map(nome=>query(nome)));
   const rows = resultados.flat();
-  return rows
-    .filter(row => {
-      const publicar = String(row.publicar ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
-      // A importação é pública por padrão. Só omite bloqueios explícitos.
-      return !["NAO","N","FALSE","0","RASCUNHO"].includes(publicar);
-    })
+  console.info("Mapa: eixo",numero,"registros",rows.length);
+  return rows;
+}
+const registrosBrutosEixo = unstable_cache(carregarRegistrosEixo,["mapa-registros-brutos-v1"],{
+  tags:["mapa-eixos"],revalidate:120,
+});
+async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
+  const rows = await registrosBrutosEixo(numero);
+  return rows.filter(publico)
     .map(row => ({
       id_indicador: normalizarId(row.indicador_id ?? row.id_indicador),
       periodo: normalizarPeriodo(row.periodo),
@@ -268,6 +278,7 @@ async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
       metrica: String(row.metrica ?? ""),
       valor: row.valor == null ? "" : Number(row.valor),
       publicar: "SIM",
+      atualizado_em: String(row.atualizado_em ?? ""),
       tipo_valor: String(row.tipo_valor ?? ""),
       escala: String(row.escala ?? ""),
       texto: String(row.texto ?? ""),
@@ -282,10 +293,10 @@ async function valoresEixo(numero: string): Promise<DadoEixo01Registro[]> {
 // A importação pode invalidar imediatamente o cache via /api/revalidate.
 // Como garantia, os dados também são atualizados automaticamente após 2 minutos.
 // Assim os 12 eixos funcionam sem mudanças de código ou publicações manuais.
-export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v9-auto"], {
+export const getIndicadores = unstable_cache(catalogo, ["mapa-catalogo-v10-todos-eixos"], {
   tags: ["mapa-indicadores"], revalidate: 120,
 });
 // O argumento numero faz parte da chave de cache, isolando cada um dos 12 eixos.
-export const getDadosEixo = unstable_cache(valoresEixo, ["mapa-eixos-v4-tabela"], {
+export const getDadosEixo = unstable_cache(valoresEixo, ["mapa-eixos-v5-todos"], {
   tags: ["mapa-eixos"], revalidate: 120,
 });
