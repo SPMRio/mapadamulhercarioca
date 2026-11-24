@@ -34,7 +34,7 @@ const CORES_GRAFICOS = ["#6D2DAD", "#42B9EB", "#FAD049", "#67B7A8", "#C875A5", "
 function coresPorCategoria(nomes: string[]): string[] {
   const fixa = (nome: string) => /^(mulheres?|meninas?|feminino)$/i.test(nome.trim()) ? "#6D2DAD"
     : /^(homens?|meninos?|masculino)$/i.test(nome.trim()) ? "#42B9EB" : undefined;
-  const reservadas = new Set(nomes.map(fixa).filter(Boolean));
+  const reservadas = new Set<string>(nomes.map(fixa).filter((cor): cor is NonNullable<ReturnType<typeof fixa>> => cor !== undefined));
   const livres = CORES_GRAFICOS.filter(cor => !reservadas.has(cor));
   let i = 0;
   return nomes.map(nome => fixa(nome) ?? livres[i++ % livres.length]);
