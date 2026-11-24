@@ -29,6 +29,17 @@ const temas = [
   "CODIM",
 ];
 
+// Cartela institucional SPM-Rio: ordem intercalada para distinguir categorias adjacentes.
+const CORES_GRAFICOS = ["#6D2DAD", "#42B9EB", "#FAD049", "#67B7A8", "#C875A5", "#13335A", "#C488F4", "#247FB5", "#FFE28A", "#EBAAC5", "#83C9B5", "#E2C9F5"];
+function coresPorCategoria(nomes: string[]): string[] {
+  const fixa = (nome: string) => /^(mulheres?|meninas?|feminino)$/i.test(nome.trim()) ? "#6D2DAD"
+    : /^(homens?|meninos?|masculino)$/i.test(nome.trim()) ? "#42B9EB" : undefined;
+  const reservadas = new Set(nomes.map(fixa).filter(Boolean));
+  const livres = CORES_GRAFICOS.filter(cor => !reservadas.has(cor));
+  let i = 0;
+  return nomes.map(nome => fixa(nome) ?? livres[i++ % livres.length]);
+}
+
 const tituloEixo = (tema: string) => tema === "Visão geral" ? "Radar de Dados" : tema;
 
 const faixas = [
@@ -580,8 +591,8 @@ function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico"
   const periodos = Array.from(new Set(publicados.map(d => d.periodo)))
     .sort((a, b) => periodoOrdem(a) - periodoOrdem(b));
   const series = [
-    { nome: "Mulheres", cor: "#7438b4" },
-    { nome: "Homens", cor: "#259cc9" },
+    { nome: "Mulheres", cor: "#6D2DAD" },
+    { nome: "Homens", cor: "#42B9EB" },
   ];
   const valores = publicados.map(d => Number(d.valor));
   const min = Math.floor(Math.min(...valores) / 250) * 250;
@@ -791,7 +802,7 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
   const piso = Math.floor(menor/passo)*passo;
   const teto = Math.max(piso+passo,Math.ceil(maior/passo)*passo);
   const formatar = (n:number) => n.toLocaleString("pt-BR",{maximumFractionDigits:percentual?9:2})+(percentual?"%":"");
-  const cores = ["#427ef2","#df514a","#269c85","#a66ddd","#dc9c32","#4066ad"];
+  const cores = CORES_GRAFICOS;
   const paginas = Math.ceil(series.length/2);
   const paginaAtual = Math.min(pagina,Math.max(0,paginas-1));
   const visiveis = series.slice(paginaAtual*2,paginaAtual*2+2);
@@ -986,9 +997,8 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
   const teto = Math.max(passo, Math.ceil(maior / passo) * passo);
   const numero = (n: number) => n.toLocaleString("pt-BR", {maximumFractionDigits: porcentagem ? 9 : Number.isInteger(passo) ? 0 : 2});
   const formato = (n: number) => numero(n) + (porcentagem ? "%" : "");
-  const cor = (serie: string, i: number) => /mulher/i.test(serie) ? "#7132b2"
-    : /homem/i.test(serie) ? "#42b9eb"
-    : ["#a66ddd","#269c85","#dc9c32","#4066ad","#c58df1"][i % 5];
+  const coresSeries = coresPorCategoria(series);
+  const cor = (_serie: string, i: number) => coresSeries[i];
   return <div className="radar-grouped-root">
     <div className="radar-view-legend">
       {series.map((serie, i) => <span key={serie} className="radar-grouped-legend">
@@ -1039,7 +1049,7 @@ function GraficoBarrasSeparadasPorSerie({ dados, titulo }: { dados: DadoEixo01[]
   const passo=(n<=1?1:n<=2?2:n<=5?5:10)*potencia;
   const teto=Math.max(passo,Math.ceil(maior/passo)*passo);
   const formato=(n:number)=>n.toLocaleString("pt-BR",{maximumFractionDigits:percentual?9:2})+(percentual?"%":"");
-  const cores=["#7132b2","#42b9eb","#a66ddd","#269c85"];
+  const cores=coresPorCategoria(series);
   return <div className="radar-series-separated" role="region" aria-label={`Barras agrupadas por série: ${titulo}`}>
     <div className="radar-series-separated-plot">
       {[0,1,2,3,4].map(i=><div key={i} className="radar-series-separated-grid" style={{bottom:`${i*25}%`}}>
@@ -1131,7 +1141,7 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
     const participacao = total > 0 ? quantidade / total * 100 : 0;
     return percentual ? percentualExibicao(quantidade) : `${numero(quantidade)} · ${porcentagem(participacao)}`;
   };
-  const cores = categoriasRaca ? ["#4285f4","#ea4335","#f4b400","#34a853"] : ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
+  const cores = coresPorCategoria(nomesSeries);
   if (!barras.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis para barras empilhadas.</p></div>;
   return <div className="radar-stacked-root radar-stacked-responsive">
     {metricas.length > 1 && <div className="radar-view-controls" aria-label="Selecionar métrica">
@@ -1238,9 +1248,9 @@ function HistoricoIndicador({dados,formatar}:{dados:DadoEixo01[];formatar:(d:Dad
           return <g key={t}><line x1="78" x2="826" y1={y(valor)} y2={y(valor)} stroke="#e8dfee" strokeWidth="1.5"/>
             <text x="68" y={y(valor)+4} textAnchor="end" fontSize="12" fill="#52627b">{numeroEixo(valor)}</text></g>;
         })}
-        {valores.length>1&&<polyline points={pontos} fill="none" stroke="#7132b2" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>}
+        {valores.length>1&&<polyline points={pontos} fill="none" stroke="#6D2DAD" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>}
         {valores.map((d,i)=><g key={d.periodo}>
-          <circle cx={x(i)} cy={y(numeros[i])} r="7" fill="#7132b2" stroke="#fff" strokeWidth="3"/>
+          <circle cx={x(i)} cy={y(numeros[i])} r="7" fill="#6D2DAD" stroke="#fff" strokeWidth="3"/>
           <title>{`${exibirPeriodo(d.periodo)}: ${formatar(d)}`}</title>
           {(i%intervaloRotulos===0 || i===valores.length-1) && <text x={x(i)} y="307" textAnchor="middle" fontSize="12" fill="#293b60">{exibirPeriodo(d.periodo)}</text>}
         </g>)}
@@ -1325,9 +1335,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     const fatias = Array.from(grupos, ([nome, valor]) => ({ nome, valor })).filter(f => f.valor > 0);
     const total = fatias.reduce((soma, f) => soma + f.valor, 0);
     if (fatias.length < 2 || total <= 0) return <div className="radar-chart-empty"><p>Não há pelo menos duas categorias com valores positivos para este gráfico de pizza.</p></div>;
-    const cores = ["#42b9eb", "#7132b2", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97", "#7654af", "#c35c83"];
-    const coresFatia = fatias.map((f, i) => /^(homens|meninos)$/i.test(f.nome) ? "#42b9eb"
-      : /^(mulheres|meninas)$/i.test(f.nome) ? "#7132b2" : cores[i % cores.length]);
+    const coresFatia = coresPorCategoria(fatias.map(f => f.nome));
     const percentual = validos.every(ehPercentual);
     const formatoPercentual = percentualExibicao;
     const unidades = Array.from(new Set(validos.map(d => d.unidade_dado?.trim()).filter(Boolean)));
@@ -1415,13 +1423,13 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
             <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:8}}>
               <small>{fmtPir(homens)}</small>
               <div style={{width:"75%",display:"flex",justifyContent:"flex-end"}}>
-                <div title={`Homens: ${fmtPir(homens)}`} style={{width:`${homens/maxPir*100}%`,height:22,background:"#42b3df",borderRadius:"5px 0 0 5px"}} />
+                <div title={`Homens: ${fmtPir(homens)}`} style={{width:`${homens/maxPir*100}%`,height:22,background:"#42B9EB",borderRadius:"5px 0 0 5px"}} />
               </div>
             </div>
             <span style={{fontSize:12,textAlign:"center"}}>{faixa}</span>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <div style={{width:"75%"}}>
-                <div title={`Mulheres: ${fmtPir(mulheres)}`} style={{width:`${mulheres/maxPir*100}%`,height:22,background:"#7030b5",borderRadius:"0 5px 5px 0"}} />
+                <div title={`Mulheres: ${fmtPir(mulheres)}`} style={{width:`${mulheres/maxPir*100}%`,height:22,background:"#6D2DAD",borderRadius:"0 5px 5px 0"}} />
               </div>
               <small>{fmtPir(mulheres)}</small>
             </div>
@@ -1538,7 +1546,8 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
   const barrasVerticais = tipo === "barras" || tipo === "barras_uf" || tipo === "barras_populacao";
-  const coresBarras = ["#7132b2", "#a66ddd", "#42b9eb", "#c58df1"];
+  const coresBarras = coresPorCategoria(ordered.map(rotuloBarra));
+  const coresLinhas = coresPorCategoria(seriesLinha);
   const maiorValorVertical = Math.max(0, ...ordered.map(d => Math.abs(valorExibicao(d))));
   // Taxas por 100 mil habitantes podem ser menores que 1. Nesses casos,
   // usar teto 1 evita barras quase invisíveis no intervalo artificial 0–4.
@@ -1554,7 +1563,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       </div>}
       {serieX && aba === "grafico" && <div className="radar-view-legend">
         {seriesLinha.map((serie, i) => {
-          const cor = ["#7030b5", "#42b3df", "#e19c29", "#21977e"][i % 4];
+          const cor = coresLinhas[i];
           return <span key={serie} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
             <i aria-hidden="true" style={{ display: "inline-block", width: 10, height: 10, flexShrink: 0, borderRadius: "50%", backgroundColor: cor }} />
             {serie}
@@ -1569,7 +1578,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         })}
         {periodos.map((p,i) => <text key={p} x={linhaX(i)} y="277" fontSize="12" textAnchor="middle" fill="#53657c">{exibirPeriodo(p)}</text>)}
         {seriesLinha.map((serie,i) => {
-          const cor = ["#7030b5","#42b3df","#e19c29","#21977e"][i%4];
+          const cor = coresLinhas[i];
           const coords = periodos.map((p,j) => {
             const d = linhas.find(x => exibirPeriodo(x.periodo) === p && nomeSerie(x) === serie);
             if (!d) return null;
