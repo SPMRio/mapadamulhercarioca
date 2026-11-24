@@ -546,6 +546,17 @@ type DadoEixo01 = {
   situacao?: string;
   ordem?: number;
 };
+// Percentuais no modelo atual são pontos percentuais: 1 = 1%, 0.096 = 0,096%.
+function ehPercentual(d: DadoEixo01): boolean {
+  return d.unidade_dado?.trim() === "%" || /percentual|proporção|porcentagem/i.test(d.metrica ?? "") || d.tipo_valor === "percentual" || d.escala === "0–1";
+}
+function valorExibicao(d: DadoEixo01): number {
+  // Conversão exclusivamente para registros legados com escala explícita.
+  return Number(d.valor) * (ehPercentual(d) && d.escala === "0–1" ? 100 : 1);
+}
+function percentualExibicao(n: number): string {
+  return n.toLocaleString("pt-BR", { maximumFractionDigits: 9 }) + "%";
+}
 function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   // O recorte por gênero pode estar na coluna Série ou Categoria da planilha.
   const genero = (d: DadoEixo01) => {
@@ -769,11 +780,8 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
   const series = Array.from(new Set(linhas.map(d => d.serie_subrecorte.trim()).filter(Boolean)));
   const periodos = Array.from(new Set(linhas.map(d => d.periodo.trim()).filter(Boolean)))
     .sort((a,b) => ordenarPeriodo(a)-ordenarPeriodo(b) || a.localeCompare(b,"pt-BR",{numeric:true}));
-  const percentual = linhas.length > 0 && linhas.every(d =>
-    d.unidade_dado?.trim() === "%" || /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
-  const todosFracionarios = percentual && linhas.every(d => Math.abs(Number(d.valor)) <= 1);
-  const valor = (d: DadoEixo01) => Number(d.valor) *
-    (percentual && (d.escala === "0–1" || (todosFracionarios && !d.escala)) ? 100 : 1);
+  const percentual = linhas.length > 0 && linhas.every(ehPercentual);
+  const valor = valorExibicao;
   const maior = Math.max(0,...linhas.map(d => valor(d)));
   const menor = Math.min(0,...linhas.map(d => valor(d)));
   const bruto = Math.max(0.01,(maior-menor)/4);
@@ -782,7 +790,7 @@ function GraficoComparativo({ dados, titulo }: { dados: DadoEixo01[]; titulo: st
   const passo = (n<=1?1:n<=2?2:n<=5?5:10)*potencia;
   const piso = Math.floor(menor/passo)*passo;
   const teto = Math.max(piso+passo,Math.ceil(maior/passo)*passo);
-  const formatar = (n:number) => n.toLocaleString("pt-BR",{maximumFractionDigits:2})+(percentual?"%":"");
+  const formatar = (n:number) => n.toLocaleString("pt-BR",{maximumFractionDigits:percentual?9:2})+(percentual?"%":"");
   const cores = ["#427ef2","#df514a","#269c85","#a66ddd","#dc9c32","#4066ad"];
   const paginas = Math.ceil(series.length/2);
   const paginaAtual = Math.min(pagina,Math.max(0,paginas-1));
@@ -968,17 +976,15 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
     faixasEtarias
   ));
   // A orientação é determinada pelo tipo cadastrado, nunca pela quantidade de categorias.
-  const porcentagem = dados.every(d => d.unidade_dado?.trim() === "%" ||
-    /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
-  const fator = porcentagem && dados.every(d => Math.abs(Number(d.valor)) <= 1) ? 100 : 1;
-  const valor = (d: DadoEixo01) => Number(d.valor) * fator;
+  const porcentagem = dados.every(ehPercentual);
+  const valor = valorExibicao;
   const maior = Math.max(0, ...dados.map(d => Math.max(0, valor(d))));
   const bruto = Math.max(0.25, maior / 4);
   const potencia = 10 ** Math.floor(Math.log10(bruto));
   const normalizado = bruto / potencia;
   const passo = (normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 5 ? 5 : 10) * potencia;
   const teto = Math.max(passo, Math.ceil(maior / passo) * passo);
-  const numero = (n: number) => n.toLocaleString("pt-BR", {maximumFractionDigits: porcentagem ? 2 : Number.isInteger(passo) ? 0 : 2});
+  const numero = (n: number) => n.toLocaleString("pt-BR", {maximumFractionDigits: porcentagem ? 9 : Number.isInteger(passo) ? 0 : 2});
   const formato = (n: number) => numero(n) + (porcentagem ? "%" : "");
   const cor = (serie: string, i: number) => /mulher/i.test(serie) ? "#7132b2"
     : /homem/i.test(serie) ? "#42b9eb"
@@ -1024,16 +1030,15 @@ function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo
 function GraficoBarrasSeparadasPorSerie({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const series=Array.from(new Set(dados.map(d=>d.serie_subrecorte.trim()).filter(Boolean)))
     .sort((a,b)=>/homens?/i.test(a)?-1:/homens?/i.test(b)?1:a.localeCompare(b,"pt-BR"));
-  const percentual=dados.length>0 && dados.every(d=>d.unidade_dado?.trim()==="%"||/percentual|proporção/i.test(d.metrica??"")||d.escala==="0–1");
-  const fator=percentual && dados.every(d=>Math.abs(Number(d.valor))<=1)?100:1;
-  const valor=(d:DadoEixo01)=>Number(d.valor)*fator;
+  const percentual=dados.length>0 && dados.every(ehPercentual);
+  const valor=valorExibicao;
   const maior=Math.max(0,...dados.map(d=>valor(d)));
   const bruto=Math.max(0.01,maior/4);
   const potencia=10**Math.floor(Math.log10(bruto));
   const n=bruto/potencia;
   const passo=(n<=1?1:n<=2?2:n<=5?5:10)*potencia;
   const teto=Math.max(passo,Math.ceil(maior/passo)*passo);
-  const formato=(n:number)=>n.toLocaleString("pt-BR",{maximumFractionDigits:2})+(percentual?"%":"");
+  const formato=(n:number)=>n.toLocaleString("pt-BR",{maximumFractionDigits:percentual?9:2})+(percentual?"%":"");
   const cores=["#7132b2","#42b9eb","#a66ddd","#269c85"];
   return <div className="radar-series-separated" role="region" aria-label={`Barras agrupadas por série: ${titulo}`}>
     <div className="radar-series-separated-plot">
@@ -1099,14 +1104,11 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
     : d.serie_subrecorte.trim() || d.categoria_recorte.trim() || "Valor";
   const registros = new Map<string, { nome: string; partes: Map<string, number> }>();
   const nomesSeries: string[] = [];
-  const percentual = linhas.length > 0 && linhas.every(d =>
-    d.unidade_dado?.trim() === "%" || /percentual|proporção/i.test(d.metrica ?? "")
-  );
-  const valoresFracionarios = percentual && linhas.every(d => Math.abs(Number(d.valor)) <= 1);
-  const fator = valoresFracionarios ? 100 : 1;
+  const percentual = linhas.length > 0 && linhas.every(ehPercentual);
+
   let existemNegativos = false;
   for (const d of linhas) {
-    const valor = Number(d.valor) * fator;
+    const valor = valorExibicao(d);
     if (valor < 0) { existemNegativos = true; continue; }
     const nome = grupo(d);
     const nomeSerie = serie(d);
@@ -1127,7 +1129,7 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
   const porcentagem = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
   const descricaoSegmento = (quantidade: number, total: number) => {
     const participacao = total > 0 ? quantidade / total * 100 : 0;
-    return percentual ? porcentagem(participacao) : `${numero(quantidade)} · ${porcentagem(participacao)}`;
+    return percentual ? percentualExibicao(quantidade) : `${numero(quantidade)} · ${porcentagem(participacao)}`;
   };
   const cores = categoriasRaca ? ["#4285f4","#ea4335","#f4b400","#34a853"] : ["#7132b2", "#42b9eb", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97"];
   if (!barras.length) return <div className="radar-chart-empty"><p>Dados ainda não disponíveis para barras empilhadas.</p></div>;
@@ -1161,7 +1163,7 @@ function GraficoBarrasEmpilhadas({ dados, titulo }: { dados: DadoEixo01[]; titul
                       cor={cores[i % cores.length]} serie={nome} categoria={barra.nome} valor={rotulo}
                       ariaLabel={`${barra.nome}, ${nome}: ${rotulo}`}>
                       {participacao >= 9 && <span className="radar-stacked-segment-label">
-                        {percentual ? porcentagem(participacao) : <>{numero(valor)}<small>{porcentagem(participacao)}</small></>}
+                        {percentual ? percentualExibicao(valor) : <>{numero(valor)}<small>{porcentagem(participacao)}</small></>}
                       </span>}
                     </BarraComTooltip>;
                   })}
@@ -1212,8 +1214,7 @@ function HistoricoIndicador({dados,formatar}:{dados:DadoEixo01[];formatar:(d:Dad
   const escolhida=series.find(s=>s.chave===chaveAtiva)??series[0];
   if (!escolhida) return <p className="radar-history-empty">Não há dois períodos comparáveis para construir uma evolução histórica deste recorte.</p>;
   const valores=escolhida.valores;
-  const numeros=valores.map(d=>d.escala==="0–1"&&(d.unidade_dado==="%"||/percentual|proporção/i.test(d.metrica??""))
-    ? Number(d.valor)*100:Number(d.valor));
+  const numeros=valores.map(valorExibicao);
   const minimo=Math.min(0,...numeros),maximo=Math.max(0,...numeros);
   const alcance=Math.max(1,maximo-minimo);
   const x=(i:number)=>78+(valores.length === 1 ? 0.5 : i / (valores.length - 1))*748;
@@ -1273,7 +1274,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const fmt = (d: DadoEixo01) => {
     const n = Number(d.valor);
     if (d.tipo_valor === "moeda" || d.unidade_dado === "R$") return moeda(n);
-    if (d.unidade_dado === "%" || /proporção|percentual/i.test(d.metrica ?? "")) return `${(d.escala === "0–1" ? n * 100 : n).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+    if (ehPercentual(d)) return percentualExibicao(valorExibicao(d));
     if (/100\s*mil/i.test(d.unidade_dado ?? "") || /taxa/i.test(d.metrica ?? "")) return n.toLocaleString("pt-BR", {maximumFractionDigits: 5});
     if (d.unidade_dado === "posição") return `${n}º`;
     return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
@@ -1317,7 +1318,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     const grupos = new Map<string, number>();
     for (const d of validos) {
       const nome = nomeFatia(d);
-      const valor = Number(d.valor);
+      const valor = valorExibicao(d);
       if (!nome || eTotal(nome) || !Number.isFinite(valor) || valor < 0) continue;
       grupos.set(nome, (grupos.get(nome) ?? 0) + valor);
     }
@@ -1327,10 +1328,8 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     const cores = ["#42b9eb", "#7132b2", "#a66ddd", "#269c85", "#dc9c32", "#c58df1", "#4066ad", "#dc6d97", "#7654af", "#c35c83"];
     const coresFatia = fatias.map((f, i) => /^(homens|meninos)$/i.test(f.nome) ? "#42b9eb"
       : /^(mulheres|meninas)$/i.test(f.nome) ? "#7132b2" : cores[i % cores.length]);
-    const percentual = validos.every(d => d.unidade_dado?.trim() === "%" ||
-      /percentual|proporção/i.test(d.metrica ?? "") || d.escala === "0–1");
-    const fracao = percentual && fatias.every(f => f.valor <= 1);
-    const formatoPercentual = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + "%";
+    const percentual = validos.every(ehPercentual);
+    const formatoPercentual = percentualExibicao;
     const unidades = Array.from(new Set(validos.map(d => d.unidade_dado?.trim()).filter(Boolean)));
     const unidade = unidades.length === 1 ? unidades[0] : "";
     let acumulado = 0;
@@ -1344,7 +1343,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         inicio,
         fim: acumulado,
         participacao,
-        valorExibido: percentual ? formatoPercentual(fracao ? f.valor * 100 : f.valor)
+        valorExibido: percentual ? formatoPercentual(f.valor)
           : f.valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + (unidade ? ` ${unidade}` : ""),
       };
     });
@@ -1402,7 +1401,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
         };
         return idadeInicial(a) - idadeInicial(b) || a.localeCompare(b, "pt-BR", { numeric: true });
       });
-    const maxPir = Math.max(1, ...validos.map(d => Math.abs(Number(d.valor))));
+    const maxPir = Math.max(1, ...validos.map(d => Math.abs(valorExibicao(d))));
     const fmtPir = (n: number) => Math.abs(n).toLocaleString("pt-BR", {maximumFractionDigits:0});
     return (
       <div style={{padding:"16px 4px"}}>
@@ -1449,7 +1448,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const metricasUF = Array.from(new Set(validos.map(d => d.metrica).filter((m): m is string => Boolean(m))));
   const [metricaUF, setMetricaUF] = [metrica, setMetrica];
   const metricaUFAtual = metricasUF.includes(metricaUF) ? metricaUF : (metricasUF.find(m => /quantidade|casos/i.test(m)) || metricasUF[0]);
-  const valoresLinha = linhas.map(d => d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor));
+  const valoresLinha = linhas.map(valorExibicao);
   // Escalas arredondadas com intervalos inteiros (1, 2 ou 5 x potência de 10).
   // Não arredonda os dados; apenas os números mostrados nos eixos.
   const passoEixo = (maiorValor: number) => {
@@ -1535,12 +1534,12 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     if (distintos(d => d.periodo) > 1) return exibirPeriodo(d.periodo);
     return d.categoria_recorte || d.serie_subrecorte || d.territorio || exibirPeriodo(d.periodo);
   };
-  const max = Math.max(1,...ordered.map(d => Math.abs(Number(d.valor))));
+  const max = Math.max(1,...ordered.map(d => Math.abs(valorExibicao(d))));
   const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
   const barrasVerticais = tipo === "barras" || tipo === "barras_uf" || tipo === "barras_populacao";
   const coresBarras = ["#7132b2", "#a66ddd", "#42b9eb", "#c58df1"];
-  const maiorValorVertical = Math.max(0, ...ordered.map(d => Math.abs(Number(d.valor))));
+  const maiorValorVertical = Math.max(0, ...ordered.map(d => Math.abs(valorExibicao(d))));
   // Taxas por 100 mil habitantes podem ser menores que 1. Nesses casos,
   // usar teto 1 evita barras quase invisíveis no intervalo artificial 0–4.
   const escalaTaxaUF = indicador.indicador_id === "1.2.2" && /taxa/i.test(metricaUFAtual ?? "");
@@ -1574,7 +1573,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
           const coords = periodos.map((p,j) => {
             const d = linhas.find(x => exibirPeriodo(x.periodo) === p && nomeSerie(x) === serie);
             if (!d) return null;
-            return { x: linhaX(j), y: linhaY(d.escala === "0–1" ? Number(d.valor)*100 : Number(d.valor)), label: fmt(d), periodo: p };
+            return { x: linhaX(j), y: linhaY(valorExibicao(d)), label: fmt(d), periodo: p };
           }).filter((x): x is {x:number;y:number;label:string;periodo:string} => x !== null);
           return <g key={serie}>{coords.length>1 && <polyline points={coords.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={cor} strokeWidth="3" className="radar-animated-line" pathLength={1} />}
             {coords.map((p,j)=><circle key={j} cx={p.x} cy={p.y} r="7" fill={cor} stroke="white" strokeWidth="2" tabIndex={0}
@@ -1619,7 +1618,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
                 <div className="radar-vertical-columns">
                   {ordered.map((d,i) => {
                     const nome = rotuloBarra(d);
-                    const valor = Math.abs(Number(d.valor));
+                    const valor = Math.abs(valorExibicao(d));
                     return <div className="radar-vertical-item" key={`${d.id_indicador}-${i}`}>
                       <BarraComTooltip className="radar-vertical-bar"
                         style={{height:`${valor/maxVertical*100}%`,background:coresBarras[metricasComparacao ? 0 : i%coresBarras.length]}}
@@ -1640,7 +1639,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
             <div className="radar-horizontal-list">
               {ordered.map((d,i) => {
                 const nome = rotuloBarra(d);
-                const valor = Math.abs(Number(d.valor));
+                const valor = Math.abs(valorExibicao(d));
                 const cor = coresBarras[metricasComparacao ? 0 : i % coresBarras.length];
                 return <div className="radar-horizontal-row" key={`${d.periodo}-${d.categoria_recorte}-${d.serie_subrecorte}-${i}`}>
                   <div className="radar-horizontal-meta">
