@@ -964,6 +964,55 @@ function compararCategoriasGrafico(a: string, b: string, valorA: number, valorB:
 }
 
 // Barras agrupadas: as séries ficam lado a lado dentro da mesma categoria.
+function GraficoHorizontalAgrupado({dados,titulo,formatar}:{dados:DadoEixo01[];titulo:string;formatar:(d:DadoEixo01)=>string}) {
+  const series = Array.from(new Set(dados.map(d=>d.serie_subrecorte.trim()))).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const cores = coresPorCategoria(series);
+  const grupos = new Map<string,{nome:string;dados:DadoEixo01[]}>();
+  const variosTerritorios = new Set(dados.map(d=>d.territorio)).size>1;
+  const variosPeriodos = new Set(dados.map(d=>d.periodo)).size>1;
+  const variasMetricas = new Set(dados.map(d=>d.metrica)).size>1;
+  for(const d of dados){
+    const chave=JSON.stringify([d.categoria_recorte.trim(),d.territorio,d.periodo,d.metrica??"",d.unidade_dado??""]);
+    const nome=[d.categoria_recorte.trim(),variosTerritorios?d.territorio:"",variosPeriodos?exibirPeriodo(d.periodo):"",variasMetricas?d.metrica:""].filter(Boolean).join(" · ");
+    if(!grupos.has(chave)) grupos.set(chave,{nome,dados:[]});
+    grupos.get(chave)!.dados.push(d);
+  }
+  const maiorGrupo=(g:{dados:DadoEixo01[]})=>Math.max(...g.dados.map(d=>Math.abs(valorExibicao(d))));
+  const linhas=[...grupos.values()].sort((a,b)=>maiorGrupo(b)-maiorGrupo(a)||a.nome.localeCompare(b.nome,"pt-BR"));
+  const maior=Math.max(0,...dados.map(d=>Math.abs(valorExibicao(d))));
+  const bruto=Math.max(0.000001,maior/4);
+  const potencia=10**Math.floor(Math.log10(bruto));
+  const n=bruto/potencia;
+  const passo=(n<=1?1:n<=2?2:n<=5?5:10)*potencia;
+  const teto=Math.max(passo,Math.ceil(maior/passo)*passo);
+  const percentual=dados.every(ehPercentual);
+  return <div className="radar-horizontal-chart" role="region" aria-label={`Barras horizontais agrupadas: ${titulo}`}>
+    <div className="radar-view-legend" style={{display:"flex",flexWrap:"wrap",gap:16,marginBottom:16}}>
+      {series.map((s,i)=><span key={s} style={{display:"inline-flex",alignItems:"center",gap:7}}><i style={{backgroundColor:cores[i],width:10,height:10,borderRadius:"50%",display:"inline-block"}}/>{s}</span>)}
+    </div>
+    <div className="radar-horizontal-axis" aria-hidden="true">{[0,1,2,3,4].map(t=><span key={t}>{(teto*t/4).toLocaleString("pt-BR",{maximumFractionDigits:9})}{percentual?"%":""}</span>)}</div>
+    <div className="radar-horizontal-list" style={{display:"flex",flexDirection:"column",gap:20}}>
+      {linhas.map((g,i)=><div key={i} style={{borderBottom:"1px solid #e8e0ec",paddingBottom:14}}>
+        <strong style={{display:"block",marginBottom:8}}>{g.nome}</strong>
+        <div style={{display:"flex",flexDirection:"column",gap:7}}>
+          {[...g.dados].sort((a,b)=>series.indexOf(a.serie_subrecorte.trim())-series.indexOf(b.serie_subrecorte.trim())).map((d,j)=>{
+            const serie=d.serie_subrecorte.trim();
+            const cor=cores[series.indexOf(serie)];
+            const valor=Math.abs(valorExibicao(d));
+            return <div className="radar-horizontal-row" key={j}>
+              <div className="radar-horizontal-meta"><span>{serie}</span><strong>{formatar(d)}</strong></div>
+              <div className="radar-horizontal-track">
+                {[0,1,2,3,4].map(t=><i key={t} className="radar-horizontal-gridline" style={{left:`${t*25}%`}}/>)}
+                <BarraComTooltip className="radar-horizontal-bar" style={{width:`${valor/teto*100}%`,backgroundColor:cor}} cor={cor} serie={serie} categoria={g.nome} valor={formatar(d)} ariaLabel={`${g.nome}, ${serie}: ${formatar(d)}`}/>
+              </div>
+            </div>;
+          })}
+        </div>
+      </div>)}
+    </div>
+  </div>;
+}
+
 function GraficoBarrasAgrupadas({ dados, titulo }: { dados: DadoEixo01[]; titulo: string }) {
   const series = Array.from(new Set(dados.map(d => d.serie_subrecorte.trim()).filter(Boolean)))
     .sort((a, b) => {
@@ -1605,6 +1654,8 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
   const avisos = Array.from(new Set(validos.filter(d => d.situacao && d.situacao !== "conferido").map(d => d.situacao)));
   const serieX = tipo === "linhas" || tipo === "barras_populacao";
   const barrasVerticais = tipo === "barras" || tipo === "barras_uf" || tipo === "barras_populacao";
+  const horizontaisAgrupadas = !barrasVerticais && comparacao.every(d=>d.categoria_recorte.trim() && d.serie_subrecorte.trim()) &&
+    comparacao.some(d=>comparacao.some(outro=>d.categoria_recorte.trim()===outro.categoria_recorte.trim() && d.territorio===outro.territorio && d.periodo===outro.periodo && d.metrica===outro.metrica && d.unidade_dado===outro.unidade_dado && d.serie_subrecorte.trim()!==outro.serie_subrecorte.trim()));
   const coresBarras = coresPorCategoria(ordered.map(rotuloBarra));
   const coresLinhas = coresPorCategoria(seriesLinha);
   const maiorValorVertical = Math.max(0, ...ordered.map(d => Math.abs(valorExibicao(d))));
@@ -1670,7 +1721,9 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
       {aba === "grafico" && !graficoTemporal && (!permiteAlternar || visaoPeriodo==="atual") && <>
         {tipo === "linhas" && <p style={{marginBottom:12}}>Comparação dos valores disponíveis.</p>}
         {/* A métrica só é filtrada para a comparação por UF. */}
-        {agrupadas ? (
+        {horizontaisAgrupadas ? (
+          <GraficoHorizontalAgrupado dados={comparacao} titulo={indicador.titulo} formatar={fmt} />
+        ) : agrupadas ? (
           <GraficoBarrasAgrupadas dados={comparacao} titulo={indicador.titulo} />
         ) : agruparSeriesSeparadas ? (
           <GraficoBarrasSeparadasPorSerie dados={comparacao} titulo={indicador.titulo} />
