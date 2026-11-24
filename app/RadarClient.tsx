@@ -545,6 +545,8 @@ type DadoEixo01 = {
   nota_dado?: string;
   situacao?: string;
   ordem?: number;
+  linha_tabela?: number;
+  coluna_tabela?: number;
 };
 function GraficoRendimento({ dados, aba }: { dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   // O recorte por gênero pode estar na coluna Série ou Categoria da planilha.
@@ -1255,6 +1257,62 @@ function HistoricoIndicador({dados,formatar}:{dados:DadoEixo01[];formatar:(d:Dad
 }
 
 // As visualizações são geradas pelos registros da tabela de dados do eixo, não por constantes no front-end.
+function TabelaIndicador({ dados, formatar }: { dados: DadoEixo01[]; formatar: (d: DadoEixo01) => string }) {
+  const [busca, setBusca] = useState("");
+  const [pagina, setPagina] = useState(0);
+  const [ordem, setOrdem] = useState<{ coluna: number; sentido: number } | null>(null);
+  const normalizar = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const validos = dados.filter(d => Number.isSafeInteger(d.linha_tabela) && Number(d.linha_tabela) > 0 && Number.isSafeInteger(d.coluna_tabela) && Number(d.coluna_tabela) > 0);
+  if (!validos.length) return <div className="radar-chart-empty"><p>Tabela ainda não disponível. É necessário informar linha_tabela e coluna_tabela.</p></div>;
+  const colunas = new Map<number, string>();
+  const grupos = new Map<string, { periodo: string; territorio: string; linha: number; celulas: Map<number, string> }>();
+  let conflito = validos.length !== dados.length;
+  for (const d of validos) {
+    const coluna = Number(d.coluna_tabela);
+    const linha = Number(d.linha_tabela);
+    const nome = d.serie_subrecorte.trim();
+    if (!nome || (colunas.has(coluna) && colunas.get(coluna) !== nome)) conflito = true;
+    colunas.set(coluna, nome);
+    const chave = JSON.stringify([d.periodo, d.territorio, linha]);
+    if (!grupos.has(chave)) grupos.set(chave, { periodo: d.periodo, territorio: d.territorio, linha, celulas: new Map() });
+    const celulas = grupos.get(chave)!.celulas;
+    if (celulas.has(coluna)) conflito = true;
+    celulas.set(coluna, d.categoria_recorte.trim() || d.texto?.trim() || (String(d.valor ?? "").trim() !== "" && Number.isFinite(Number(d.valor)) ? formatar(d) : ""));
+  }
+  if (conflito) return <div className="radar-chart-empty"><p>Os dados da tabela precisam de revisão: coordenadas ausentes, duplicadas ou cabeçalhos inconsistentes.</p></div>;
+  const mostrarPeriodo = new Set(validos.map(d => d.periodo)).size > 1;
+  const mostrarTerritorio = new Set(validos.map(d => d.territorio)).size > 1;
+  const ids = [...colunas.keys()].sort((a,b) => a-b);
+  const cabecalhos = [...(mostrarPeriodo ? ["Período"] : []), ...(mostrarTerritorio ? ["Território"] : []), ...ids.map(id => colunas.get(id)!)];
+  const linhas = [...grupos.values()].sort((a,b) => ordenarPeriodo(a.periodo)-ordenarPeriodo(b.periodo) || a.periodo.localeCompare(b.periodo,"pt-BR") || a.territorio.localeCompare(b.territorio,"pt-BR") || a.linha-b.linha)
+    .map(r => [...(mostrarPeriodo ? [exibirPeriodo(r.periodo)] : []), ...(mostrarTerritorio ? [r.territorio] : []), ...ids.map(id => r.celulas.get(id) ?? "")])
+    .filter(r => normalizar(r.join(" ")).includes(normalizar(busca)));
+  if (ordem) linhas.sort((a,b) => ordem.sentido * a[ordem.coluna].localeCompare(b[ordem.coluna],"pt-BR",{numeric:true}));
+  const limite = 10;
+  const atual = Math.min(pagina, Math.max(0, Math.ceil(linhas.length/limite)-1));
+  function baixar() {
+    const csv = [cabecalhos,...linhas].map(r => r.map(v => '"' + (/^[=+@\-\t\r]/.test(v) ? "'" + v : v).replace(/"/g,'""') + '"').join(";")).join("\r\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"}));
+    const a = document.createElement("a"); a.href=url; a.download="indicador.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  return <div style={{width:"100%",minWidth:0}}>
+    <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",marginBottom:12}}>
+      <input aria-label="Pesquisar na tabela" placeholder="Pesquisar na tabela" value={busca} onChange={e=>{setBusca(e.target.value);setPagina(0);}} style={{flex:1,minWidth:160,padding:10,border:"1px solid #d5cce0",borderRadius:8}} />
+      <button type="button" onClick={baixar}>Baixar CSV</button>
+    </div>
+    <div className="radar-data-table-wrap radar-table-standalone" style={{overflowX:"auto",maxWidth:"100%"}}>
+      <table><thead><tr>{cabecalhos.map((c,i)=><th key={i} aria-sort={ordem?.coluna===i?(ordem.sentido===1?"ascending":"descending"):"none"}><button type="button" onClick={()=>{setOrdem(o=>({coluna:i,sentido:o?.coluna===i?-o.sentido:1}));setPagina(0);}} style={{background:"none",border:0,color:"inherit",font:"inherit",cursor:"pointer",textAlign:"left"}}>{c} {ordem?.coluna===i?(ordem.sentido===1?"↑":"↓"):"↕"}</button></th>)}</tr></thead>
+      <tbody>{linhas.slice(atual*limite,(atual+1)*limite).map((r,i)=><tr key={i}>{r.map((v,j)=><td key={j} style={{whiteSpace:"normal"}}>{v || "—"}</td>)}</tr>)}</tbody></table>
+    </div>
+    {!linhas.length && <p>Nenhum registro encontrado.</p>}
+    <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end",marginTop:12}}>
+      <span>{linhas.length ? atual*limite+1 : 0}–{Math.min((atual+1)*limite,linhas.length)} de {linhas.length} registros</span>
+      <button type="button" disabled={atual===0} onClick={()=>setPagina(atual-1)}>Anterior</button>
+      <button type="button" disabled={(atual+1)*limite>=linhas.length} onClick={()=>setPagina(atual+1)}>Próxima</button>
+    </div>
+  </div>;
+}
+
 function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & { tipo_visualizacao?: string }; dados: DadoEixo01[]; aba: "grafico" | "tabela" }) {
   const [metrica, setMetrica] = useState("");
   const [ordem, setOrdem] = useState<"maior" | "menor">("maior");
@@ -1278,6 +1336,7 @@ function VisualizacaoEixo1({ indicador, dados, aba }: { indicador: Indicador & {
     if (d.unidade_dado === "posição") return `${n}º`;
     return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   };
+  if (tipo === "tabela") return <TabelaIndicador dados={registros} formatar={fmt} />;
   if (tipo === "texto" && aba === "grafico") return (
     <div className="radar-world-grid">
       {registros.filter(d => d.texto?.trim()).map((d, i) => (
@@ -1980,14 +2039,14 @@ export default function RadarClient({
                         return territorios.map(t => <span key={t}>{t}</span>);
                       })()}
                     </div>
-                    <div className="radar-indicator-tabs" role="tablist" aria-label="Visualização dos dados">
+                    {selecionado.tipo_visualizacao?.trim().toLowerCase() !== "tabela" && <div className="radar-indicator-tabs" role="tablist" aria-label="Visualização dos dados">
                       <button type="button" role="tab" id="indicador-aba-grafico" aria-controls="indicador-conteudo" aria-selected={abaVisualizacao === "grafico"}
                         className={abaVisualizacao === "grafico" ? "active" : ""} onClick={() => setAbaVisualizacao("grafico")}>Gráfico</button>
                       <button type="button" role="tab" id="indicador-aba-tabela" aria-controls="indicador-conteudo" aria-selected={abaVisualizacao === "tabela"}
                         className={abaVisualizacao === "tabela" ? "active" : ""} onClick={() => setAbaVisualizacao("tabela")}>Tabela</button>
-                    </div>
-                    <div className="radar-indicator-preview" id="indicador-conteudo" role="tabpanel" aria-labelledby={abaVisualizacao === "grafico" ? "indicador-aba-grafico" : "indicador-aba-tabela"} key={`${selecionado.indicador_id}-${abaVisualizacao}`}>
-                      {abaVisualizacao === "tabela" && (
+                    </div>}
+                    <div className="radar-indicator-preview" id="indicador-conteudo" role={selecionado.tipo_visualizacao?.trim().toLowerCase() === "tabela" ? undefined : "tabpanel"} aria-labelledby={selecionado.tipo_visualizacao?.trim().toLowerCase() === "tabela" ? undefined : abaVisualizacao === "grafico" ? "indicador-aba-grafico" : "indicador-aba-tabela"} key={`${selecionado.indicador_id}-${abaVisualizacao}`}>
+                      {(abaVisualizacao === "tabela" || selecionado.tipo_visualizacao?.trim().toLowerCase() === "tabela") && (
                         <div className="radar-table-update">
                           <strong>Última atualização:</strong>{" "}
                           {selecionado.atualizado_em
@@ -2002,7 +2061,7 @@ export default function RadarClient({
                           <div className="radar-chart-grid" aria-hidden="true" />
                           <div className="radar-chart-message">
                             <strong>{carregandoDados ? "Carregando dados…" : erroDados || "Dados ainda não disponíveis"}</strong>
-                            <p>O gráfico aparecerá quando os dados deste indicador estiverem publicados.</p>
+                            <p>A visualização aparecerá quando os dados deste indicador estiverem publicados.</p>
                           </div>
                         </div>
                       )}
